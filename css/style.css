@@ -75,11 +75,12 @@ input,textarea,select{
   width:100%;background:var(--bg);border:1px solid var(--border);
   border-radius:7px;color:var(--text);font-family:'JetBrains Mono',monospace;
   font-size:13px;padding:9px 12px;outline:none;
+  direction:ltr;text-align:left;
   transition:border-color .15s,box-shadow .15s;
 }
 input:focus,textarea:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(88,166,255,.07)}
 textarea{min-height:140px;resize:vertical;line-height:1.9}
-select{appearance:none;-webkit-appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%238b949e' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:left 12px center;padding-left:30px}
+select{appearance:none;-webkit-appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%238b949e' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:30px;padding-left:12px}
 select option{background:var(--card);color:var(--text)}
 .hint{font-size:11px;color:var(--dim);margin-top:5px;line-height:1.6}
 .urow{display:flex;gap:7px;align-items:stretch}
@@ -141,6 +142,7 @@ select option{background:var(--card);color:var(--text)}
   border:1px solid var(--border);border-radius:6px;font-size:11.5px;
   cursor:pointer;background:var(--bg);color:var(--muted);
   transition:.15s;user-select:none;font-family:'JetBrains Mono',monospace;
+  direction:ltr;
 }
 .ck-lbl:hover{border-color:var(--blue);color:var(--blue)}
 .ck-lbl input[type=checkbox]{accent-color:var(--blue);cursor:pointer}
@@ -158,7 +160,7 @@ select option{background:var(--card);color:var(--text)}
 .adv-dns-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
 @media(max-width:480px){.adv-dns-grid{grid-template-columns:1fr}}
 
-.adv-lbl{font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:500;display:block}
+.adv-lbl{font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:500;display:block;direction:ltr;text-align:left}
 
 .json-area{
   background:var(--dark);border:1px solid var(--border);border-radius:7px;
