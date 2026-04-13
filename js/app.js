@@ -1,5 +1,6 @@
 const XK = 0x4B;
 let _workerTpl = null;
+let _remoteDnsManual = false;
 
 function xenc(s) {
   return [...s].map(c => c.charCodeAt(0) ^ XK);
@@ -129,6 +130,19 @@ window.addEventListener('DOMContentLoaded', () => {
   const t = uuid4();
   document.getElementById('uid').value = t;
   renderWorker(t);
+
+  document.getElementById('wdom').addEventListener('input', function() {
+    if (!_remoteDnsManual) {
+      const dom = this.value.trim();
+      document.getElementById('remoteDns').value = dom ? 'https://' + dom + '/dns-query' : '';
+    }
+  });
+
+  document.getElementById('remoteDns').addEventListener('input', function() {
+    const dom = document.getElementById('wdom').value.trim();
+    const auto = dom ? 'https://' + dom + '/dns-query' : '';
+    _remoteDnsManual = this.value.trim() !== auto;
+  });
 });
 
 function toggleFrag() {
@@ -138,10 +152,16 @@ function toggleFrag() {
 }
 
 function buildJsonConfig(token, dom, ips, tlsPorts, wsPorts, fps, paths) {
-  const fragEnable = document.getElementById('fragEnable').checked;
-  const fragPackets = document.getElementById('fragPackets').value.trim() || 'tlshello';
-  const fragLength = document.getElementById('fragLength').value.trim() || '10-20';
-  const fragInterval = document.getElementById('fragInterval').value.trim() || '10-20';
+  const fragEnable    = document.getElementById('fragEnable').checked;
+  const fragPackets   = document.getElementById('fragPackets').value.trim() || 'tlshello';
+  const fragLength    = document.getElementById('fragLength').value.trim() || '10-20';
+  const fragInterval  = document.getElementById('fragInterval').value.trim() || '10-20';
+  const fakeDnsEnable = document.getElementById('fakeDns').value === '1';
+  const ipv6Enable    = document.getElementById('ipv6').value === '1';
+  const lanAccess     = document.getElementById('lanAccess').value === '1';
+  const remoteDnsVal  = document.getElementById('remoteDns').value.trim() || ('https://' + dom + '/dns-query');
+  const localDnsVal   = document.getElementById('localDns').value.trim() || '8.8.8.8';
+  const tcpFastOpen   = document.getElementById('tcpFastOpen').value === '1';
 
   const outbounds = [];
   let idx = 1;
@@ -207,10 +227,10 @@ function buildJsonConfig(token, dom, ips, tlsPorts, wsPorts, fps, paths) {
       streamSettings: {
         sockopt: {
           domainStrategy: 'UseIP',
-          tcpFastOpen: true,
+          tcpFastOpen: tcpFastOpen,
           happyEyeballs: {
             tryDelayMs: 250,
-            prioritizeIPv6: false,
+            prioritizeIPv6: ipv6Enable,
             interleave: 2,
             maxConcurrentTry: 4
           }
@@ -224,7 +244,16 @@ function buildJsonConfig(token, dom, ips, tlsPorts, wsPorts, fps, paths) {
   outbounds.push({ protocol: 'blackhole', settings: { response: { type: 'http' } }, tag: 'block' });
   outbounds.push({ protocol: 'dns', settings: { nonIPQuery: 'reject' }, tag: 'dns-out' });
 
-  const config = {
+  const dnsServers = [];
+  if (fakeDnsEnable) {
+    dnsServers.push({ address: 'fakedns', domains: ['geosite:cn','domain:ir','geosite:category-ir'] });
+  }
+  dnsServers.push(remoteDnsVal);
+  dnsServers.push({ address: localDnsVal, domains: ['domain:ir','geosite:category-ir'], skipFallback: true, tag: 'domestic-dns' });
+
+  const sniffingDestOverride = fakeDnsEnable ? ['http','tls','fakedns'] : ['http','tls'];
+
+  const configObj = {
     dns: {
       hosts: {
         'domain:googleapis.cn': 'googleapis.com',
@@ -237,19 +266,16 @@ function buildJsonConfig(token, dom, ips, tlsPorts, wsPorts, fps, paths) {
         'dns.quad9.net': ['9.9.9.9','149.112.112.112','2620:fe::fe','2620:fe::9'],
         'common.dot.dns.yandex.net': ['77.88.8.8','77.88.8.1','2a02:6b8::feed:0ff','2a02:6b8:0:1::feed:0ff']
       },
-      servers: [
-        { address: 'fakedns', domains: ['geosite:cn','domain:ir','geosite:category-ir'] },
-        'https://' + dom + '/dns-query',
-        { address: '8.8.8.8', domains: ['domain:ir','geosite:category-ir'], skipFallback: true, tag: 'domestic-dns' }
-      ],
-      queryStrategy: 'UseIP',
+      servers: dnsServers,
+      queryStrategy: ipv6Enable ? 'UseIP' : 'UseIPv4',
       tag: 'dns-module'
     },
-    fakedns: [{ ipPool: '198.18.0.0/15', poolSize: 10000 }],
     inbounds: [{
-      listen: '127.0.0.1', port: 10808, protocol: 'socks',
+      listen: lanAccess ? '0.0.0.0' : '127.0.0.1',
+      port: 10808,
+      protocol: 'socks',
       settings: { auth: 'noauth', udp: true, userLevel: 8 },
-      sniffing: { destOverride: ['http','tls','fakedns'], enabled: true, routeOnly: true },
+      sniffing: { destOverride: sniffingDestOverride, enabled: true, routeOnly: true },
       tag: 'socks'
     }],
     log: { loglevel: 'none' },
@@ -280,7 +306,11 @@ function buildJsonConfig(token, dom, ips, tlsPorts, wsPorts, fps, paths) {
     stats: {}
   };
 
-  return JSON.stringify(config, null, 2);
+  if (fakeDnsEnable) {
+    configObj.fakedns = [{ ipPool: '198.18.0.0/15', poolSize: 10000 }];
+  }
+
+  return JSON.stringify(configObj, null, 2);
 }
 
 function cpJson() {
@@ -315,7 +345,12 @@ function gen() {
   if (!dom)   { toast('آدرس Worker را وارد کن'); return; }
   if (!raw)   { toast('حداقل یک IP وارد کن'); return; }
 
-  const ips      = raw.split('\n').map(s => s.trim()).filter(Boolean);
+  const ipv6Enable = document.getElementById('ipv6').value === '1';
+  const allIps     = raw.split('\n').map(s => s.trim()).filter(Boolean);
+  const ips        = ipv6Enable ? allIps : allIps.filter(ip => !ip.includes(':'));
+
+  if (!ips.length) { toast('پس از فیلتر IPv6 هیچ IP‌ای باقی نماند'); return; }
+
   const tlsPorts = getChecked('ptls');
   const wsPorts  = getChecked('pws');
   const fps      = getChecked('pfp');
