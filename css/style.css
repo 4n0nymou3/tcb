@@ -110,7 +110,7 @@ select option{background:var(--card);color:var(--text)}
 .sl{font-size:10px;color:var(--muted);margin-top:3px}
 .rh{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:9px;margin-bottom:13px}
 .rt{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:7px;font-family:'JetBrains Mono',monospace}
-.rh-buttons{display:flex;gap:9px}
+.rh-buttons{display:flex;gap:6px}
 .cnt{background:var(--green);color:#000;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px}
 .cb{
   padding:5px 12px;border-radius:5px;font-size:12px;font-weight:500;cursor:pointer;
