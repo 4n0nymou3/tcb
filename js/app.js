@@ -305,6 +305,21 @@ function cpJson() {
   navigator.clipboard.writeText(txt).then(() => toast('کانفیگ JSON کپی شد'));
 }
 
+function dlJson() {
+  const txt = document.getElementById('jsonDisplay').textContent;
+  if (!txt) return;
+  const blob = new Blob([txt], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'TCB.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('فایل TCB.json دانلود شد');
+}
+
 let allC = [];
 
 function getChecked(cls) {
@@ -417,6 +432,21 @@ function cpOne(btn, enc) {
 function cpAll() {
   navigator.clipboard.writeText(allC.map(c => c.cfg).join('\n'))
     .then(() => toast(`${allC.length} کانفیگ کپی شد`));
+}
+
+function dlAll() {
+  if (!allC.length) return;
+  const txt = allC.map(c => c.cfg).join('\n');
+  const blob = new Blob([txt], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'TCB.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast(`فایل TCB.txt با ${allC.length} کانفیگ دانلود شد`);
 }
 
 function toast(msg) {
