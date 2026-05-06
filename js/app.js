@@ -308,16 +308,18 @@ function cpJson() {
 function dlJson() {
   const txt = document.getElementById('jsonDisplay').textContent;
   if (!txt) return;
+  const fragEnabled = document.getElementById('fragEnable').checked;
+  const fileName = fragEnabled ? 'TCB_Fragment.json' : 'TCB_Normal.json';
   const blob = new Blob([txt], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'TCB.json';
+  a.download = fileName;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  toast('فایل TCB.json دانلود شد');
+  toast('فایل ' + fileName + ' دانلود شد');
 }
 
 let allC = [];
