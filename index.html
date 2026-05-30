@@ -14,7 +14,7 @@
 <div class="hdr">
   <div class="hdr-top">
     <div class="hdr-dot"></div>
-    <h1>Tunnel Config Builder (TCB) v3.1</h1>
+    <h1>Tunnel Config Builder (TCB) v3.5</h1>
   </div>
   <p class="hdr-sub">ساخت کانفیگ VLESS برای Cloudflare Worker — بدون نیاز به VPS</p>
 </div>
@@ -26,14 +26,12 @@
   <div class="step" id="sn4"><div class="step-n">4</div><span>کانفیگ‌ها</span></div>
 </div>
 
-<!-- STEP 1 -->
 <div class="sec">
   <div class="sec-hdr">
     <div class="sec-title"><i></i>مرحله ۱ — ساخت Cloudflare Worker (یک‌بار)</div>
   </div>
   <div class="sec-body">
     <div class="guide">
-
       <div class="gitem">
         <div class="gn"></div>
         <div class="gb2">
@@ -41,7 +39,6 @@
           <div class="gdesc">به <a class="lk" href="https://dash.cloudflare.com/sign-up" target="_blank">dash.cloudflare.com</a> برو و با ایمیل اکانت بساز.</div>
         </div>
       </div>
-
       <div class="gitem">
         <div class="gn"></div>
         <div class="gb2">
@@ -49,7 +46,6 @@
           <div class="gdesc">از داشبورد: <code>Workers &amp; Pages</code> ← <code>Create Application</code> ← <code>Create Worker</code> — یه اسم بده و <code>Deploy</code> کن.</div>
         </div>
       </div>
-
       <div class="gitem">
         <div class="gn"></div>
         <div class="gb2">
@@ -64,7 +60,6 @@
           </div>
         </div>
       </div>
-
       <div class="gitem">
         <div class="gn"></div>
         <div class="gb2">
@@ -72,12 +67,10 @@
           <div class="gdesc">بعد از Deploy، CF آدرسی مثل <code>myworker.username.workers.dev</code> نشون میده. آن را در مرحله ۲ وارد کن.</div>
         </div>
       </div>
-
     </div>
   </div>
 </div>
 
-<!-- STEP 2 -->
 <div class="sec">
   <div class="sec-hdr">
     <div class="sec-title"><i></i>مرحله ۲ — Token و آدرس Worker</div>
@@ -102,12 +95,12 @@
   </div>
 </div>
 
-<!-- STEP 3 -->
 <div class="sec">
   <div class="sec-hdr">
     <div class="sec-title"><i></i>مرحله ۳ — IP های سالم Cloudflare</div>
   </div>
   <div class="sec-body">
+
     <div class="fg">
       <label>آدرس‌های IP (هر خط یک IP)</label>
       <div class="alert ab" style="margin-bottom:10px">
@@ -120,13 +113,13 @@
         </button>
       </a>
       <textarea id="ips" placeholder="104.16.0.1&#10;104.17.0.1&#10;104.18.0.1&#10;104.19.0.1&#10;104.20.0.1"></textarea>
-      <p class="hint">هر تعداد IP قابل قبول است — از هر IP چند کانفیگ با پورت‌ها و متدهای مختلف ساخته می‌شود. علاوه بر IP، می‌توانید از برخی دامنه‌ها نیز استفاده کنید (مثلاً chatgpt.com)</p>
+      <p class="hint">هر تعداد IP قابل قبول است — از هر IP چند کانفیگ با پورت‌های مختلف ساخته می‌شود. علاوه بر IP، می‌توانید از برخی دامنه‌ها نیز استفاده کنید (مثلاً chatgpt.com)</p>
     </div>
 
     <div class="fg" style="margin-top:14px">
       <label style="margin-bottom:9px">پورت‌های TLS (امن‌تر — برای یوتیوب، اینستاگرام، اکس)</label>
-      <div style="display:flex;flex-wrap:wrap;gap:7px" id="portsTls">
-        <label class="ck-lbl"><input type="checkbox" class="ptls" value="443"  checked> 443</label>
+      <div style="display:flex;flex-wrap:wrap;gap:7px;justify-content:flex-start;direction:ltr">
+        <label class="ck-lbl"><input type="checkbox" class="ptls" value="443" checked> 443</label>
         <label class="ck-lbl"><input type="checkbox" class="ptls" value="8443"> 8443</label>
         <label class="ck-lbl"><input type="checkbox" class="ptls" value="2053"> 2053</label>
         <label class="ck-lbl"><input type="checkbox" class="ptls" value="2083"> 2083</label>
@@ -137,8 +130,8 @@
 
     <div class="fg" style="margin-top:10px">
       <label style="margin-bottom:9px">پورت‌های WebSocket بدون TLS (برای شبکه‌هایی که TLS بلاک است)</label>
-      <div style="display:flex;flex-wrap:wrap;gap:7px" id="portsWs">
-        <label class="ck-lbl"><input type="checkbox" class="pws" value="80"   checked> 80</label>
+      <div style="display:flex;flex-wrap:wrap;gap:7px;justify-content:flex-start;direction:ltr">
+        <label class="ck-lbl"><input type="checkbox" class="pws" value="80" checked> 80</label>
         <label class="ck-lbl"><input type="checkbox" class="pws" value="8080"> 8080</label>
         <label class="ck-lbl"><input type="checkbox" class="pws" value="8880"> 8880</label>
         <label class="ck-lbl"><input type="checkbox" class="pws" value="2052"> 2052</label>
@@ -150,45 +143,48 @@
 
     <div class="fg" style="margin-top:10px">
       <label style="margin-bottom:9px">TLS Fingerprint — جهت دور زدن DPI</label>
-      <div style="display:flex;flex-wrap:wrap;gap:7px" id="fpSel">
-        <label class="ck-lbl"><input type="checkbox" class="pfp" value="chrome"> Chrome</label>
-        <label class="ck-lbl"><input type="checkbox" class="pfp" value="firefox" checked> Firefox</label>
-        <label class="ck-lbl"><input type="checkbox" class="pfp" value="safari"> Safari</label>
-        <label class="ck-lbl"><input type="checkbox" class="pfp" value="edge">   Edge</label>
-        <label class="ck-lbl"><input type="checkbox" class="pfp" value="ios">    iOS</label>
-        <label class="ck-lbl"><input type="checkbox" class="pfp" value="android"> Android</label>
-        <label class="ck-lbl"><input type="checkbox" class="pfp" value="random"> Random</label>
-      </div>
+      <select id="fpSelect">
+        <option value="chrome" selected>chrome</option>
+        <option value="firefox">firefox</option>
+        <option value="safari">safari</option>
+        <option value="ios">ios</option>
+        <option value="android">android</option>
+        <option value="edge">edge</option>
+        <option value="360">360</option>
+        <option value="qq">qq</option>
+        <option value="random">random</option>
+        <option value="randomized">randomized</option>
+      </select>
     </div>
 
     <div class="fg" style="margin-top:10px">
-      <label style="margin-bottom:9px">مسیر WebSocket path</label>
-      <div style="display:flex;flex-wrap:wrap;gap:7px" id="pathSel">
-        <label class="ck-lbl"><input type="checkbox" class="ppath" value="/"> /</label>
-        <label class="ck-lbl"><input type="checkbox" class="ppath" value="/ws"> /ws</label>
-        <label class="ck-lbl"><input type="checkbox" class="ppath" value="/v2ray">   /v2ray</label>
-        <label class="ck-lbl"><input type="checkbox" class="ppath" value="/vless">   /vless</label>
-        <label class="ck-lbl"><input type="checkbox" class="ppath" value="/proxy"   checked> /proxy</label>
-      </div>
+      <label style="margin-bottom:9px">مسیر WebSocket Path</label>
+      <select id="pathSelect">
+        <option value="/proxy" selected>/proxy</option>
+        <option value="/v2ray">/v2ray</option>
+        <option value="/vless">/vless</option>
+        <option value="/ws">/ws</option>
+        <option value="/">/</option>
+      </select>
     </div>
 
     <div class="fg" style="margin-top:14px;border:1px solid var(--border2);border-radius:8px;padding:13px">
       <label style="margin-bottom:9px;color:var(--text);font-size:13px;font-weight:600">تنظیمات Fragment</label>
-      <div style="margin-bottom:10px">
-        <label class="ck-lbl"><input type="checkbox" id="fragEnable" onchange="toggleFrag()"> فعال‌سازی Fragment</label>
+      <div style="margin-bottom:10px;display:flex;justify-content:flex-start;direction:ltr">
+        <label class="ck-lbl"><input type="checkbox" id="fragEnable" onchange="toggleFrag()"> Fragment</label>
       </div>
-      <div class="frag-grid disabled" id="fragFields">
+      <div class="frag-grid disabled" id="fragFields" style="direction:ltr">
         <div>
-          <label>Fragment Packets</label>
+          <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:500;direction:ltr;text-align:left">Fragment Packets</label>
           <input type="text" id="fragPackets" value="tlshello" placeholder="tlshello یا 1-2"/>
         </div>
         <div>
-          <label>Fragment Length</label>
-          <input type="text" id="fragLength" value="10-20" placeholder="10-20"/>
+          <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:500;direction:ltr;text-align:left">Fragment Interval</label>
+          <input type="text" id="fragInterval" value="10-20" placeholder="10-20"/>
         </div>
         <div>
-          <label>Fragment Interval</label>
-          <input type="text" id="fragInterval" value="10-20" placeholder="10-20"/>
+          <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:500;direction:ltr;text-align:left">Fragment Length</label>
+          <input type="text" id="fragLength" value="10-20" placeholder="10-20"/>
         </div>
       </div>
       <p class="hint" style="margin-top:10px">در صورت فعال بودن، تنظیمات fragment فقط در کانفیگ مادر JSON اعمال می‌شود و روی کانفیگ‌های VLESS تأثیری ندارد.</p>
@@ -226,7 +222,17 @@
           </select>
         </div>
       </div>
-      <div class="adv-dns-grid">
+      <div id="echWrap" style="margin-top:12px">
+        <div style="display:flex;justify-content:flex-start;direction:ltr">
+          <label class="ck-lbl"><input type="checkbox" id="echEnable" onchange="toggleEch()"> ECH</label>
+        </div>
+        <div id="echFields" class="ech-field disabled">
+          <label class="adv-lbl" style="margin-top:8px">DNS سرور برای دریافت کلید ECH</label>
+          <input type="text" id="echDns" value="https://cloudflare-dns.com/dns-query" placeholder="https://cloudflare-dns.com/dns-query"/>
+          <p class="hint" style="margin-top:6px">فعال کردن چک‌باکس کافی است — Xray کلید رمزنگاری دامنه Worker شما را به صورت خودکار از این سرور DNS دریافت می‌کند. آدرس پیش‌فرض (DoH Cloudflare) بهترین گزینه برای ایران است زیرا یک آدرس <code>https://</code> است و در برابر فیلترینگ مقاوم می‌باشد. اگر DoH Proxy شخصی دارید، آدرس آن را اینجا وارد کنید.</p>
+        </div>
+      </div>
+      <div class="adv-dns-grid" style="margin-top:12px">
         <div>
           <label class="adv-lbl">Local DNS</label>
           <input type="text" id="localDns" value="8.8.8.8" placeholder="8.8.8.8"/>
@@ -241,7 +247,7 @@
           <input type="text" id="remoteDns" value="https://cloudflare-dns.com/dns-query" placeholder="https://cloudflare-dns.com/dns-query"/>
         </div>
       </div>
-      <p class="hint" style="margin-top:10px">Local DNS برای resolve دامنه‌های ایرانی استفاده می‌شود. Remote DNS به‌صورت پیشفرض روی Cloudflare DoH تنظیم است و می‌توانید آن را با هر آدرس DoH دلخواه جایگزین کنید. با ابزار DoH Proxy می‌توانید یک سرور DoH اختصاصی روی Cloudflare بسازید و آدرس آن را اینجا وارد کنید. Allow LAN اتصال سایر دستگاه‌های شبکه محلی را فعال می‌کند.</p>
+      <p class="hint" style="margin-top:10px">Local DNS برای resolve دامنه‌های ایرانی استفاده می‌شود. Remote DNS به‌صورت پیشفرض روی Cloudflare DoH تنظیم است و می‌توانید آن را با هر آدرس DoH دلخواه جایگزین کنید. با ابزار DoH Proxy می‌توانید یک سرور DoH اختصاصی روی Cloudflare بسازید و آدرس آن را اینجا وارد کنید. Allow LAN اتصال سایر دستگاه‌های شبکه محلی را فعال می‌کند. ECH فقط در حالت Normal (بدون Fragment) روی کانفیگ JSON اعمال می‌شود.</p>
     </div>
 
     <div class="alert ao" style="margin-top:14px;margin-bottom:0">
@@ -259,7 +265,6 @@
   </div>
 </div>
 
-<!-- RESULTS -->
 <div id="results">
   <hr class="dv">
   <div class="stats">
