@@ -69,10 +69,9 @@ function hl(code) {
     .replace(/&/g,'&amp;')
     .replace(/</g,'&lt;')
     .replace(/>/g,'&gt;');
-  h = h.replace(/\b(import|from|const|let|async|await|return|if|else|for|of|new|try|catch|null|true|false)\b/g,
-    '<span class="k">$1</span>');
-  h = h.replace(/('[^']*')/g, '<span class="s">$1</span>');
-  h = h.replace(/\b(\d+)\b/g, '<span class="n">$1</span>');
+  h = h.replace(/\b(import|from|const|let|async|await|return|if|else|for|of|new|try|catch|null|true|false)\b/g,'<span class="k">$1</span>');
+  h = h.replace(/('[^']*')/g,'<span class="s">$1</span>');
+  h = h.replace(/\b(\d+)\b/g,'<span class="n">$1</span>');
   return h;
 }
 
@@ -134,92 +133,98 @@ window.addEventListener('DOMContentLoaded', () => {
 function toggleFrag() {
   const en = document.getElementById('fragEnable').checked;
   const ff = document.getElementById('fragFields');
-  if (en) { ff.classList.remove('disabled'); } else { ff.classList.add('disabled'); }
+  const echWrap = document.getElementById('echWrap');
+  const echEnable = document.getElementById('echEnable');
+  if (en) {
+    ff.classList.remove('disabled');
+    echEnable.checked = false;
+    echWrap.classList.add('ech-blocked');
+    document.getElementById('echFields').classList.add('disabled');
+  } else {
+    ff.classList.add('disabled');
+    echWrap.classList.remove('ech-blocked');
+  }
 }
 
-function buildJsonConfig(token, dom, ips, tlsPorts, wsPorts, fps, paths) {
-  const fragEnable    = document.getElementById('fragEnable').checked;
-  const fragPackets   = document.getElementById('fragPackets').value.trim() || 'tlshello';
-  const fragLength    = document.getElementById('fragLength').value.trim() || '10-20';
-  const fragInterval  = document.getElementById('fragInterval').value.trim() || '10-20';
+function toggleEch() {
+  const en = document.getElementById('echEnable').checked;
+  const ef = document.getElementById('echFields');
+  if (en) { ef.classList.remove('disabled'); } else { ef.classList.add('disabled'); }
+}
+
+function buildJsonConfig(token, dom, ips, tlsPorts, wsPorts, fp) {
+  const path         = document.getElementById('pathSelect').value;
+  const fragEnable   = document.getElementById('fragEnable').checked;
+  const fragPackets  = document.getElementById('fragPackets').value.trim() || 'tlshello';
+  const fragLength   = document.getElementById('fragLength').value.trim() || '10-20';
+  const fragInterval = document.getElementById('fragInterval').value.trim() || '10-20';
   const fakeDnsEnable = document.getElementById('fakeDns').value === '1';
-  const ipv6Enable    = document.getElementById('ipv6').value === '1';
-  const lanAccess     = document.getElementById('lanAccess').value === '1';
-  const remoteDnsVal  = document.getElementById('remoteDns').value.trim() || 'https://cloudflare-dns.com/dns-query';
-  const localDnsVal   = document.getElementById('localDns').value.trim() || '8.8.8.8';
-  const tcpFastOpen   = document.getElementById('tcpFastOpen').value === '1';
+  const ipv6Enable   = document.getElementById('ipv6').value === '1';
+  const lanAccess    = document.getElementById('lanAccess').value === '1';
+  const remoteDnsVal = document.getElementById('remoteDns').value.trim() || 'https://cloudflare-dns.com/dns-query';
+  const localDnsVal  = document.getElementById('localDns').value.trim() || '8.8.8.8';
+  const tcpFastOpen  = document.getElementById('tcpFastOpen').value === '1';
+  const echEnable    = document.getElementById('echEnable').checked && !fragEnable;
+  const echDns       = document.getElementById('echDns').value.trim() || 'https://cloudflare-dns.com/dns-query';
 
   const outbounds = [];
   let idx = 1;
 
   ips.forEach(ip => {
     tlsPorts.forEach(port => {
-      fps.forEach(fp => {
-        paths.forEach(path => {
-          const streamSettings = {
-            network: 'ws',
-            security: 'tls',
-            tlsSettings: {
-              allowInsecure: false,
-              fingerprint: fp,
-              serverName: dom,
-              show: false,
-              alpn: ['http/1.1']
-            },
-            wsSettings: { headers: { Host: dom }, path: path }
-          };
-          if (fragEnable) {
-            streamSettings.sockopt = { dialerProxy: 'fragment' };
-          }
-          outbounds.push({
-            mux: { concurrency: -1, enabled: false },
-            protocol: 'vless',
-            settings: { vnext: [{ address: ip, port: parseInt(port), users: [{ encryption: 'none', id: token, level: 8 }] }] },
-            streamSettings: streamSettings,
-            tag: 'proxy-' + idx
-          });
-          idx++;
-        });
+      const tlsSettings = {
+        allowInsecure: false,
+        fingerprint: fp,
+        serverName: dom,
+        show: false,
+        alpn: ['http/1.1']
+      };
+      if (echEnable) {
+        tlsSettings.echConfigList = echDns;
+      }
+      const streamSettings = {
+        network: 'ws',
+        security: 'tls',
+        tlsSettings: tlsSettings,
+        wsSettings: { headers: { Host: dom }, path: path }
+      };
+      if (fragEnable) { streamSettings.sockopt = { dialerProxy: 'fragment' }; }
+      outbounds.push({
+        mux: { concurrency: -1, enabled: false },
+        protocol: 'vless',
+        settings: { vnext: [{ address: ip, port: parseInt(port), users: [{ encryption: 'none', id: token, level: 8 }] }] },
+        streamSettings: streamSettings,
+        tag: 'proxy-' + idx
       });
+      idx++;
     });
 
     wsPorts.forEach(port => {
-      paths.forEach(path => {
-        const streamSettings = {
-          network: 'ws',
-          wsSettings: { headers: { Host: dom }, path: path }
-        };
-        if (fragEnable) {
-          streamSettings.sockopt = { dialerProxy: 'fragment' };
-        }
-        outbounds.push({
-          mux: { concurrency: -1, enabled: false },
-          protocol: 'vless',
-          settings: { vnext: [{ address: ip, port: parseInt(port), users: [{ encryption: 'none', id: token, level: 8 }] }] },
-          streamSettings: streamSettings,
-          tag: 'proxy-' + idx
-        });
-        idx++;
+      const streamSettings = {
+        network: 'ws',
+        wsSettings: { headers: { Host: dom }, path: path }
+      };
+      if (fragEnable) { streamSettings.sockopt = { dialerProxy: 'fragment' }; }
+      outbounds.push({
+        mux: { concurrency: -1, enabled: false },
+        protocol: 'vless',
+        settings: { vnext: [{ address: ip, port: parseInt(port), users: [{ encryption: 'none', id: token, level: 8 }] }] },
+        streamSettings: streamSettings,
+        tag: 'proxy-' + idx
       });
+      idx++;
     });
   });
 
   if (fragEnable) {
     outbounds.push({
       protocol: 'freedom',
-      settings: {
-        fragment: { packets: fragPackets, length: fragLength, interval: fragInterval }
-      },
+      settings: { fragment: { packets: fragPackets, length: fragLength, interval: fragInterval } },
       streamSettings: {
         sockopt: {
           domainStrategy: 'UseIP',
           tcpFastOpen: tcpFastOpen,
-          happyEyeballs: {
-            tryDelayMs: 250,
-            prioritizeIPv6: ipv6Enable,
-            interleave: 2,
-            maxConcurrentTry: 4
-          }
+          happyEyeballs: { tryDelayMs: 250, prioritizeIPv6: ipv6Enable, interleave: 2, maxConcurrentTry: 4 }
         }
       },
       tag: 'fragment'
@@ -356,12 +361,10 @@ function gen() {
 
   const tlsPorts = getChecked('ptls');
   const wsPorts  = getChecked('pws');
-  const fps      = getChecked('pfp');
-  const paths    = getChecked('ppath');
+  const fp       = document.getElementById('fpSelect').value;
+  const path     = document.getElementById('pathSelect').value;
 
   if (!tlsPorts.length && !wsPorts.length) { toast('حداقل یک پورت انتخاب کن'); return; }
-  if (!fps.length)   { toast('حداقل یک Fingerprint انتخاب کن'); return; }
-  if (!paths.length) { toast('حداقل یک Path انتخاب کن'); return; }
 
   const btn = document.getElementById('gb');
   btn.innerHTML = '<span class="sp"></span> در حال ساخت...';
@@ -374,22 +377,14 @@ function gen() {
     ips.forEach((ip, ipIdx) => {
       const ipLabel = `IP${ipIdx + 1}`;
       tlsPorts.forEach(port => {
-        fps.forEach(fp => {
-          paths.forEach(path => {
-            const pathSlug = path === '/' ? 'root' : path.slice(1);
-            const label = `${ipLabel}-TLS${port}-${fp}-${pathSlug}`;
-            allC.push({ cfg: buildConfig(token, dom, ip, port, 'tls', fp, path, label), tag: `TLS-${port}`, tagColor: 'var(--blue)' });
-            tlsCount++;
-          });
-        });
+        const label = `${ipLabel}-TLS${port}-${fp}`;
+        allC.push({ cfg: buildConfig(token, dom, ip, port, 'tls', fp, path, label), tag: `TLS-${port}`, tagColor: 'var(--blue)' });
+        tlsCount++;
       });
       wsPorts.forEach(port => {
-        paths.forEach(path => {
-          const pathSlug = path === '/' ? 'root' : path.slice(1);
-          const label = `${ipLabel}-WS${port}-${pathSlug}`;
-          allC.push({ cfg: buildConfig(token, dom, ip, port, 'none', 'chrome', path, label), tag: `WS-${port}`, tagColor: 'var(--orange)' });
-          wsCount++;
-        });
+        const label = `${ipLabel}-WS${port}`;
+        allC.push({ cfg: buildConfig(token, dom, ip, port, 'none', '', path, label), tag: `WS-${port}`, tagColor: 'var(--orange)' });
+        wsCount++;
       });
     });
 
@@ -399,7 +394,7 @@ function gen() {
     document.getElementById('sa').textContent  = allC.length;
     document.getElementById('cb2').textContent = allC.length;
 
-    const jsonStr = buildJsonConfig(token, dom, ips, tlsPorts, wsPorts, fps, paths);
+    const jsonStr = buildJsonConfig(token, dom, ips, tlsPorts, wsPorts, fp);
     document.getElementById('jsonDisplay').textContent = jsonStr;
 
     document.getElementById('results').style.display = 'block';
