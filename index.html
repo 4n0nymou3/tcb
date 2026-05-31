@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Tunnel Config Builder</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxOTIgMTkyIj48cmVjdCB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgZmlsbD0iIzFjMjEyOCIvPjx0ZXh0IHg9Ijk2IiB5PSIxMDgiIGZvbnQtZmFtaWx5PSJtb25vc3BhY2Usc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyMiIgZm9udC13ZWlnaHQ9IjcwMCIgZmlsbD0iIzAwZTVmZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgbGV0dGVyLXNwYWNpbmc9IjIiPkFub255bW91czwvdGV4dD48L3N2Zz4="/>
+<link rel="icon" type="image/svg+xml" href="icon.svg"/>
+<link rel="manifest" href="site.webmanifest"/>
 <link rel="stylesheet" href="css/style.css"/>
 </head>
 <body>
@@ -14,7 +15,7 @@
 <div class="hdr">
   <div class="hdr-top">
     <div class="hdr-dot"></div>
-    <h1>Tunnel Config Builder (TCB) v3.2</h1>
+    <h1>Tunnel Config Builder (TCB) v3.5</h1>
   </div>
   <p class="hdr-sub">ساخت کانفیگ VLESS برای Cloudflare Worker — بدون نیاز به VPS</p>
 </div>
@@ -77,7 +78,7 @@
   </div>
   <div class="sec-body">
     <div class="fg">
-      <label>Token</label>
+      <label style="direction:ltr;text-align:left">Token</label>
       <div class="urow">
         <input type="text" id="uid" placeholder="xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx" oninput="renderWorker(this.value.trim())"/>
         <div class="ubtns">
@@ -88,7 +89,11 @@
       <p class="hint">با هر بار تولید Token جدید، کد Worker بالا نیز به‌صورت خودکار آپدیت می‌شود.</p>
     </div>
     <div class="fg">
-      <label>آدرس دامنه Worker (بدون https://)</label>
+      <label>آدرس دامنه Worker</label>
+      <div class="alert ao" style="margin-bottom:8px">
+        <span class="aico">⚠</span>
+        <div>آدرس را بدون <code>https://</code> در ابتدا و بدون <code>/</code> در انتها وارد کنید. مثال صحیح: <code>myworker.username.workers.dev</code></div>
+      </div>
       <input type="text" id="wdom" placeholder="myworker.username.workers.dev"/>
       <p class="hint">آدرسی که Cloudflare بعد از Deploy به Worker داد</p>
     </div>
@@ -160,9 +165,9 @@
     <div class="fg" style="margin-top:10px">
       <label style="margin-bottom:9px">مسیر WebSocket Path</label>
       <select id="pathSelect">
-        <option value="/vless" selected>/vless</option>
-        <option value="/proxy">/proxy</option>
+        <option value="/proxy" selected>/proxy</option>
         <option value="/v2ray">/v2ray</option>
+        <option value="/vless">/vless</option>
         <option value="/ws">/ws</option>
         <option value="/">/</option>
       </select>
@@ -170,7 +175,7 @@
 
     <div class="fg" style="margin-top:14px;border:1px solid var(--border2);border-radius:8px;padding:13px">
       <label style="margin-bottom:9px;color:var(--text);font-size:13px;font-weight:600">تنظیمات Fragment</label>
-      <div style="margin-bottom:10px;display:flex;justify-content:flex-start">
+      <div style="margin-bottom:10px;display:flex;justify-content:flex-start;direction:ltr">
         <label class="ck-lbl"><input type="checkbox" id="fragEnable" onchange="toggleFrag()"> Fragment</label>
       </div>
       <div class="frag-grid disabled" id="fragFields" style="direction:ltr">
@@ -223,11 +228,13 @@
         </div>
       </div>
       <div id="echWrap" style="margin-top:12px">
-        <div style="display:flex;justify-content:flex-start">
+        <div style="display:flex;justify-content:flex-start;direction:ltr">
           <label class="ck-lbl"><input type="checkbox" id="echEnable" onchange="toggleEch()"> ECH</label>
         </div>
         <div id="echFields" class="ech-field disabled">
-          <input type="text" id="echServer" placeholder="ECH Server Name"/>
+          <label class="adv-lbl" style="margin-top:8px">DNS سرور برای دریافت کلید ECH</label>
+          <input type="text" id="echDns" value="https://cloudflare-dns.com/dns-query" placeholder="https://cloudflare-dns.com/dns-query"/>
+          <p class="hint" style="margin-top:6px">فعال کردن چک‌باکس کافی است — Xray کلید رمزنگاری دامنه Worker شما را به صورت خودکار از این سرور DNS دریافت می‌کند. آدرس پیش‌فرض (DoH Cloudflare) بهترین گزینه برای ایران است زیرا یک آدرس <code>https://</code> است و در برابر فیلترینگ مقاوم‌تر از <code>udp://8.8.8.8</code> می‌باشد. اگر DoH Proxy شخصی دارید، آدرس آن را اینجا وارد کنید.</p>
         </div>
       </div>
       <div class="adv-dns-grid" style="margin-top:12px">
