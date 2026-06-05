@@ -167,6 +167,12 @@ function buildJsonConfig(token, dom, ips, tlsPorts, wsPorts, fp) {
   const echEnable    = document.getElementById('echEnable').checked && !fragEnable;
   const echDns       = document.getElementById('echDns').value.trim() || 'https://cloudflare-dns.com/dns-query';
 
+  const normalSockopt = {
+    domainStrategy: 'UseIP',
+    tcpFastOpen: tcpFastOpen,
+    happyEyeballs: { tryDelayMs: 250, prioritizeIPv6: false, interleave: 2, maxConcurrentTry: 4 }
+  };
+
   const outbounds = [];
   let idx = 1;
 
@@ -186,9 +192,9 @@ function buildJsonConfig(token, dom, ips, tlsPorts, wsPorts, fp) {
         network: 'ws',
         security: 'tls',
         tlsSettings: tlsSettings,
-        wsSettings: { headers: { Host: dom }, path: path }
+        wsSettings: { headers: { Host: dom }, path: path },
+        sockopt: fragEnable ? { dialerProxy: 'fragment' } : normalSockopt
       };
-      if (fragEnable) { streamSettings.sockopt = { dialerProxy: 'fragment' }; }
       outbounds.push({
         mux: { concurrency: -1, enabled: false },
         protocol: 'vless',
@@ -202,9 +208,9 @@ function buildJsonConfig(token, dom, ips, tlsPorts, wsPorts, fp) {
     wsPorts.forEach(port => {
       const streamSettings = {
         network: 'ws',
-        wsSettings: { headers: { Host: dom }, path: path }
+        wsSettings: { headers: { Host: dom }, path: path },
+        sockopt: fragEnable ? { dialerProxy: 'fragment' } : normalSockopt
       };
-      if (fragEnable) { streamSettings.sockopt = { dialerProxy: 'fragment' }; }
       outbounds.push({
         mux: { concurrency: -1, enabled: false },
         protocol: 'vless',
@@ -224,7 +230,7 @@ function buildJsonConfig(token, dom, ips, tlsPorts, wsPorts, fp) {
         sockopt: {
           domainStrategy: 'UseIP',
           tcpFastOpen: tcpFastOpen,
-          happyEyeballs: { tryDelayMs: 250, prioritizeIPv6: ipv6Enable, interleave: 2, maxConcurrentTry: 4 }
+          happyEyeballs: { tryDelayMs: 250, prioritizeIPv6: false, interleave: 2, maxConcurrentTry: 4 }
         }
       },
       tag: 'fragment'
@@ -339,7 +345,7 @@ function buildConfig(token, dom, ip, port, security, fp, path, label) {
     encryption: 'none', security: security, type: 'ws',
     host: dom, path: path, allowInsecure: '0'
   });
-  if (security === 'tls') { params.set('sni', dom); params.set('fp', fp); }
+  if (security === 'tls') { params.set('sni', dom); params.set('fp', fp); params.set('alpn', 'http/1.1'); }
   const name = encodeURIComponent(`CF-${label}`);
   return `vless://${token}@${h}:${port}?${params}#${name}`;
 }
