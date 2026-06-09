@@ -20,16 +20,17 @@ async function buildWorker(token) {
   if (tpl) {
     return tpl.replace('__WORKER_TOKEN_ARRAY__', `[${enc.join(',')}]`);
   }
+  const PF = "['[2602:fc59:b0:64::]','[2602:fc59:11:64::]','[2a02:898:146:64::]']";
   return `import{connect as _a}from'cloudflare:sockets';
 const _b=${XK};
 const _d=[${enc.join(',')}];
 const _e=(()=>_d.map(v=>String.fromCharCode(v^_b)).join('').replace(/-/g,'').toLowerCase())();
-const _PF=['[2602:fc59:b0:64::]','[2602:fc59:11:64::]','[2a02:898:146:64::]'];
+const _PF=${PF};
 export default{async fetch(r){if((r.headers.get('upgrade')||'').toLowerCase()!=='websocket')return new Response('',{status:200});return _hw(r)}};
 function _dd(h){if(!h)return null;try{return Uint8Array.from(atob(h.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0)).buffer}catch(_){return null}}
 function _ms(ws,ed){return new ReadableStream({start(ctrl){if(ed)ctrl.enqueue(ed);ws.addEventListener('message',({data:m})=>ctrl.enqueue(m));ws.addEventListener('close',()=>ctrl.close());ws.addEventListener('error',e=>ctrl.error(e))}})}
 async function _dns(h){try{const r=await fetch('https://cloudflare-dns.com/dns-query?name='+encodeURIComponent(h)+'&type=A',{headers:{accept:'application/dns-json'}});const d=await r.json();return d.Answer?.find(a=>a.type===1)?.data||null}catch(_){return null}}
-function _p6(v4,pfx){const h=v4.split('.').map(n=>parseInt(n).toString(16).padStart(2,'0'));const m=pfx.match(/^\\[([0-9A-Fa-f:]+)\\]$/);return m?\`[\${m[1]}\${h[0]}\${h[1]}:\${h[2]}\${h[3]}]\`:null}
+function _p6(v4,pfx){const h=v4.split('.').map(n=>parseInt(n).toString(16).padStart(2,'0'));const m=pfx.match(/^\[([0-9A-Fa-f:]+)\]$/);return m?('['+m[1]+h[0]+h[1]+':'+h[2]+h[3]+']'):null}
 async function _oc(ref,host,port,init){const s=_a({hostname:host,port});ref.v=s;if(init.byteLength>0){const w=s.writable.getWriter();await w.write(init);w.releaseLock()}return s}
 function _pw(sock,ws,vh,onND){let got=false;let hdr=vh;sock.readable.pipeTo(new WritableStream({async write(chunk){got=true;if(hdr){const out=new Uint8Array(hdr.byteLength+chunk.byteLength);out.set(hdr,0);out.set(chunk instanceof Uint8Array?chunk:new Uint8Array(chunk),hdr.byteLength);ws.send(out.buffer);hdr=null}else ws.send(chunk)},close(){},abort(){}})).catch(()=>{}).finally(()=>{if(!got&&onND)onND();else try{ws.close()}catch(_){}})}
 async function _hw(r){const[cl,sv]=Object.values(new WebSocketPair());sv.accept();sv.binaryType='arraybuffer';const ed=_dd(r.headers.get('sec-websocket-protocol')||'');let ref={v:null};_ms(sv,ed).pipeTo(new WritableStream({async write(chunk){if(ref.v){const w=ref.v.writable.getWriter();await w.write(chunk);w.releaseLock();return}const d=chunk instanceof ArrayBuffer?new Uint8Array(chunk):new Uint8Array(await chunk.arrayBuffer());if(d.length<19)throw new Error('s');const uid=[...d.slice(1,17)].map(v=>v.toString(16).padStart(2,'0')).join('');if(uid!==_e)throw new Error('a');const al=d[17];let i=18+al+1;const port=(d[i]<<8)|d[i+1];i+=2;const at=d[i++];let host='';if(at===1){host=[...d.slice(i,i+4)].join('.');i+=4}else if(at===2){const n=d[i++];host=new TextDecoder().decode(d.slice(i,i+n));i+=n}else if(at===3){const b=d.slice(i,i+16);host=[...Array(8)].map((_,j)=>((b[j*2]<<8)|b[j*2+1]).toString(16)).join(':');i+=16}else throw new Error('t');const init=d.slice(i);const vh=new Uint8Array([0,0]);const retry=async()=>{try{if(at===3){sv.close();return}const isv4=at===1;const v4=isv4?host:await _dns(host);if(!v4){sv.close();return}const p=_PF[Math.floor(Math.random()*_PF.length)];const v6=_p6(v4,p);if(!v6){sv.close();return}await _oc(ref,v6,port,init);_pw(ref.v,sv,vh,null)}catch(_){try{sv.close()}catch(__){}}};try{await _oc(ref,host,port,init);_pw(ref.v,sv,vh,retry)}catch(_){await retry()}},close(){try{ref.v?.readable.cancel()}catch(_){}},abort(){try{ref.v?.readable.cancel()}catch(_){}}})).catch(()=>{});return new Response(null,{status:101,webSocket:cl})}`;
@@ -124,7 +125,8 @@ function toggleEch() {
 }
 
 function buildJsonConfig(token, dom, ips, tlsPorts, wsPorts, fp) {
-  const path         = document.getElementById('pathSelect').value;
+  const basePath     = document.getElementById('pathSelect').value;
+  const path         = basePath + '?ed=2560';
   const fragEnable   = document.getElementById('fragEnable').checked;
   const fragPackets  = document.getElementById('fragPackets').value.trim() || 'tlshello';
   const fragLength   = document.getElementById('fragLength').value.trim() || '10-20';
@@ -138,7 +140,7 @@ function buildJsonConfig(token, dom, ips, tlsPorts, wsPorts, fp) {
   const echEnable    = document.getElementById('echEnable').checked && !fragEnable;
   const echDns       = document.getElementById('echDns').value.trim() || 'https://cloudflare-dns.com/dns-query';
 
-  const normalSockopt = {
+  const outboundSockopt = {
     domainStrategy: 'UseIP',
     tcpFastOpen: tcpFastOpen,
     happyEyeballs: { tryDelayMs: 250, prioritizeIPv6: false, interleave: 2, maxConcurrentTry: 4 }
@@ -164,8 +166,16 @@ function buildJsonConfig(token, dom, ips, tlsPorts, wsPorts, fp) {
         security: 'tls',
         tlsSettings: tlsSettings,
         wsSettings: { headers: { Host: dom }, path: path },
-        sockopt: fragEnable ? { dialerProxy: 'fragment' } : normalSockopt
+        sockopt: outboundSockopt
       };
+      if (fragEnable) {
+        streamSettings.finalmask = {
+          tcp: [{
+            type: 'fragment',
+            settings: { packets: fragPackets, length: fragLength, delay: fragInterval, maxSplit: '0-0' }
+          }]
+        };
+      }
       outbounds.push({
         mux: { concurrency: -1, enabled: false },
         protocol: 'vless',
@@ -180,8 +190,16 @@ function buildJsonConfig(token, dom, ips, tlsPorts, wsPorts, fp) {
       const streamSettings = {
         network: 'ws',
         wsSettings: { headers: { Host: dom }, path: path },
-        sockopt: fragEnable ? { dialerProxy: 'fragment' } : normalSockopt
+        sockopt: outboundSockopt
       };
+      if (fragEnable) {
+        streamSettings.finalmask = {
+          tcp: [{
+            type: 'fragment',
+            settings: { packets: fragPackets, length: fragLength, delay: fragInterval, maxSplit: '0-0' }
+          }]
+        };
+      }
       outbounds.push({
         mux: { concurrency: -1, enabled: false },
         protocol: 'vless',
@@ -192,21 +210,6 @@ function buildJsonConfig(token, dom, ips, tlsPorts, wsPorts, fp) {
       idx++;
     });
   });
-
-  if (fragEnable) {
-    outbounds.push({
-      protocol: 'freedom',
-      settings: { fragment: { packets: fragPackets, length: fragLength, interval: fragInterval } },
-      streamSettings: {
-        sockopt: {
-          domainStrategy: 'UseIP',
-          tcpFastOpen: tcpFastOpen,
-          happyEyeballs: { tryDelayMs: 250, prioritizeIPv6: false, interleave: 2, maxConcurrentTry: 4 }
-        }
-      },
-      tag: 'fragment'
-    });
-  }
 
   outbounds.push({ protocol: 'freedom', settings: { domainStrategy: 'UseIP' }, tag: 'direct' });
   outbounds.push({ protocol: 'blackhole', settings: { response: { type: 'http' } }, tag: 'block' });
@@ -238,14 +241,23 @@ function buildJsonConfig(token, dom, ips, tlsPorts, wsPorts, fp) {
       queryStrategy: ipv6Enable ? 'UseIP' : 'UseIPv4',
       tag: 'dns-module'
     },
-    inbounds: [{
-      listen: lanAccess ? '0.0.0.0' : '127.0.0.1',
-      port: 10808,
-      protocol: 'socks',
-      settings: { auth: 'noauth', udp: true, userLevel: 8 },
-      sniffing: { destOverride: sniffingDestOverride, enabled: true, routeOnly: true },
-      tag: 'socks'
-    }],
+    inbounds: [
+      {
+        listen: lanAccess ? '0.0.0.0' : '127.0.0.1',
+        port: 10808,
+        protocol: 'mixed',
+        settings: { auth: 'noauth', udp: true, userLevel: 8 },
+        sniffing: { destOverride: sniffingDestOverride, enabled: true, routeOnly: true },
+        tag: 'mixed-in'
+      },
+      {
+        listen: lanAccess ? '0.0.0.0' : '127.0.0.1',
+        port: 10853,
+        protocol: 'dokodemo-door',
+        settings: { address: '1.1.1.1', network: 'tcp,udp', port: 53 },
+        tag: 'dns-in'
+      }
+    ],
     log: { loglevel: 'none' },
     observatory: { enableConcurrency: true, probeInterval: '3m', probeUrl: 'https://www.gstatic.com/generate_204', subjectSelector: ['proxy-'] },
     outbounds: outbounds,
@@ -258,7 +270,8 @@ function buildJsonConfig(token, dom, ips, tlsPorts, wsPorts, fp) {
       balancers: [{ selector: ['proxy-'], strategy: { type: 'leastPing' }, tag: 'proxy-round' }],
       domainStrategy: 'IPIfNonMatch',
       rules: [
-        { inboundTag: ['socks'], outboundTag: 'dns-out', port: '53', type: 'field' },
+        { inboundTag: ['mixed-in'], outboundTag: 'dns-out', port: '53', type: 'field' },
+        { inboundTag: ['dns-in'], outboundTag: 'dns-out', type: 'field' },
         { ip: ['geoip:private'], outboundTag: 'direct', type: 'field' },
         { domain: ['geosite:private'], outboundTag: 'direct', type: 'field' },
         { network: 'udp', outboundTag: 'block', type: 'field' },
@@ -310,13 +323,21 @@ function getChecked(cls) {
   return [...document.querySelectorAll('.' + cls + ':checked')].map(el => el.value);
 }
 
-function buildConfig(token, dom, ip, port, security, fp, path, label) {
+function buildConfig(token, dom, ip, port, security, fp, path, label, echActive, echDns) {
   const h = ip.includes(':') ? `[${ip}]` : ip;
+  const edPath = path + '?ed=2560';
   const params = new URLSearchParams({
     encryption: 'none', security: security, type: 'ws',
-    host: dom, path: path, allowInsecure: '0'
+    host: dom, path: edPath, allowInsecure: '0'
   });
-  if (security === 'tls') { params.set('sni', dom); params.set('fp', fp); params.set('alpn', 'http/1.1'); }
+  if (security === 'tls') {
+    params.set('sni', dom);
+    params.set('fp', fp);
+    params.set('alpn', 'http/1.1');
+    if (echActive) {
+      params.set('ech', echDns);
+    }
+  }
   const name = encodeURIComponent(`CF-${label}`);
   return `vless://${token}@${h}:${port}?${params}#${name}`;
 }
@@ -337,10 +358,14 @@ function gen() {
 
   if (!ips.length) { toast('پس از فیلتر IPv6 هیچ IP‌ای باقی نماند'); return; }
 
-  const tlsPorts = getChecked('ptls');
-  const wsPorts  = getChecked('pws');
-  const fp       = document.getElementById('fpSelect').value;
-  const path     = document.getElementById('pathSelect').value;
+  const tlsPorts  = getChecked('ptls');
+  const wsPorts   = getChecked('pws');
+  const fp        = document.getElementById('fpSelect').value;
+  const path      = document.getElementById('pathSelect').value;
+  const fragEn    = document.getElementById('fragEnable').checked;
+  const echEn     = document.getElementById('echEnable').checked;
+  const echDns    = document.getElementById('echDns').value.trim() || 'https://cloudflare-dns.com/dns-query';
+  const echActive = echEn && !fragEn;
 
   if (!tlsPorts.length && !wsPorts.length) { toast('حداقل یک پورت انتخاب کن'); return; }
 
@@ -356,12 +381,12 @@ function gen() {
       const ipLabel = `IP${ipIdx + 1}`;
       tlsPorts.forEach(port => {
         const label = `${ipLabel}-TLS${port}-${fp}`;
-        allC.push({ cfg: buildConfig(token, dom, ip, port, 'tls', fp, path, label), tag: `TLS-${port}`, tagColor: 'var(--blue)' });
+        allC.push({ cfg: buildConfig(token, dom, ip, port, 'tls', fp, path, label, echActive, echDns), tag: `TLS-${port}`, tagColor: 'var(--blue)' });
         tlsCount++;
       });
       wsPorts.forEach(port => {
         const label = `${ipLabel}-WS${port}`;
-        allC.push({ cfg: buildConfig(token, dom, ip, port, 'none', '', path, label), tag: `WS-${port}`, tagColor: 'var(--orange)' });
+        allC.push({ cfg: buildConfig(token, dom, ip, port, 'none', '', path, label, false, ''), tag: `WS-${port}`, tagColor: 'var(--orange)' });
         wsCount++;
       });
     });
