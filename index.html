@@ -15,7 +15,7 @@
 <div class="hdr">
   <div class="hdr-top">
     <div class="hdr-dot"></div>
-    <h1>Tunnel Config Builder (TCB) v3.7</h1>
+    <h1>Tunnel Config Builder (TCB) v3.8</h1>
   </div>
   <p class="hdr-sub">ساخت کانفیگ VLESS برای Cloudflare Worker — بدون نیاز به VPS</p>
 </div>
@@ -234,7 +234,7 @@
         <div id="echFields" class="ech-field disabled">
           <label class="adv-lbl" style="margin-top:8px">DNS سرور برای دریافت کلید ECH</label>
           <input type="text" id="echDns" value="https://cloudflare-dns.com/dns-query" placeholder="https://cloudflare-dns.com/dns-query"/>
-          <p class="hint" style="margin-top:6px">فعال کردن چک‌باکس کافی است — Xray کلید رمزنگاری دامنه Worker شما را به صورت خودکار از این سرور DNS دریافت می‌کند. آدرس پیش‌فرض (DoH Cloudflare) بهترین گزینه برای ایران است زیرا یک آدرس <code>https://</code> است و در برابر فیلترینگ مقاوم‌تر از <code>udp://8.8.8.8</code> می‌باشد. اگر DoH Proxy شخصی دارید، آدرس آن را اینجا وارد کنید.</p>
+          <p class="hint" style="margin-top:6px">فعال کردن چک‌باکس کافی است — Xray کلید رمزنگاری دامنه Worker شما را به صورت خودکار از این سرور DNS دریافت می‌کند. ECH روی کانفیگ‌های JSON و URL (فرمت vless://) اعمال می‌شود. آدرس پیش‌فرض (DoH Cloudflare) بهترین گزینه برای ایران است زیرا یک آدرس <code>https://</code> رمزگذاری‌شده است و برخلاف <code>udp://8.8.8.8</code> در برابر دستکاری DNS توسط ISPها مقاوم است. اگر DoH Proxy شخصی دارید، آدرس آن را اینجا وارد کنید.</p>
         </div>
       </div>
       <div class="adv-dns-grid" style="margin-top:12px">
@@ -252,7 +252,7 @@
           <input type="text" id="remoteDns" value="https://cloudflare-dns.com/dns-query" placeholder="https://cloudflare-dns.com/dns-query"/>
         </div>
       </div>
-      <p class="hint" style="margin-top:10px">Local DNS برای resolve دامنه‌های ایرانی استفاده می‌شود. Remote DNS به‌صورت پیشفرض روی Cloudflare DoH تنظیم است و می‌توانید آن را با هر آدرس DoH دلخواه جایگزین کنید. با ابزار DoH Proxy می‌توانید یک سرور DoH اختصاصی روی Cloudflare بسازید و آدرس آن را اینجا وارد کنید. Allow LAN اتصال سایر دستگاه‌های شبکه محلی را فعال می‌کند. ECH فقط در حالت Normal (بدون Fragment) روی کانفیگ JSON اعمال می‌شود.</p>
+      <p class="hint" style="margin-top:10px">Local DNS برای resolve دامنه‌های ایرانی استفاده می‌شود. Remote DNS به‌صورت پیشفرض روی Cloudflare DoH تنظیم است و می‌توانید آن را با هر آدرس DoH دلخواه جایگزین کنید. با ابزار DoH Proxy می‌توانید یک سرور DoH اختصاصی روی Cloudflare بسازید و آدرس آن را اینجا وارد کنید. Allow LAN اتصال سایر دستگاه‌های شبکه محلی را فعال می‌کند. ECH فقط در حالت Normal (بدون Fragment) روی کانفیگ JSON و کانفیگ‌های فرمت URL اعمال می‌شود.</p>
     </div>
 
     <div class="alert ao" style="margin-top:14px;margin-bottom:0">
