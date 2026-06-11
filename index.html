@@ -15,7 +15,7 @@
 <div class="hdr">
   <div class="hdr-top">
     <div class="hdr-dot"></div>
-    <h1>Tunnel Config Builder (TCB) v3.8</h1>
+    <h1>Tunnel Config Builder (TCB) v3.9</h1>
   </div>
   <p class="hdr-sub">ساخت کانفیگ VLESS برای Cloudflare Worker — بدون نیاز به VPS</p>
 </div>
@@ -54,8 +54,8 @@
           <div class="gdesc">Token به‌صورت خودکار داخل کد جاگذاری می‌شود. می‌توانی کد را کپی کنی یا فایل <code>worker.js</code> را مستقیم دانلود کنی. در Worker: <code>Edit Code</code> ← همه را پاک کن ← Paste کن ← <code>Deploy</code>. برای آپلود فایل نیز می‌توانی از گزینه Upload در داشبورد استفاده کنی.</div>
           <div class="script-wrap">
             <div class="script-btns">
-              <button class="btn-cpscript" onclick="cpWorker()">⎘ کپی کد</button>
-              <button class="btn-cpscript" onclick="dlWorker()">↓ دانلود .js</button>
+              <button class="btn-cpscript" id="btn-cp-worker">⎘ کپی کد</button>
+              <button class="btn-cpscript" id="btn-dl-worker">↓ دانلود .js</button>
             </div>
             <div class="script-area" id="workerDisplay"></div>
           </div>
@@ -78,19 +78,19 @@
   </div>
   <div class="sec-body">
     <div class="fg">
-      <label style="direction:ltr;text-align:left">Token</label>
+      <label class="lbl-ltr">Token</label>
       <div class="urow">
-        <input type="text" id="uid" placeholder="xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx" oninput="renderWorker(this.value.trim())"/>
+        <input type="text" id="uid" placeholder="xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"/>
         <div class="ubtns">
-          <button class="bsm" onclick="mkToken()">↺ جدید</button>
-          <button class="bsm" onclick="cpToken()">⎘ کپی</button>
+          <button class="bsm" id="btn-mk-token">↺ جدید</button>
+          <button class="bsm" id="btn-cp-token">⎘ کپی</button>
         </div>
       </div>
       <p class="hint">با هر بار تولید Token جدید، کد Worker بالا نیز به‌صورت خودکار آپدیت می‌شود.</p>
     </div>
     <div class="fg">
       <label>آدرس دامنه Worker</label>
-      <div class="alert ao" style="margin-bottom:8px">
+      <div class="alert ao mb-8">
         <span class="aico">⚠</span>
         <div>فقط نام دامنه را وارد کنید — مثال: <code>myworker.username.workers.dev</code> — در صورت وارد کردن <code>https://</code> یا <code>/</code> اضافه، به‌صورت خودکار اصلاح می‌شود.</div>
       </div>
@@ -108,22 +108,22 @@
 
     <div class="fg">
       <label>آدرس‌های IP (هر خط یک IP)</label>
-      <div class="alert ab" style="margin-bottom:10px">
+      <div class="alert ab mb-10">
         <span class="aico">ℹ</span>
         <div>برای یافتن IP های سالم Cloudflare می‌توانید از ابزار Clean IP Scanner استفاده کنید. این ابزار مبتنی بر Termux بوده و روی اندروید اجرا می‌شود — نتیجه اسکن را مستقیم در کادر زیر وارد کنید.</div>
       </div>
-      <a href="https://github.com/4n0nymou3/Clean-IP-Scanner" target="_blank" style="text-decoration:none;display:block;margin-bottom:10px">
-        <button class="bgen" style="background:#1a4d3a;border-color:#2ea043;padding:10px;font-size:13px" onmouseover="this.style.background='#1f5c45'" onmouseout="this.style.background='#1a4d3a'">
-          <span style="font-size:15px">🔍</span> ابزار Clean IP Scanner — یافتن IP سالم با Termux
+      <a href="https://github.com/4n0nymou3/Clean-IP-Scanner" target="_blank" class="btn-link mb-10">
+        <button class="bgen btn-scanner">
+          <span class="ico">🔍</span> ابزار Clean IP Scanner — یافتن IP سالم با Termux
         </button>
       </a>
       <textarea id="ips" placeholder="104.16.0.1&#10;104.17.0.1&#10;104.18.0.1&#10;104.19.0.1&#10;104.20.0.1"></textarea>
       <p class="hint">هر تعداد IP قابل قبول است — از هر IP چند کانفیگ با پورت‌های مختلف ساخته می‌شود. علاوه بر IP، می‌توانید از برخی دامنه‌ها نیز استفاده کنید (مثلاً chatgpt.com)</p>
     </div>
 
-    <div class="fg" style="margin-top:14px">
-      <label style="margin-bottom:9px">پورت‌های TLS (امن‌تر — برای یوتیوب، اینستاگرام، اکس)</label>
-      <div style="display:flex;flex-wrap:wrap;gap:7px;justify-content:flex-start;direction:ltr">
+    <div class="fg mt-14">
+      <label class="mb-9">پورت‌های TLS (امن‌تر — برای یوتیوب، اینستاگرام، اکس)</label>
+      <div class="port-row">
         <label class="ck-lbl"><input type="checkbox" class="ptls" value="443" checked> 443</label>
         <label class="ck-lbl"><input type="checkbox" class="ptls" value="8443"> 8443</label>
         <label class="ck-lbl"><input type="checkbox" class="ptls" value="2053"> 2053</label>
@@ -133,9 +133,9 @@
       </div>
     </div>
 
-    <div class="fg" style="margin-top:10px">
-      <label style="margin-bottom:9px">پورت‌های WebSocket بدون TLS (برای شبکه‌هایی که TLS بلاک است)</label>
-      <div style="display:flex;flex-wrap:wrap;gap:7px;justify-content:flex-start;direction:ltr">
+    <div class="fg mt-10">
+      <label class="mb-9">پورت‌های WebSocket بدون TLS (برای شبکه‌هایی که TLS بلاک است)</label>
+      <div class="port-row">
         <label class="ck-lbl"><input type="checkbox" class="pws" value="80" checked> 80</label>
         <label class="ck-lbl"><input type="checkbox" class="pws" value="8080"> 8080</label>
         <label class="ck-lbl"><input type="checkbox" class="pws" value="8880"> 8880</label>
@@ -146,8 +146,8 @@
       </div>
     </div>
 
-    <div class="fg" style="margin-top:10px">
-      <label style="margin-bottom:9px">TLS Fingerprint — جهت دور زدن DPI</label>
+    <div class="fg mt-10">
+      <label class="mb-9">TLS Fingerprint — جهت دور زدن DPI</label>
       <select id="fpSelect">
         <option value="chrome" selected>chrome</option>
         <option value="firefox">firefox</option>
@@ -162,8 +162,8 @@
       </select>
     </div>
 
-    <div class="fg" style="margin-top:10px">
-      <label style="margin-bottom:9px">مسیر WebSocket Path</label>
+    <div class="fg mt-10">
+      <label class="mb-9">مسیر WebSocket Path</label>
       <select id="pathSelect">
         <option value="/proxy">/proxy</option>
         <option value="/v2ray">/v2ray</option>
@@ -173,30 +173,30 @@
       </select>
     </div>
 
-    <div class="fg" style="margin-top:14px;border:1px solid var(--border2);border-radius:8px;padding:13px">
-      <label style="margin-bottom:9px;color:var(--text);font-size:13px;font-weight:600">تنظیمات Fragment</label>
-      <div style="margin-bottom:10px;display:flex;justify-content:flex-start;direction:ltr">
-        <label class="ck-lbl"><input type="checkbox" id="fragEnable" onchange="toggleFrag()"> Fragment</label>
+    <div class="fg mt-14 settings-box">
+      <label class="box-lbl">تنظیمات Fragment</label>
+      <div class="toggle-row mb-10">
+        <label class="ck-lbl"><input type="checkbox" id="fragEnable"> Fragment</label>
       </div>
-      <div class="frag-grid disabled" id="fragFields" style="direction:ltr">
+      <div class="frag-grid disabled" id="fragFields">
         <div>
-          <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:500;direction:ltr;text-align:left">Fragment Packets</label>
+          <label class="adv-lbl">Fragment Packets</label>
           <input type="text" id="fragPackets" value="tlshello" placeholder="tlshello یا 1-2"/>
         </div>
         <div>
-          <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:500;direction:ltr;text-align:left">Fragment Interval</label>
+          <label class="adv-lbl">Fragment Interval</label>
           <input type="text" id="fragInterval" value="10-20" placeholder="10-20"/>
         </div>
         <div>
-          <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:500;direction:ltr;text-align:left">Fragment Length</label>
+          <label class="adv-lbl">Fragment Length</label>
           <input type="text" id="fragLength" value="10-20" placeholder="10-20"/>
         </div>
       </div>
-      <p class="hint" style="margin-top:10px">در صورت فعال بودن، تنظیمات fragment فقط در کانفیگ مادر JSON اعمال می‌شود و روی کانفیگ‌های VLESS تأثیری ندارد.</p>
+      <p class="hint mt-10">در صورت فعال بودن، تنظیمات fragment فقط در کانفیگ مادر JSON اعمال می‌شود و روی کانفیگ‌های VLESS تأثیری ندارد.</p>
     </div>
 
-    <div class="fg" style="margin-top:14px;border:1px solid var(--border2);border-radius:8px;padding:13px">
-      <label style="margin-bottom:12px;color:var(--text);font-size:13px;font-weight:600">تنظیمات پیشرفته JSON</label>
+    <div class="fg mt-14 settings-box">
+      <label class="box-lbl">تنظیمات پیشرفته JSON</label>
       <div class="adv-grid">
         <div>
           <label class="adv-lbl">Fake DNS</label>
@@ -227,110 +227,110 @@
           </select>
         </div>
       </div>
-      <div id="echWrap" style="margin-top:12px">
-        <div style="display:flex;justify-content:flex-start;direction:ltr">
-          <label class="ck-lbl"><input type="checkbox" id="echEnable" onchange="toggleEch()"> ECH</label>
+      <div id="echWrap" class="mt-12">
+        <div class="toggle-row">
+          <label class="ck-lbl"><input type="checkbox" id="echEnable"> ECH</label>
         </div>
         <div id="echFields" class="ech-field disabled">
-          <label class="adv-lbl" style="margin-top:8px">DNS سرور برای دریافت کلید ECH</label>
+          <label class="adv-lbl mt-8">DNS سرور برای دریافت کلید ECH</label>
           <input type="text" id="echDns" value="https://cloudflare-dns.com/dns-query" placeholder="https://cloudflare-dns.com/dns-query"/>
-          <p class="hint" style="margin-top:6px">فعال کردن چک‌باکس کافی است — Xray کلید رمزنگاری دامنه Worker شما را به صورت خودکار از این سرور DNS دریافت می‌کند. ECH روی کانفیگ‌های JSON و URL (فرمت vless://) اعمال می‌شود. آدرس پیش‌فرض (DoH Cloudflare) بهترین گزینه برای ایران است زیرا یک آدرس <code>https://</code> رمزگذاری‌شده است و برخلاف <code>udp://8.8.8.8</code> در برابر دستکاری DNS توسط ISPها مقاوم است. اگر DoH Proxy شخصی دارید، آدرس آن را اینجا وارد کنید.</p>
+          <p class="hint mt-6">فعال کردن چک‌باکس کافی است — Xray کلید رمزنگاری دامنه Worker شما را به صورت خودکار از این سرور DNS دریافت می‌کند. ECH روی کانفیگ‌های JSON و URL (فرمت vless://) اعمال می‌شود. آدرس پیش‌فرض (DoH Cloudflare) بهترین گزینه برای ایران است زیرا یک آدرس <code>https://</code> رمزگذاری‌شده است و برخلاف <code>udp://8.8.8.8</code> در برابر دستکاری DNS توسط ISPها مقاوم است. اگر DoH Proxy شخصی دارید، آدرس آن را اینجا وارد کنید.</p>
         </div>
       </div>
-      <div class="adv-dns-grid" style="margin-top:12px">
+      <div class="adv-dns-grid mt-12">
         <div>
           <label class="adv-lbl">Local DNS</label>
           <input type="text" id="localDns" value="8.8.8.8" placeholder="8.8.8.8"/>
         </div>
         <div>
           <label class="adv-lbl">Remote DNS / DoH</label>
-          <a href="https://github.com/4n0nymou3/cloudflare-doh-proxy" target="_blank" style="text-decoration:none;display:block;margin-bottom:8px">
-            <button class="bgen" style="background:#1a3a4d;border-color:#2080b0;padding:8px 12px;font-size:12px;gap:7px" onmouseover="this.style.background='#1e4a63'" onmouseout="this.style.background='#1a3a4d'">
-              <span style="font-size:14px">🌐</span> ابزار DoH Proxy — ساخت DNS اختصاصی با Cloudflare
+          <a href="https://github.com/4n0nymou3/cloudflare-doh-proxy" target="_blank" class="btn-link mb-8">
+            <button class="bgen btn-doh">
+              <span class="ico">🌐</span> ابزار DoH Proxy — ساخت DNS اختصاصی با Cloudflare
             </button>
           </a>
           <input type="text" id="remoteDns" value="https://cloudflare-dns.com/dns-query" placeholder="https://cloudflare-dns.com/dns-query"/>
         </div>
       </div>
-      <p class="hint" style="margin-top:10px">Local DNS برای resolve دامنه‌های ایرانی استفاده می‌شود. Remote DNS به‌صورت پیشفرض روی Cloudflare DoH تنظیم است و می‌توانید آن را با هر آدرس DoH دلخواه جایگزین کنید. با ابزار DoH Proxy می‌توانید یک سرور DoH اختصاصی روی Cloudflare بسازید و آدرس آن را اینجا وارد کنید. Allow LAN اتصال سایر دستگاه‌های شبکه محلی را فعال می‌کند. ECH فقط در حالت Normal (بدون Fragment) روی کانفیگ JSON و کانفیگ‌های فرمت URL اعمال می‌شود.</p>
+      <p class="hint mt-10">Local DNS برای resolve دامنه‌های ایرانی استفاده می‌شود. Remote DNS به‌صورت پیشفرض روی Cloudflare DoH تنظیم است و می‌توانید آن را با هر آدرس DoH دلخواه جایگزین کنید. با ابزار DoH Proxy می‌توانید یک سرور DoH اختصاصی روی Cloudflare بسازید و آدرس آن را اینجا وارد کنید. Allow LAN اتصال سایر دستگاه‌های شبکه محلی را فعال می‌کند. ECH فقط در حالت Normal (بدون Fragment) روی کانفیگ JSON و کانفیگ‌های فرمت URL اعمال می‌شود.</p>
     </div>
 
-    <div class="alert ao" style="margin-top:14px;margin-bottom:0">
+    <div class="alert ao mt-14 mb-0">
       <span class="aico">ℹ</span>
       <div>هر ترکیب پورت یک کانفیگ مجزاست. با انتخاب بیشتر، کانفیگ‌های متنوع‌تری برای دور زدن فیلترینگ هوشمند ساخته می‌شه. پیشنهاد: ابتدا فقط پورت 443 را تست کنید و اگر کار نکرد پورت‌های دیگر را هم فعال کنید.</div>
     </div>
 
-    <div class="fg" style="margin-top:14px">
+    <div class="fg mt-14">
       <label>نام کانفیگ JSON (اختیاری)</label>
       <input type="text" id="jsonName" placeholder="در صورت خالی بودن، نام به‌صورت خودکار تعیین می‌شود"/>
       <p class="hint">اگر خالی بماند، پنل نام پیش‌فرض را برای کانفیگ Normal یا Fragment انتخاب خواهد کرد.</p>
     </div>
 
-    <button class="bgen" id="gb" onclick="gen()" style="margin-top:14px">⚙ ساخت کانفیگ</button>
+    <button class="bgen mt-14" id="gb">⚙ ساخت کانفیگ</button>
   </div>
 </div>
 
 <div id="results">
-  <hr class="dv">
+  <hr class="dv"/>
   <div class="stats">
-    <div class="stat"><span class="sn" style="color:var(--blue)" id="sv">0</span><div class="sl">کانفیگ TLS</div></div>
-    <div class="stat"><span class="sn" style="color:var(--orange)" id="si">0</span><div class="sl">کانفیگ WS</div></div>
-    <div class="stat"><span class="sn" style="color:var(--green)" id="sa">0</span><div class="sl">مجموع</div></div>
+    <div class="stat"><span class="sn sn-blue" id="sv">0</span><div class="sl">کانفیگ TLS</div></div>
+    <div class="stat"><span class="sn sn-orange" id="si">0</span><div class="sl">کانفیگ WS</div></div>
+    <div class="stat"><span class="sn sn-green" id="sa">0</span><div class="sl">مجموع</div></div>
   </div>
   <div class="sec">
     <div class="sec-hdr">
-      <div class="sec-title"><i style="background:var(--green)"></i>کانفیگ‌های تولید شده</div>
+      <div class="sec-title"><i></i>کانفیگ‌های تولید شده</div>
       <span class="cnt" id="cb2">0</span>
     </div>
     <div class="sec-body">
       <div class="rh">
         <div class="rt">VLESS configs</div>
         <div class="rh-buttons">
-          <button class="cb" onclick="cpAll()">⎘ کپی همه</button>
-          <button class="cb" onclick="dlAll()">↓ دانلود TCB.txt</button>
+          <button class="cb" id="btn-cp-all">⎘ کپی همه</button>
+          <button class="cb" id="btn-dl-all">↓ دانلود TCB.txt</button>
         </div>
       </div>
       <div class="cfgl" id="lAll"></div>
     </div>
   </div>
-  <div class="sec" style="border-color:rgba(63,185,80,.35)">
-    <div class="sec-hdr" style="border-bottom-color:rgba(63,185,80,.2)">
-      <div class="sec-title"><i style="background:var(--green)"></i>تبدیل به فرمت Sing-box</div>
+  <div class="sec sec-green">
+    <div class="sec-hdr sec-hdr-green">
+      <div class="sec-title"><i class="dot-green"></i>تبدیل به فرمت Sing-box</div>
     </div>
     <div class="sec-body">
-      <div class="alert ab" style="margin-bottom:13px">
+      <div class="alert ab mb-13">
         <span class="aico">💡</span>
-        <div>اگر از کلاینت‌هایی مثل <strong style="color:var(--text)">Sing-box</strong> یا <strong style="color:var(--text)">Hiddify</strong> استفاده می‌کنید، می‌توانید کانفیگ‌های معمولی تولیدشده را (با دکمه «کپی همه» بالا) کپی کنید و سپس با کلیک روی دکمه زیر وارد ابزار <strong style="color:var(--text)">Drill</strong> شوید و آن‌ها را به فرمت Sing-box تبدیل کنید.</div>
+        <div>اگر از کلاینت‌هایی مثل <strong class="txt-strong">Sing-box</strong> یا <strong class="txt-strong">Hiddify</strong> استفاده می‌کنید، می‌توانید کانفیگ‌های معمولی تولیدشده را (با دکمه «کپی همه» بالا) کپی کنید و سپس با کلیک روی دکمه زیر وارد ابزار <strong class="txt-strong">Drill</strong> شوید و آن‌ها را به فرمت Sing-box تبدیل کنید.</div>
       </div>
-      <a href="https://4n0nymou3.github.io/proxy-to-singbox-converter/" target="_blank" style="text-decoration:none;display:block">
-        <button class="bgen" style="background:#1a6b3a;border-color:#2ea043;gap:10px" onmouseover="this.style.background='#2ea043'" onmouseout="this.style.background='#1a6b3a'">
-          <span style="font-size:16px">🔄</span> باز کردن ابزار Drill — تبدیل به Sing-box
+      <a href="https://4n0nymou3.github.io/proxy-to-singbox-converter/" target="_blank" class="btn-link">
+        <button class="bgen btn-drill">
+          <span class="ico-lg">🔄</span> باز کردن ابزار Drill — تبدیل به Sing-box
         </button>
       </a>
     </div>
   </div>
   <div class="sec">
     <div class="sec-hdr">
-      <div class="sec-title"><i style="background:var(--orange)"></i>کانفیگ JSON — My configs 🚀</div>
-      <div style="display:flex;gap:6px">
-        <button class="cb" onclick="cpJson()">⎘ کپی JSON</button>
-        <button class="cb" onclick="dlJson()">↓ دانلود TCB.json</button>
+      <div class="sec-title"><i class="dot-orange"></i>کانفیگ JSON — My configs 🚀</div>
+      <div class="flex-gap-6">
+        <button class="cb" id="btn-cp-json">⎘ کپی JSON</button>
+        <button class="cb" id="btn-dl-json">↓ دانلود TCB.json</button>
       </div>
     </div>
     <div class="sec-body">
       <div class="script-wrap">
         <div class="script-btns">
-          <button class="btn-cpscript" onclick="cpJson()">⎘ کپی</button>
-          <button class="btn-cpscript" onclick="dlJson()">↓ دانلود</button>
+          <button class="btn-cpscript" id="btn-cp-json-2">⎘ کپی</button>
+          <button class="btn-cpscript" id="btn-dl-json-2">↓ دانلود</button>
         </div>
         <div class="json-area" id="jsonDisplay"></div>
       </div>
-      <p class="hint" style="margin-top:10px">این کانفیگ را در v2rayNG یا هر کلاینت سازگار با Xray وارد کن — از حالت least ping برای انتخاب سریع‌ترین سرور استفاده می‌کند.</p>
+      <p class="hint mt-10">این کانفیگ را در v2rayNG یا هر کلاینت سازگار با Xray وارد کن — از حالت least ping برای انتخاب سریع‌ترین سرور استفاده می‌کند.</p>
     </div>
   </div>
   <div class="alert ag">
     <span class="aico">✓</span>
-    <div>کانفیگ‌ها آماده‌اند. در <strong style="color:var(--text)">v2rayNG</strong>، <strong style="color:var(--text)">Hiddify</strong>، <strong style="color:var(--text)">NekoBox</strong> یا <strong style="color:var(--text)">Sing-box</strong> وارد کن.</div>
+    <div>کانفیگ‌ها آماده‌اند. در <strong class="txt-strong">v2rayNG</strong>، <strong class="txt-strong">Hiddify</strong>، <strong class="txt-strong">NekoBox</strong> یا <strong class="txt-strong">Sing-box</strong> وارد کن.</div>
   </div>
 </div>
 
@@ -340,6 +340,6 @@
 
 </div>
 <div class="toast" id="toast"></div>
-<script src="js/app.js"></script>
+<script type="module" src="js/app.js"></script>
 </body>
 </html>
