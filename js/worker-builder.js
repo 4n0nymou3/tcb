@@ -1,0 +1,50 @@
+const XK = 0x4B;
+let _workerTpl = null;
+
+function xenc(s) {
+  return [...s].map(c => c.charCodeAt(0) ^ XK);
+}
+
+async function fetchWorkerTpl() {
+  if (_workerTpl !== null) return _workerTpl;
+  try {
+    const r = await fetch('manual-worker/worker.js');
+    if (r.ok) { _workerTpl = await r.text(); }
+  } catch(e) {}
+  return _workerTpl;
+}
+
+export async function buildWorker(token) {
+  const enc = xenc(token);
+  const tpl = await fetchWorkerTpl();
+  if (tpl) {
+    return tpl.replace('__WORKER_TOKEN_ARRAY__', `[${enc.join(',')}]`);
+  }
+
+  const hardcoded = `import{connect as _a}from'cloudflare:sockets';
+const _b=75;
+const _d=__WORKER_TOKEN_ARRAY__;
+const _e=(()=>_d.map(v=>String.fromCharCode(v^_b)).join('').replace(/-/g,'').toLowerCase())();
+const _PF=['[2602:fc59:b0:64::]','[2602:fc59:11:64::]','[2a02:898:146:64::]'];
+export default{async fetch(r){if((r.headers.get('upgrade')||'').toLowerCase()!=='websocket')return new Response('',{status:200});return _hw(r)}};
+function _dd(h){if(!h)return null;try{return Uint8Array.from(atob(h.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0)).buffer}catch(_){return null}}
+function _ms(ws,ed){return new ReadableStream({start(ctrl){if(ed)ctrl.enqueue(ed);ws.addEventListener('message',({data:m})=>ctrl.enqueue(m));ws.addEventListener('close',()=>ctrl.close());ws.addEventListener('error',e=>ctrl.error(e))}})}
+async function _dns(h){try{const r=await fetch('https://cloudflare-dns.com/dns-query?name='+encodeURIComponent(h)+'&type=A',{headers:{accept:'application/dns-json'}});const d=await r.json();return d.Answer?.find(a=>a.type===1)?.data||null}catch(_){return null}}
+function _p6(v4,pfx){const h=v4.split('.').map(n=>parseInt(n).toString(16).padStart(2,'0'));const m=pfx.match(/^\\[([0-9A-Fa-f:]+)\\]$/);return m?\`[\${m[1]}\${h[0]}\${h[1]}:\${h[2]}\${h[3]}]\`:null}
+async function _oc(ref,host,port,init){const s=_a({hostname:host,port});ref.v=s;if(init.byteLength>0){const w=s.writable.getWriter();await w.write(init);w.releaseLock()}return s}
+function _pw(sock,ws,vh,onND){let got=false;let hdr=vh;sock.readable.pipeTo(new WritableStream({async write(chunk){got=true;if(hdr){const out=new Uint8Array(hdr.byteLength+chunk.byteLength);out.set(hdr,0);out.set(chunk instanceof Uint8Array?chunk:new Uint8Array(chunk),hdr.byteLength);ws.send(out.buffer);hdr=null}else ws.send(chunk)},close(){},abort(){}})).catch(()=>{}).finally(()=>{if(!got&&onND)onND();else try{ws.close()}catch(_){}})}
+async function _hw(r){const[cl,sv]=Object.values(new WebSocketPair());sv.accept();sv.binaryType='arraybuffer';const ed=_dd(r.headers.get('sec-websocket-protocol')||'');let ref={v:null};_ms(sv,ed).pipeTo(new WritableStream({async write(chunk){if(ref.v){const w=ref.v.writable.getWriter();await w.write(chunk);w.releaseLock();return}const d=chunk instanceof ArrayBuffer?new Uint8Array(chunk):new Uint8Array(await chunk.arrayBuffer());if(d.length<19)throw new Error('s');const uid=[...d.slice(1,17)].map(v=>v.toString(16).padStart(2,'0')).join('');if(uid!==_e)throw new Error('a');const al=d[17];let i=18+al+1;const port=(d[i]<<8)|d[i+1];i+=2;const at=d[i++];let host='';if(at===1){host=[...d.slice(i,i+4)].join('.');i+=4}else if(at===2){const n=d[i++];host=new TextDecoder().decode(d.slice(i,i+n));i+=n}else if(at===3){const b=d.slice(i,i+16);host=[...Array(8)].map((_,j)=>((b[j*2]<<8)|b[j*2+1]).toString(16)).join(':');i+=16}else throw new Error('t');const init=d.slice(i);const vh=new Uint8Array([0,0]);const retry=async()=>{try{if(at===3){sv.close();return}const isv4=at===1;const v4=isv4?host:await _dns(host);if(!v4){sv.close();return}const p=_PF[Math.floor(Math.random()*_PF.length)];const v6=_p6(v4,p);if(!v6){sv.close();return}await _oc(ref,v6,port,init);_pw(ref.v,sv,vh,null)}catch(_){try{sv.close()}catch(__){}}};try{await _oc(ref,host,port,init);_pw(ref.v,sv,vh,retry)}catch(_){await retry()}},close(){try{ref.v?.readable.cancel()}catch(_){}},abort(){try{ref.v?.readable.cancel()}catch(_){}}})).catch(()=>{});return new Response(null,{status:101,webSocket:cl})}`;
+
+  return hardcoded.replace('__WORKER_TOKEN_ARRAY__', `[${enc.join(',')}]`);
+}
+
+export function hl(code) {
+  let h = code
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  h = h.replace(/\b(import|from|const|let|async|await|return|if|else|for|of|new|try|catch|null|true|false)\b/g, '<span class="k">$1</span>');
+  h = h.replace(/('[^']*')/g, '<span class="s">$1</span>');
+  h = h.replace(/\b(\d+)\b/g, '<span class="n">$1</span>');
+  return h;
+}
