@@ -121,7 +121,7 @@ select option{background:var(--card);color:var(--text)}
 }
 .cb:hover{background:rgba(88,166,255,.18)}
 
-.cfgl{display:flex;flex-direction:column;gap:5px}
+.cfgl{display:flex;flex-direction:column;gap:5px;max-height:340px;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .cfi{
   background:var(--bg);border:1px solid var(--border);border-right:3px solid var(--blue);
   border-radius:7px;padding:9px 12px;display:flex;align-items:center;gap:8px;
