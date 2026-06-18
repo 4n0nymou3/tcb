@@ -15,7 +15,7 @@
 <div class="hdr">
   <div class="hdr-top">
     <div class="hdr-dot"></div>
-    <h1>Tunnel Config Builder (TCB) v4.0</h1>
+    <h1>Tunnel Config Builder (TCB) v4.1</h1>
   </div>
   <p class="hdr-sub">ساخت کانفیگ VLESS برای Cloudflare Worker — بدون نیاز به VPS</p>
 </div>
@@ -261,7 +261,7 @@
     </div>
 
     <div class="fg mt-14">
-      <label>نام کانفیگ JSON (اختیاری)</label>
+      <label>نام کانفیگ JSON Xray (اختیاری)</label>
       <input type="text" id="jsonName" placeholder="در صورت خالی بودن، نام به‌صورت خودکار تعیین می‌شود"/>
       <p class="hint">اگر خالی بماند، پنل نام پیش‌فرض را برای کانفیگ Normal یا Fragment انتخاب خواهد کرد.</p>
     </div>
@@ -274,7 +274,7 @@
   <hr class="dv"/>
   <div class="sec">
     <div class="sec-hdr">
-      <div class="sec-title"><i class="dot-orange"></i>کانفیگ JSON — My configs 🚀</div>
+      <div class="sec-title"><i class="dot-orange"></i>کانفیگ JSON — Xray 🚀</div>
       <div class="flex-gap-6">
         <button class="cb" id="btn-cp-json">⎘ کپی JSON</button>
         <button class="cb" id="btn-dl-json">↓ دانلود TCB.json</button>
@@ -289,6 +289,44 @@
         <div class="json-area" id="jsonDisplay"></div>
       </div>
       <p class="hint mt-10">این کانفیگ را در v2rayNG یا هر کلاینت سازگار با Xray وارد کن — از حالت least ping برای انتخاب سریع‌ترین سرور استفاده می‌کند.</p>
+    </div>
+  </div>
+  <div class="sec sec-green">
+    <div class="sec-hdr sec-hdr-green">
+      <div class="sec-title"><i class="dot-green"></i>کانفیگ JSON — Sing-box 📦</div>
+      <div class="flex-gap-6">
+        <button class="cb" id="btn-cp-singbox">⎘ کپی JSON</button>
+        <button class="cb" id="btn-dl-singbox">↓ دانلود TCB.json</button>
+      </div>
+    </div>
+    <div class="sec-body">
+      <div class="script-wrap">
+        <div class="script-btns">
+          <button class="btn-cpscript" id="btn-cp-singbox-2">⎘ کپی</button>
+          <button class="btn-cpscript" id="btn-dl-singbox-2">↓ دانلود</button>
+        </div>
+        <div class="json-area" id="singboxDisplay"></div>
+      </div>
+      <p class="hint mt-10">این کانفیگ مستقیماً برای Sing-box و کلاینت‌های مبتنی بر هسته‌ی Sing-box ساخته شده. به دلیل Deprecated شدن فیلد ECH در نسخه فعلی Sing-box، این کانفیگ بدون ECH ساخته می‌شود (Fragment و سایر تنظیمات شما اعمال شده‌اند).</p>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="sec-hdr">
+      <div class="sec-title"><i></i>کانفیگ JSON — Clash 🐱</div>
+      <div class="flex-gap-6">
+        <button class="cb" id="btn-cp-clash">⎘ کپی JSON</button>
+        <button class="cb" id="btn-dl-clash">↓ دانلود TCB.yaml</button>
+      </div>
+    </div>
+    <div class="sec-body">
+      <div class="script-wrap">
+        <div class="script-btns">
+          <button class="btn-cpscript" id="btn-cp-clash-2">⎘ کپی</button>
+          <button class="btn-cpscript" id="btn-dl-clash-2">↓ دانلود</button>
+        </div>
+        <div class="json-area" id="clashDisplay"></div>
+      </div>
+      <p class="hint mt-10">فرمت و دانلود این کانفیگ با پسوند <code>.yaml</code> انجام می‌شود تا کلاینت‌های Clash/Mihomo آن را به‌عنوان پروفایل بشناسند. توجه: فرمت Clash/Mihomo اصولاً قابلیت Fragment ندارد، بنابراین تنظیمات Fragment روی این کانفیگ اعمال نمی‌شود.</p>
     </div>
   </div>
   <div class="stats">
@@ -312,25 +350,9 @@
       <div class="cfgl" id="lAll"></div>
     </div>
   </div>
-  <div class="sec sec-green">
-    <div class="sec-hdr sec-hdr-green">
-      <div class="sec-title"><i class="dot-green"></i>تبدیل به فرمت Sing-box</div>
-    </div>
-    <div class="sec-body">
-      <div class="alert ab mb-13">
-        <span class="aico">💡</span>
-        <div>اگر از کلاینت‌هایی مثل <strong class="txt-strong">Sing-box</strong> یا <strong class="txt-strong">Hiddify</strong> استفاده می‌کنید، می‌توانید کانفیگ‌های معمولی تولیدشده را (با دکمه «کپی همه» بالا) کپی کنید و سپس با کلیک روی دکمه زیر وارد ابزار <strong class="txt-strong">Drill</strong> شوید و آن‌ها را به فرمت Sing-box تبدیل کنید.</div>
-      </div>
-      <a href="https://4n0nymou3.github.io/proxy-to-singbox-converter/" target="_blank" class="btn-link">
-        <button class="bgen btn-drill">
-          <span class="ico-lg">🔄</span> باز کردن ابزار Drill — تبدیل به Sing-box
-        </button>
-      </a>
-    </div>
-  </div>
   <div class="alert ag">
     <span class="aico">✓</span>
-    <div>کانفیگ‌ها آماده‌اند. در <strong class="txt-strong">v2rayNG</strong>، <strong class="txt-strong">Hiddify</strong>، <strong class="txt-strong">NekoBox</strong> یا <strong class="txt-strong">Sing-box</strong> وارد کن.</div>
+    <div>کانفیگ‌ها آماده‌اند. کانفیگ JSON متناسب با کلاینت خودت را انتخاب کن: کانفیگ <strong class="txt-strong">Xray</strong> برای v2rayNG و تمام کلاینت‌های مبتنی بر هسته‌ی Xray، کانفیگ <strong class="txt-strong">Sing-box</strong> برای NekoBox/Hiddify و تمام کلاینت‌های مبتنی بر هسته‌ی Sing-box، و کانفیگ <strong class="txt-strong">Clash</strong> برای Mihomo/Clash Verge و... .</div>
   </div>
 </div>
 
