@@ -380,7 +380,7 @@ kill -9 2341
 
 طراحی و توسعه توسط: **Anonymous**
 
-ارتباط: [Telegram](https://t.me/BXAMbot)
+ارتباط: [Telegram](https://t.me/An0nymou3Bot)
 
 ---
 
