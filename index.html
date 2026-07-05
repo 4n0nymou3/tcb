@@ -15,7 +15,7 @@
 <div class="hdr">
   <div class="hdr-top">
     <div class="hdr-dot"></div>
-    <h1>Tunnel Config Builder (TCB) v4.1</h1>
+    <h1>Tunnel Config Builder (TCB) v4.2</h1>
   </div>
   <p class="hdr-sub">ساخت کانفیگ VLESS برای Cloudflare Worker — بدون نیاز به VPS</p>
 </div>
@@ -191,7 +191,12 @@
           <label class="adv-lbl">Fragment Length</label>
           <input type="text" id="fragLength" value="10-20" placeholder="10-20"/>
         </div>
+        <div>
+          <label class="adv-lbl">Fragment Max Split</label>
+          <input type="text" id="fragMaxSplit" value="10" placeholder="10"/>
+        </div>
       </div>
+
       <p class="hint mt-10">در صورت فعال بودن، تنظیمات fragment فقط در کانفیگ مادر JSON اعمال می‌شود و روی کانفیگ‌های VLESS تأثیری ندارد.</p>
     </div>
 
