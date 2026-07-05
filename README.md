@@ -1,6 +1,6 @@
 <div align="right" dir="rtl">
 
-# Tunnel Config Builder (TCB) v4.1
+# Tunnel Config Builder (TCB) v4.2
 
 ابزار ساخت کانفیگ VLESS برای Cloudflare Workers — بدون نیاز به VPS یا سرور شخصی
 
@@ -83,6 +83,7 @@ Tunnel Config Builder یک ابزار تحت وب است که به شما امک
 - **Fragment Packets**: نوع داده‌ای که Fragment می‌شود. مقدار `tlshello` برای تقطیع TLS Client Hello توصیه می‌شود.
 - **Fragment Interval**: فاصله زمانی بین ارسال قطعات (میلی‌ثانیه).
 - **Fragment Length**: اندازه هر قطعه (بایت).
+- **Fragment Max Split**: حداکثر تعداد دفعات تقسیم بسته.
 
 ### ECH — Encrypted Client Hello
 
