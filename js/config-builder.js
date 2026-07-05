@@ -19,7 +19,7 @@ export function buildConfig(token, dom, ip, port, security, fp, path, label, ech
 
 export function buildJsonConfig(token, dom, ips, tlsPorts, wsPorts, fp, settings) {
   const {
-    basePath, fragEnable, fragPackets, fragLength, fragInterval,
+    basePath, fragEnable, fragPackets, fragLength, fragInterval, fragMaxSplit,
     fakeDnsEnable, ipv6Enable, lanAccess, remoteDnsVal, localDnsVal,
     tcpFastOpen, echEnable, echDns, jsonName
   } = settings;
@@ -58,7 +58,7 @@ export function buildJsonConfig(token, dom, ips, tlsPorts, wsPorts, fp, settings
         streamSettings.finalmask = {
           tcp: [{
             type: 'fragment',
-            settings: { packets: fragPackets, length: fragLength, delay: fragInterval, maxSplit: '0-0' }
+            settings: { packets: fragPackets, length: fragLength, delay: fragInterval, maxSplit: fragMaxSplit }
           }]
         };
       }
@@ -82,7 +82,7 @@ export function buildJsonConfig(token, dom, ips, tlsPorts, wsPorts, fp, settings
         streamSettings.finalmask = {
           tcp: [{
             type: 'fragment',
-            settings: { packets: fragPackets, length: fragLength, delay: fragInterval, maxSplit: '0-0' }
+            settings: { packets: fragPackets, length: fragLength, delay: fragInterval, maxSplit: fragMaxSplit }
           }]
         };
       }
