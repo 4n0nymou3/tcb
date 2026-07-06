@@ -3,6 +3,7 @@ import { buildConfig, buildJsonConfig } from './config-builder.js';
 import { buildSingboxConfig } from './singbox-builder.js';
 import { buildClashConfig } from './clash-builder.js';
 import { toast, getChecked, row, downloadFile } from './ui.js';
+import { exportSettingsToString, isValidImportPayload, applyImportedSettings } from './settings-io.js';
 
 let allC = [];
 
@@ -216,6 +217,37 @@ function dlAll() {
   toast(`فایل TCB.txt با ${allC.length} کانفیگ دانلود شد`);
 }
 
+function exportSettings() {
+  const json = exportSettingsToString();
+  downloadFile(json, 'TCB_Settings.json', 'application/json');
+  toast('فایل تنظیمات دانلود شد');
+}
+
+function importSettings(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    let parsed;
+    try {
+      parsed = JSON.parse(reader.result);
+    } catch (e) {
+      toast('فایل انتخاب‌شده یک فایل JSON معتبر نیست');
+      return;
+    }
+    if (!isValidImportPayload(parsed)) {
+      toast('این فایل مخصوص TCB نیست و قابل ایمپورت نمی‌باشد');
+      return;
+    }
+    applyImportedSettings(parsed);
+    toggleFrag();
+    toggleEch();
+    renderWorker(document.getElementById('uid').value.trim());
+    toast('تنظیمات با موفقیت ایمپورت شد');
+  };
+  reader.onerror = () => toast('خطا در خواندن فایل');
+  reader.readAsText(file);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const t = uuid4();
   document.getElementById('uid').value = t;
@@ -228,6 +260,15 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-cp-token').addEventListener('click', cpToken);
   document.getElementById('fragEnable').addEventListener('change', toggleFrag);
   document.getElementById('echEnable').addEventListener('change', toggleEch);
+  document.getElementById('btn-export-settings').addEventListener('click', exportSettings);
+  document.getElementById('btn-import-settings').addEventListener('click', () => {
+    document.getElementById('importFileInput').click();
+  });
+  document.getElementById('importFileInput').addEventListener('change', e => {
+    const file = e.target.files[0];
+    importSettings(file);
+    e.target.value = '';
+  });
   document.getElementById('gb').addEventListener('click', gen);
   document.getElementById('btn-cp-all').addEventListener('click', cpAll);
   document.getElementById('btn-dl-all').addEventListener('click', dlAll);
