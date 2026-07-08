@@ -1,11 +1,14 @@
-import { buildWorker, hl } from './worker-builder.js';
+import { buildWorker } from './worker-builder.js';
 import { buildConfig, buildJsonConfig } from './config-builder.js';
 import { buildSingboxConfig } from './singbox-builder.js';
 import { buildClashConfig } from './clash-builder.js';
-import { toast, getChecked, row, downloadFile } from './ui.js';
+import { toast, getChecked, row, downloadFile, renderCodeBlock, highlightJsonLine, highlightYamlLine, highlightJsLine } from './ui.js';
 import { exportSettingsToString, isValidImportPayload, applyImportedSettings } from './settings-io.js';
 
 let allC = [];
+let lastJsonStr = '';
+let lastSingboxStr = '';
+let lastClashStr = '';
 
 function uuid4() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -17,7 +20,7 @@ function uuid4() {
 async function renderWorker(token) {
   if (!token) return;
   const code = await buildWorker(token);
-  document.getElementById('workerDisplay').innerHTML = hl(code);
+  renderCodeBlock('workerDisplay', code, highlightJsLine);
 }
 
 function mkToken() {
@@ -143,13 +146,16 @@ function gen() {
     document.getElementById('cb2').textContent = allC.length;
 
     const jsonStr = buildJsonConfig(token, dom, ips, tlsPorts, wsPorts, fp, settings);
-    document.getElementById('jsonDisplay').textContent = jsonStr;
+    lastJsonStr = jsonStr;
+    renderCodeBlock('jsonDisplay', jsonStr, highlightJsonLine);
 
     const singboxStr = buildSingboxConfig(token, dom, ips, tlsPorts, wsPorts, fp, settings);
-    document.getElementById('singboxDisplay').textContent = singboxStr;
+    lastSingboxStr = singboxStr;
+    renderCodeBlock('singboxDisplay', singboxStr, highlightJsonLine);
 
     const clashStr = buildClashConfig(token, dom, ips, tlsPorts, wsPorts, fp, settings);
-    document.getElementById('clashDisplay').textContent = clashStr;
+    lastClashStr = clashStr;
+    renderCodeBlock('clashDisplay', clashStr, highlightYamlLine);
 
     document.getElementById('results').style.display = 'block';
     document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
@@ -163,46 +169,40 @@ function gen() {
 }
 
 function cpJson() {
-  const txt = document.getElementById('jsonDisplay').textContent;
-  if (!txt) return;
-  navigator.clipboard.writeText(txt).then(() => toast('کانفیگ JSON کپی شد'));
+  if (!lastJsonStr) return;
+  navigator.clipboard.writeText(lastJsonStr).then(() => toast('کانفیگ JSON کپی شد'));
 }
 
 function dlJson() {
-  const txt = document.getElementById('jsonDisplay').textContent;
-  if (!txt) return;
+  if (!lastJsonStr) return;
   const fragEnabled = document.getElementById('fragEnable').checked;
   const fileName = fragEnabled ? 'TCB_Fragment.json' : 'TCB_Normal.json';
-  downloadFile(txt, fileName, 'application/json');
+  downloadFile(lastJsonStr, fileName, 'application/json');
   toast('فایل ' + fileName + ' دانلود شد');
 }
 
 function cpSingbox() {
-  const txt = document.getElementById('singboxDisplay').textContent;
-  if (!txt) return;
-  navigator.clipboard.writeText(txt).then(() => toast('کانفیگ Sing-box کپی شد'));
+  if (!lastSingboxStr) return;
+  navigator.clipboard.writeText(lastSingboxStr).then(() => toast('کانفیگ Sing-box کپی شد'));
 }
 
 function dlSingbox() {
-  const txt = document.getElementById('singboxDisplay').textContent;
-  if (!txt) return;
+  if (!lastSingboxStr) return;
   const fragEnabled = document.getElementById('fragEnable').checked;
   const fileName = fragEnabled ? 'TCB_Singbox_Fragment.json' : 'TCB_Singbox_Normal.json';
-  downloadFile(txt, fileName, 'application/json');
+  downloadFile(lastSingboxStr, fileName, 'application/json');
   toast('فایل ' + fileName + ' دانلود شد');
 }
 
 function cpClash() {
-  const txt = document.getElementById('clashDisplay').textContent;
-  if (!txt) return;
-  navigator.clipboard.writeText(txt).then(() => toast('کانفیگ Clash کپی شد'));
+  if (!lastClashStr) return;
+  navigator.clipboard.writeText(lastClashStr).then(() => toast('کانفیگ Clash کپی شد'));
 }
 
 function dlClash() {
-  const txt = document.getElementById('clashDisplay').textContent;
-  if (!txt) return;
+  if (!lastClashStr) return;
   const fileName = 'TCB_Clash.yaml';
-  downloadFile(txt, fileName, 'text/yaml');
+  downloadFile(lastClashStr, fileName, 'text/yaml');
   toast('فایل ' + fileName + ' دانلود شد');
 }
 
