@@ -19,7 +19,7 @@ a{color:var(--blue)}
 :focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:4px}
 .wrap{max-width:820px;margin:0 auto;padding:20px 16px 60px}
 
-.topbar{position:sticky;top:0;z-index:50;background:rgba(13,17,23,.85);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+.topbar{position:sticky;top:0;z-index:50;background:rgba(13,17,23,.45);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
 .topbar-inner{max-width:820px;margin:0 auto;padding:16px 16px 14px}
 
 .hdr{margin-bottom:14px}
