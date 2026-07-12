@@ -1,5 +1,5 @@
 import { buildWorker } from './worker-builder.js';
-import { buildConfig, buildJsonConfig } from './config-builder.js';
+import { buildConfig, buildTrojanConfig, buildJsonConfig } from './config-builder.js';
 import { buildSingboxConfig } from './singbox-builder.js';
 import { buildClashConfig } from './clash-builder.js';
 import { toast, getChecked, row, downloadFile, renderCodeBlock, highlightJsonLine, highlightYamlLine, highlightJsLine } from './ui.js';
@@ -17,16 +17,29 @@ function uuid4() {
   });
 }
 
-async function renderWorker(token) {
-  if (!token) return;
-  const code = await buildWorker(token);
+function genPassword() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let out = '';
+  for (let i = 0; i < 24; i++) {
+    out += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return out;
+}
+
+async function renderWorker(token, password) {
+  if (!token || !password) return;
+  const code = await buildWorker(token, password);
   renderCodeBlock('workerDisplay', code, highlightJsLine);
+}
+
+function currentPassword() {
+  return document.getElementById('tpw').value.trim();
 }
 
 function mkToken() {
   const t = uuid4();
   document.getElementById('uid').value = t;
-  renderWorker(t);
+  renderWorker(t, currentPassword());
   toast('Token جدید — کد Worker آپدیت شد');
 }
 
@@ -36,17 +49,32 @@ function cpToken() {
   navigator.clipboard.writeText(v).then(() => toast('Token کپی شد'));
 }
 
+function mkPassword() {
+  const p = genPassword();
+  document.getElementById('tpw').value = p;
+  renderWorker(document.getElementById('uid').value.trim(), p);
+  toast('Password جدید — کد Worker آپدیت شد');
+}
+
+function cpPassword() {
+  const v = document.getElementById('tpw').value.trim();
+  if (!v) return;
+  navigator.clipboard.writeText(v).then(() => toast('Password کپی شد'));
+}
+
 async function cpWorker() {
   const token = document.getElementById('uid').value.trim();
-  if (!token) { toast('ابتدا Token بساز'); return; }
-  const code = await buildWorker(token);
+  const password = currentPassword();
+  if (!token || !password) { toast('ابتدا Token و Password بساز'); return; }
+  const code = await buildWorker(token, password);
   navigator.clipboard.writeText(code).then(() => toast('کد Worker کپی شد'));
 }
 
 async function dlWorker() {
   const token = document.getElementById('uid').value.trim();
-  if (!token) { toast('ابتدا Token وارد کن'); return; }
-  const code = await buildWorker(token);
+  const password = currentPassword();
+  if (!token || !password) { toast('ابتدا Token و Password وارد کن'); return; }
+  const code = await buildWorker(token, password);
   downloadFile(code, 'worker.js', 'text/javascript');
   toast('فایل worker.js دانلود شد');
 }
@@ -95,15 +123,27 @@ function collectSettings() {
   };
 }
 
-function gen() {
-  const token   = document.getElementById('uid').value.trim();
-  const raw_dom = document.getElementById('wdom').value.trim();
-  const dom     = raw_dom.replace(/^https?:\/\//i, '').replace(/\/+$/, '');
-  const raw     = document.getElementById('ips').value.trim();
+function collectProtocols() {
+  return {
+    vless: document.getElementById('protoVless').checked,
+    trojan: document.getElementById('protoTrojan').checked
+  };
+}
 
-  if (!token) { toast('Token موجود نیست'); return; }
-  if (!dom)   { toast('آدرس Worker را وارد کن'); return; }
-  if (!raw)   { toast('حداقل یک IP وارد کن'); return; }
+function gen() {
+  const token    = document.getElementById('uid').value.trim();
+  const password = currentPassword();
+  const raw_dom  = document.getElementById('wdom').value.trim();
+  const dom      = raw_dom.replace(/^https?:\/\//i, '').replace(/\/+$/, '');
+  const raw      = document.getElementById('ips').value.trim();
+
+  if (!token)    { toast('Token موجود نیست'); return; }
+  if (!password) { toast('Password موجود نیست'); return; }
+  if (!dom)      { toast('آدرس Worker را وارد کن'); return; }
+  if (!raw)      { toast('حداقل یک IP وارد کن'); return; }
+
+  const protocols = collectProtocols();
+  if (!protocols.vless && !protocols.trojan) { toast('حداقل یک پروتکل (VLESS یا Trojan) انتخاب کن'); return; }
 
   const settings  = collectSettings();
   const allIps    = raw.split('\n').map(s => s.trim()).filter(Boolean);
@@ -129,13 +169,25 @@ function gen() {
       const ipLabel = `IP${ipIdx + 1}`;
       tlsPorts.forEach(port => {
         const label = `${ipLabel}-TLS${port}-${fp}`;
-        allC.push({ cfg: buildConfig(token, dom, ip, port, 'tls', fp, settings.basePath, label, settings.echEnable, settings.echDns), tag: `TLS-${port}`, tagColor: 'var(--blue)' });
-        tlsCount++;
+        if (protocols.vless) {
+          allC.push({ cfg: buildConfig(token, dom, ip, port, 'tls', fp, settings.basePath, label, settings.echEnable, settings.echDns), tag: `VLESS-TLS-${port}`, tagColor: 'var(--blue)' });
+          tlsCount++;
+        }
+        if (protocols.trojan) {
+          allC.push({ cfg: buildTrojanConfig(password, dom, ip, port, 'tls', fp, settings.basePath, label, settings.echEnable, settings.echDns), tag: `TROJAN-TLS-${port}`, tagColor: 'var(--green)' });
+          tlsCount++;
+        }
       });
       wsPorts.forEach(port => {
         const label = `${ipLabel}-WS${port}`;
-        allC.push({ cfg: buildConfig(token, dom, ip, port, 'none', '', settings.basePath, label, false, ''), tag: `WS-${port}`, tagColor: 'var(--orange)' });
-        wsCount++;
+        if (protocols.vless) {
+          allC.push({ cfg: buildConfig(token, dom, ip, port, 'none', '', settings.basePath, label, false, ''), tag: `VLESS-WS-${port}`, tagColor: 'var(--orange)' });
+          wsCount++;
+        }
+        if (protocols.trojan) {
+          allC.push({ cfg: buildTrojanConfig(password, dom, ip, port, 'none', '', settings.basePath, label, false, ''), tag: `TROJAN-WS-${port}`, tagColor: 'var(--yellow)' });
+          wsCount++;
+        }
       });
     });
 
@@ -145,15 +197,15 @@ function gen() {
     document.getElementById('sa').textContent  = allC.length;
     document.getElementById('cb2').textContent = allC.length;
 
-    const jsonStr = buildJsonConfig(token, dom, ips, tlsPorts, wsPorts, fp, settings);
+    const jsonStr = buildJsonConfig(token, password, dom, ips, tlsPorts, wsPorts, fp, settings, protocols);
     lastJsonStr = jsonStr;
     renderCodeBlock('jsonDisplay', jsonStr, highlightJsonLine);
 
-    const singboxStr = buildSingboxConfig(token, dom, ips, tlsPorts, wsPorts, fp, settings);
+    const singboxStr = buildSingboxConfig(token, password, dom, ips, tlsPorts, wsPorts, fp, settings, protocols);
     lastSingboxStr = singboxStr;
     renderCodeBlock('singboxDisplay', singboxStr, highlightJsonLine);
 
-    const clashStr = buildClashConfig(token, dom, ips, tlsPorts, wsPorts, fp, settings);
+    const clashStr = buildClashConfig(token, password, dom, ips, tlsPorts, wsPorts, fp, settings, protocols);
     lastClashStr = clashStr;
     renderCodeBlock('clashDisplay', clashStr, highlightYamlLine);
 
@@ -164,7 +216,7 @@ function gen() {
     document.getElementById('sn4').className = 'step active';
     btn.innerHTML = '✓ ساخته شد — دوباره بساز';
     btn.disabled = false;
-    toast(`${allC.length} کانفیگ VLESS ساخته شد (${tlsCount} TLS + ${wsCount} WS)`);
+    toast(`${allC.length} کانفیگ ساخته شد (${tlsCount} TLS + ${wsCount} WS)`);
   }, 400);
 }
 
@@ -241,7 +293,7 @@ function importSettings(file) {
     applyImportedSettings(parsed);
     toggleFrag();
     toggleEch();
-    renderWorker(document.getElementById('uid').value.trim());
+    renderWorker(document.getElementById('uid').value.trim(), currentPassword());
     toast('تنظیمات با موفقیت ایمپورت شد');
   };
   reader.onerror = () => toast('خطا در خواندن فایل');
@@ -250,14 +302,19 @@ function importSettings(file) {
 
 document.addEventListener('DOMContentLoaded', () => {
   const t = uuid4();
+  const p = genPassword();
   document.getElementById('uid').value = t;
-  renderWorker(t);
+  document.getElementById('tpw').value = p;
+  renderWorker(t, p);
 
-  document.getElementById('uid').addEventListener('input', e => renderWorker(e.target.value.trim()));
+  document.getElementById('uid').addEventListener('input', e => renderWorker(e.target.value.trim(), currentPassword()));
+  document.getElementById('tpw').addEventListener('input', e => renderWorker(document.getElementById('uid').value.trim(), e.target.value.trim()));
   document.getElementById('btn-cp-worker').addEventListener('click', cpWorker);
   document.getElementById('btn-dl-worker').addEventListener('click', dlWorker);
   document.getElementById('btn-mk-token').addEventListener('click', mkToken);
   document.getElementById('btn-cp-token').addEventListener('click', cpToken);
+  document.getElementById('btn-mk-pw').addEventListener('click', mkPassword);
+  document.getElementById('btn-cp-pw').addEventListener('click', cpPassword);
   document.getElementById('fragEnable').addEventListener('change', toggleFrag);
   document.getElementById('echEnable').addEventListener('change', toggleEch);
   document.getElementById('btn-export-settings').addEventListener('click', exportSettings);
