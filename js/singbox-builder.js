@@ -12,11 +12,14 @@ function parseDnsUrl(value) {
   }
 }
 
-export function buildSingboxConfig(token, dom, ips, tlsPorts, wsPorts, fp, settings) {
+export function buildSingboxConfig(token, password, dom, ips, tlsPorts, wsPorts, fp, settings, protocols) {
   const {
     basePath, fragEnable, fakeDnsEnable, ipv6Enable, lanAccess,
     remoteDnsVal, localDnsVal, tcpFastOpen
   } = settings;
+
+  const useVless = !protocols || protocols.vless !== false;
+  const useTrojan = !!(protocols && protocols.trojan);
 
   const outbounds = [];
   const proxyTags = [];
@@ -25,60 +28,42 @@ export function buildSingboxConfig(token, dom, ips, tlsPorts, wsPorts, fp, setti
     const ipLabel = `IP${ipIdx + 1}`;
     const domainResolver = isDomainAddr(ip) ? 'dns-direct' : undefined;
 
-    tlsPorts.forEach(port => {
-      const tag = `${ipLabel}-TLS${port}-${fp}`;
-      const outbound = {
-        type: 'vless',
-        tag: tag,
+    [...tlsPorts.map(p => ({ port: p, isTls: true })), ...wsPorts.map(p => ({ port: p, isTls: false }))].forEach(({ port, isTls }) => {
+      const baseOutbound = {
         server: ip,
         server_port: parseInt(port),
-        uuid: token,
-        packet_encoding: '',
         network: 'tcp',
         tcp_fast_open: tcpFastOpen,
-        tls: {
+        transport: {
+          type: 'ws',
+          path: basePath,
+          max_early_data: 2560,
+          early_data_header_name: 'Sec-WebSocket-Protocol',
+          headers: { Host: dom }
+        }
+      };
+      if (isTls) {
+        baseOutbound.tls = {
           enabled: true,
           server_name: dom,
           record_fragment: fragEnable,
           insecure: false,
           alpn: ['http/1.1'],
           utls: { enabled: true, fingerprint: fp }
-        },
-        transport: {
-          type: 'ws',
-          path: basePath,
-          max_early_data: 2560,
-          early_data_header_name: 'Sec-WebSocket-Protocol',
-          headers: { Host: dom }
-        }
-      };
-      if (domainResolver) outbound.domain_resolver = domainResolver;
-      outbounds.push(outbound);
-      proxyTags.push(tag);
-    });
+        };
+      }
+      if (domainResolver) baseOutbound.domain_resolver = domainResolver;
 
-    wsPorts.forEach(port => {
-      const tag = `${ipLabel}-WS${port}`;
-      const outbound = {
-        type: 'vless',
-        tag: tag,
-        server: ip,
-        server_port: parseInt(port),
-        uuid: token,
-        packet_encoding: '',
-        network: 'tcp',
-        tcp_fast_open: tcpFastOpen,
-        transport: {
-          type: 'ws',
-          path: basePath,
-          max_early_data: 2560,
-          early_data_header_name: 'Sec-WebSocket-Protocol',
-          headers: { Host: dom }
-        }
-      };
-      if (domainResolver) outbound.domain_resolver = domainResolver;
-      outbounds.push(outbound);
-      proxyTags.push(tag);
+      if (useVless) {
+        const tag = `VLESS-${ipLabel}-${isTls ? 'TLS' : 'WS'}${port}${isTls ? '-' + fp : ''}`;
+        outbounds.push({ type: 'vless', tag: tag, uuid: token, packet_encoding: '', ...baseOutbound });
+        proxyTags.push(tag);
+      }
+      if (useTrojan) {
+        const tag = `TROJAN-${ipLabel}-${isTls ? 'TLS' : 'WS'}${port}${isTls ? '-' + fp : ''}`;
+        outbounds.push({ type: 'trojan', tag: tag, password: password, ...baseOutbound });
+        proxyTags.push(tag);
+      }
     });
   });
 
