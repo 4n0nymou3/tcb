@@ -1,8 +1,11 @@
-export function buildClashConfig(token, dom, ips, tlsPorts, wsPorts, fp, settings) {
+export function buildClashConfig(token, password, dom, ips, tlsPorts, wsPorts, fp, settings, protocols) {
   const {
     basePath, fakeDnsEnable, ipv6Enable, lanAccess,
     remoteDnsVal, localDnsVal, tcpFastOpen, echEnable
   } = settings;
+
+  const useVless = !protocols || protocols.vless !== false;
+  const useTrojan = !!(protocols && protocols.trojan);
 
   const proxies = [];
   const proxyTags = [];
@@ -10,46 +13,10 @@ export function buildClashConfig(token, dom, ips, tlsPorts, wsPorts, fp, setting
   ips.forEach((ip, ipIdx) => {
     const ipLabel = `IP${ipIdx + 1}`;
 
-    tlsPorts.forEach(port => {
-      const tag = `${ipLabel}-TLS${port}-${fp}`;
-      const proxy = {
-        name: tag,
-        type: 'vless',
+    [...tlsPorts.map(p => ({ port: p, isTls: true })), ...wsPorts.map(p => ({ port: p, isTls: false }))].forEach(({ port, isTls }) => {
+      const baseProxy = {
         server: ip,
         port: parseInt(port),
-        uuid: token,
-        'packet-encoding': '',
-        udp: false,
-        'ip-version': ipv6Enable ? 'ipv4-prefer' : 'ipv4',
-        tfo: tcpFastOpen,
-        network: 'ws',
-        'ws-opts': {
-          path: basePath,
-          'max-early-data': 2560,
-          'early-data-header-name': 'Sec-WebSocket-Protocol',
-          headers: { Host: dom }
-        },
-        tls: true,
-        servername: dom,
-        'client-fingerprint': fp === 'randomized' ? 'random' : fp,
-        'skip-cert-verify': false,
-        alpn: ['http/1.1']
-      };
-      if (echEnable) {
-        proxy['ech-opts'] = { enable: true, 'query-server-name': dom };
-      }
-      proxies.push(proxy);
-      proxyTags.push(tag);
-    });
-
-    wsPorts.forEach(port => {
-      const tag = `${ipLabel}-WS${port}`;
-      proxies.push({
-        name: tag,
-        type: 'vless',
-        server: ip,
-        port: parseInt(port),
-        uuid: token,
         'packet-encoding': '',
         udp: false,
         'ip-version': ipv6Enable ? 'ipv4-prefer' : 'ipv4',
@@ -61,8 +28,33 @@ export function buildClashConfig(token, dom, ips, tlsPorts, wsPorts, fp, setting
           'early-data-header-name': 'Sec-WebSocket-Protocol',
           headers: { Host: dom }
         }
-      });
-      proxyTags.push(tag);
+      };
+      if (isTls) {
+        baseProxy.tls = true;
+        baseProxy['client-fingerprint'] = fp === 'randomized' ? 'random' : fp;
+        baseProxy['skip-cert-verify'] = false;
+        baseProxy.alpn = ['http/1.1'];
+      }
+
+      if (useVless) {
+        const tag = `VLESS-${ipLabel}-${isTls ? 'TLS' : 'WS'}${port}${isTls ? '-' + fp : ''}`;
+        const proxy = { name: tag, type: 'vless', uuid: token, ...baseProxy };
+        if (isTls) {
+          proxy.servername = dom;
+          if (echEnable) proxy['ech-opts'] = { enable: true, 'query-server-name': dom };
+        }
+        proxies.push(proxy);
+        proxyTags.push(tag);
+      }
+      if (useTrojan) {
+        const tag = `TROJAN-${ipLabel}-${isTls ? 'TLS' : 'WS'}${port}${isTls ? '-' + fp : ''}`;
+        const proxy = { name: tag, type: 'trojan', password: password, ...baseProxy };
+        if (isTls) {
+          proxy.sni = dom;
+        }
+        proxies.push(proxy);
+        proxyTags.push(tag);
+      }
     });
   });
 
