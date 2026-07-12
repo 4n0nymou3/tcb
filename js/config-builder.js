@@ -17,7 +17,47 @@ export function buildConfig(token, dom, ip, port, security, fp, path, label, ech
   return `vless://${token}@${h}:${port}?${params}#${name}`;
 }
 
-export function buildJsonConfig(token, dom, ips, tlsPorts, wsPorts, fp, settings) {
+export function buildTrojanConfig(password, dom, ip, port, security, fp, path, label, echActive, echDns) {
+  const h = ip.includes(':') ? `[${ip}]` : ip;
+  const edPath = path + '?ed=2560';
+  const params = new URLSearchParams({
+    security: security, type: 'ws',
+    host: dom, path: edPath, allowInsecure: '0'
+  });
+  if (security === 'tls') {
+    params.set('sni', dom);
+    params.set('fp', fp);
+    params.set('alpn', 'http/1.1');
+    if (echActive) {
+      params.set('ech', echDns);
+    }
+  }
+  const name = encodeURIComponent(`CF-${label}`);
+  return `trojan://${encodeURIComponent(password)}@${h}:${port}?${params}#${name}`;
+}
+
+function buildStreamSettings(dom, path, fp, security, echEnable, echDns, fragEnable, fragPackets, fragLength, fragInterval, fragMaxSplit, outboundSockopt) {
+  const streamSettings = { network: 'ws', wsSettings: { headers: { Host: dom }, path: path }, sockopt: outboundSockopt };
+  if (security === 'tls') {
+    streamSettings.security = 'tls';
+    const tlsSettings = { allowInsecure: false, fingerprint: fp, serverName: dom, show: false, alpn: ['http/1.1'] };
+    if (echEnable) {
+      tlsSettings.echConfigList = echDns;
+    }
+    streamSettings.tlsSettings = tlsSettings;
+  }
+  if (fragEnable) {
+    streamSettings.finalmask = {
+      tcp: [{
+        type: 'fragment',
+        settings: { packets: fragPackets, length: fragLength, delay: fragInterval, maxSplit: fragMaxSplit }
+      }]
+    };
+  }
+  return streamSettings;
+}
+
+export function buildJsonConfig(token, password, dom, ips, tlsPorts, wsPorts, fp, settings, protocols) {
   const {
     basePath, fragEnable, fragPackets, fragLength, fragInterval, fragMaxSplit,
     fakeDnsEnable, ipv6Enable, lanAccess, remoteDnsVal, localDnsVal,
@@ -25,6 +65,8 @@ export function buildJsonConfig(token, dom, ips, tlsPorts, wsPorts, fp, settings
   } = settings;
 
   const path = basePath + '?ed=2560';
+  const useVless = !protocols || protocols.vless !== false;
+  const useTrojan = !!(protocols && protocols.trojan);
 
   const outboundSockopt = {
     domainStrategy: 'UseIP',
@@ -36,66 +78,32 @@ export function buildJsonConfig(token, dom, ips, tlsPorts, wsPorts, fp, settings
   let idx = 1;
 
   ips.forEach(ip => {
-    tlsPorts.forEach(port => {
-      const tlsSettings = {
-        allowInsecure: false,
-        fingerprint: fp,
-        serverName: dom,
-        show: false,
-        alpn: ['http/1.1']
-      };
-      if (echEnable) {
-        tlsSettings.echConfigList = echDns;
+    [...tlsPorts.map(p => ({ port: p, security: 'tls' })), ...wsPorts.map(p => ({ port: p, security: 'none' }))].forEach(({ port, security }) => {
+      if (useVless) {
+        outbounds.push({
+          mux: { concurrency: -1, enabled: false },
+          protocol: 'vless',
+          settings: { vnext: [{ address: ip, port: parseInt(port), users: [{ encryption: 'none', id: token, level: 8 }] }] },
+          streamSettings: buildStreamSettings(dom, path, fp, security, echEnable, echDns, fragEnable, fragPackets, fragLength, fragInterval, fragMaxSplit, outboundSockopt),
+          tag: 'vless-proxy-' + idx
+        });
       }
-      const streamSettings = {
-        network: 'ws',
-        security: 'tls',
-        tlsSettings: tlsSettings,
-        wsSettings: { headers: { Host: dom }, path: path },
-        sockopt: outboundSockopt
-      };
-      if (fragEnable) {
-        streamSettings.finalmask = {
-          tcp: [{
-            type: 'fragment',
-            settings: { packets: fragPackets, length: fragLength, delay: fragInterval, maxSplit: fragMaxSplit }
-          }]
-        };
+      if (useTrojan) {
+        outbounds.push({
+          mux: { concurrency: -1, enabled: false },
+          protocol: 'trojan',
+          settings: { servers: [{ address: ip, port: parseInt(port), password: password, level: 8 }] },
+          streamSettings: buildStreamSettings(dom, path, fp, security, echEnable, echDns, fragEnable, fragPackets, fragLength, fragInterval, fragMaxSplit, outboundSockopt),
+          tag: 'trojan-proxy-' + idx
+        });
       }
-      outbounds.push({
-        mux: { concurrency: -1, enabled: false },
-        protocol: 'vless',
-        settings: { vnext: [{ address: ip, port: parseInt(port), users: [{ encryption: 'none', id: token, level: 8 }] }] },
-        streamSettings: streamSettings,
-        tag: 'proxy-' + idx
-      });
-      idx++;
-    });
-
-    wsPorts.forEach(port => {
-      const streamSettings = {
-        network: 'ws',
-        wsSettings: { headers: { Host: dom }, path: path },
-        sockopt: outboundSockopt
-      };
-      if (fragEnable) {
-        streamSettings.finalmask = {
-          tcp: [{
-            type: 'fragment',
-            settings: { packets: fragPackets, length: fragLength, delay: fragInterval, maxSplit: fragMaxSplit }
-          }]
-        };
-      }
-      outbounds.push({
-        mux: { concurrency: -1, enabled: false },
-        protocol: 'vless',
-        settings: { vnext: [{ address: ip, port: parseInt(port), users: [{ encryption: 'none', id: token, level: 8 }] }] },
-        streamSettings: streamSettings,
-        tag: 'proxy-' + idx
-      });
       idx++;
     });
   });
+
+  const balancerSelector = [];
+  if (useVless) balancerSelector.push('vless-proxy-');
+  if (useTrojan) balancerSelector.push('trojan-proxy-');
 
   outbounds.push({ protocol: 'freedom', settings: { domainStrategy: 'UseIP' }, tag: 'direct' });
   outbounds.push({ protocol: 'blackhole', settings: { response: { type: 'http' } }, tag: 'block' });
@@ -146,7 +154,7 @@ export function buildJsonConfig(token, dom, ips, tlsPorts, wsPorts, fp, settings
       }
     ],
     log: { loglevel: 'none' },
-    observatory: { enableConcurrency: true, probeInterval: '3m', probeUrl: 'https://www.gstatic.com/generate_204', subjectSelector: ['proxy-'] },
+    observatory: { enableConcurrency: true, probeInterval: '3m', probeUrl: 'https://www.gstatic.com/generate_204', subjectSelector: balancerSelector },
     outbounds: outbounds,
     policy: {
       levels: { '8': { connIdle: 300, downlinkOnly: 1, handshake: 4, uplinkOnly: 1 } },
@@ -154,7 +162,7 @@ export function buildJsonConfig(token, dom, ips, tlsPorts, wsPorts, fp, settings
     },
     remarks: jsonName || (fragEnable ? '👽 Anonymous TCB (Fragment) 🚀' : '👽 Anonymous TCB (Normal) 🚀'),
     routing: {
-      balancers: [{ selector: ['proxy-'], strategy: { type: 'leastPing' }, tag: 'proxy-round' }],
+      balancers: [{ selector: balancerSelector, strategy: { type: 'leastPing' }, tag: 'proxy-round' }],
       domainStrategy: 'IPIfNonMatch',
       rules: [
         { inboundTag: ['mixed-in'], outboundTag: 'dns-out', port: '53', type: 'field' },
