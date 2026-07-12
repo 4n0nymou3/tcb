@@ -8,6 +8,11 @@ export function collectExportData() {
     exportedAt: new Date().toISOString(),
     data: {
       token: document.getElementById('uid').value.trim(),
+      trojanPassword: document.getElementById('tpw').value.trim(),
+      protocols: {
+        vless: document.getElementById('protoVless').checked,
+        trojan: document.getElementById('protoTrojan').checked
+      },
       workerDomain: document.getElementById('wdom').value.trim(),
       ips: document.getElementById('ips').value,
       tlsPorts: [...document.querySelectorAll('.ptls:checked')].map(el => el.value),
@@ -58,6 +63,11 @@ export function applyImportedSettings(payload) {
   const d = payload.data;
 
   if (typeof d.token === 'string') document.getElementById('uid').value = d.token;
+  if (typeof d.trojanPassword === 'string') document.getElementById('tpw').value = d.trojanPassword;
+  if (d.protocols && typeof d.protocols === 'object') {
+    document.getElementById('protoVless').checked = d.protocols.vless !== false;
+    document.getElementById('protoTrojan').checked = !!d.protocols.trojan;
+  }
   if (typeof d.workerDomain === 'string') document.getElementById('wdom').value = d.workerDomain;
   if (typeof d.ips === 'string') document.getElementById('ips').value = d.ips;
 
