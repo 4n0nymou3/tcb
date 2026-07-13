@@ -189,12 +189,12 @@ apk add git
 </div>
 
 ```sh
-git clone https://github.com/4n0nymou3/cf-vless-config-builder.git
+git clone https://github.com/4n0nymou3/tcb.git
 ```
 
 <div align="right" dir="rtl">
 
-> **توضیح:** دستور `git clone` یعنی «یک کپی کامل از این پروژه برایم بساز». بعد از اجرا، یک پوشه با نام `cf-vless-config-builder` در مسیر جاری شما ایجاد می‌شود.
+> **توضیح:** دستور `git clone` یعنی «یک کپی کامل از این پروژه برایم بساز». بعد از اجرا، یک پوشه با نام `tcb` در مسیر جاری شما ایجاد می‌شود.
 
 ---
 
@@ -203,7 +203,7 @@ git clone https://github.com/4n0nymou3/cf-vless-config-builder.git
 </div>
 
 ```sh
-cd cf-vless-config-builder
+cd tcb
 ```
 
 <div align="right" dir="rtl">
