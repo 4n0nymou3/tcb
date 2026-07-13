@@ -4,6 +4,7 @@ import { buildSingboxConfig } from './singbox-builder.js';
 import { buildClashConfig } from './clash-builder.js';
 import { toast, getChecked, row, downloadFile, renderCodeBlock, highlightJsonLine, highlightYamlLine, highlightJsLine } from './ui.js';
 import { exportSettingsToString, isValidImportPayload, applyImportedSettings } from './settings-io.js';
+import { generateQRMatrix, qrMatrixToSvg } from './qrcode.js';
 
 let allC = [];
 let lastJsonStr = '';
@@ -168,23 +169,25 @@ function gen() {
     ips.forEach((ip, ipIdx) => {
       const ipLabel = `IP${ipIdx + 1}`;
       tlsPorts.forEach(port => {
-        const label = `${ipLabel}-TLS${port}-${fp}`;
         if (protocols.vless) {
+          const label = `VLESS-${ipLabel}-TLS${port}-${fp}`;
           allC.push({ cfg: buildConfig(token, dom, ip, port, 'tls', fp, settings.basePath, label, settings.echEnable, settings.echDns), tag: `VLESS-TLS-${port}`, tagColor: 'var(--blue)' });
           tlsCount++;
         }
         if (protocols.trojan) {
+          const label = `TROJAN-${ipLabel}-TLS${port}-${fp}`;
           allC.push({ cfg: buildTrojanConfig(password, dom, ip, port, 'tls', fp, settings.basePath, label, settings.echEnable, settings.echDns), tag: `TROJAN-TLS-${port}`, tagColor: 'var(--green)' });
           tlsCount++;
         }
       });
       wsPorts.forEach(port => {
-        const label = `${ipLabel}-WS${port}`;
         if (protocols.vless) {
+          const label = `VLESS-${ipLabel}-WS${port}`;
           allC.push({ cfg: buildConfig(token, dom, ip, port, 'none', '', settings.basePath, label, false, ''), tag: `VLESS-WS-${port}`, tagColor: 'var(--orange)' });
           wsCount++;
         }
         if (protocols.trojan) {
+          const label = `TROJAN-${ipLabel}-WS${port}`;
           allC.push({ cfg: buildTrojanConfig(password, dom, ip, port, 'none', '', settings.basePath, label, false, ''), tag: `TROJAN-WS-${port}`, tagColor: 'var(--yellow)' });
           wsCount++;
         }
@@ -300,6 +303,23 @@ function importSettings(file) {
   reader.readAsText(file);
 }
 
+function showQrModal(cfgText) {
+  const box = document.getElementById('qrModalBox');
+  try {
+    const qr = generateQRMatrix(cfgText, 'M');
+    box.innerHTML = qrMatrixToSvg(qr, 4);
+  } catch (e) {
+    toast('این کانفیگ برای تولید QR Code بیش از حد طولانی است');
+    return;
+  }
+  document.getElementById('qrModal').classList.add('show');
+}
+
+function hideQrModal() {
+  document.getElementById('qrModal').classList.remove('show');
+  document.getElementById('qrModalBox').innerHTML = '';
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const t = uuid4();
   const p = genPassword();
@@ -343,6 +363,11 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-dl-clash-2').addEventListener('click', dlClash);
 
   document.getElementById('lAll').addEventListener('click', e => {
+    const qrBtn = e.target.closest('.bqr');
+    if (qrBtn) {
+      showQrModal(decodeURIComponent(qrBtn.dataset.cfg));
+      return;
+    }
     const btn = e.target.closest('.bcp');
     if (!btn) return;
     navigator.clipboard.writeText(decodeURIComponent(btn.dataset.cfg)).then(() => {
@@ -350,5 +375,13 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.classList.add('ok');
       setTimeout(() => { btn.textContent = 'کپی'; btn.classList.remove('ok'); }, 1800);
     });
+  });
+
+  document.getElementById('qrModalClose').addEventListener('click', hideQrModal);
+  document.getElementById('qrModal').addEventListener('click', e => {
+    if (e.target.id === 'qrModal') hideQrModal();
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') hideQrModal();
   });
 });
