@@ -1,4 +1,4 @@
-const APP_ID = 'cf-vless-config-builder';
+const APP_ID = 'tcb';
 const SCHEMA_VERSION = 1;
 
 export function collectExportData() {
