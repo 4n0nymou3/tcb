@@ -1,7 +1,7 @@
 {
   "name": "Tunnel Config Builder",
   "short_name": "TCB",
-  "description": "ساخت کانفیگ VLESS برای Cloudflare Workers",
+  "description": "ساخت کانفیگ VLESS و Trojan برای Cloudflare Workers",
   "start_url": "./",
   "icons": [
     {
