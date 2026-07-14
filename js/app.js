@@ -346,6 +346,15 @@ document.addEventListener('DOMContentLoaded', () => {
     importSettings(file);
     e.target.value = '';
   });
+  document.querySelectorAll('.sec-hdr-toggle').forEach(hdr => {
+    hdr.addEventListener('click', () => {
+      const target = document.getElementById(hdr.dataset.target);
+      if (!target) return;
+      target.classList.toggle('collapsed');
+      hdr.classList.toggle('open');
+    });
+  });
+
   document.getElementById('gb').addEventListener('click', gen);
   document.getElementById('btn-cp-all').addEventListener('click', cpAll);
   document.getElementById('btn-dl-all').addEventListener('click', dlAll);
