@@ -41,6 +41,11 @@ h1{font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:600;color:v
 
 .sec{background:var(--card);border:1px solid var(--border);border-radius:10px;margin-bottom:12px;overflow:hidden;box-shadow:0 8px 24px rgba(1,4,9,.35);transition:border-color .15s}
 .sec-hdr{padding:11px 15px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px}
+.sec-hdr-toggle{cursor:pointer;user-select:none}
+.sec-hdr-toggle:hover .sec-title{color:var(--text)}
+.chevron{width:8px;height:8px;border-style:solid;border-width:0 2px 2px 0;border-color:var(--muted);flex-shrink:0;transform:rotate(-45deg);transition:transform .2s}
+.sec-hdr-toggle.open .chevron{transform:rotate(45deg)}
+.sec-body.collapsed{display:none}
 .sec-title{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;display:flex;align-items:center;gap:7px}
 .sec-title i{width:5px;height:5px;border-radius:50%;background:var(--blue);flex-shrink:0}
 .sec-body{padding:16px}
