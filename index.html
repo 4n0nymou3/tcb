@@ -32,10 +32,11 @@
 <div class="wrap">
 
 <div class="sec">
-  <div class="sec-hdr">
+  <div class="sec-hdr sec-hdr-toggle" data-target="secBody1">
     <div class="sec-title"><i></i>مرحله ۱ — ساخت Cloudflare Worker (یک‌بار)</div>
+    <span class="chevron"></span>
   </div>
-  <div class="sec-body">
+  <div class="sec-body collapsed" id="secBody1">
     <div class="guide">
       <div class="gitem">
         <div class="gn"></div>
@@ -88,10 +89,11 @@
 </div>
 
 <div class="sec">
-  <div class="sec-hdr">
+  <div class="sec-hdr sec-hdr-toggle" data-target="secBody2">
     <div class="sec-title"><i></i>مرحله ۲ — Token و آدرس Worker</div>
+    <span class="chevron"></span>
   </div>
-  <div class="sec-body">
+  <div class="sec-body collapsed" id="secBody2">
     <div class="fg">
       <label class="lbl-ltr">Token</label>
       <div class="urow">
@@ -127,10 +129,11 @@
 </div>
 
 <div class="sec">
-  <div class="sec-hdr">
+  <div class="sec-hdr sec-hdr-toggle" data-target="secBody3">
     <div class="sec-title"><i></i>مرحله ۳ — IP های سالم Cloudflare</div>
+    <span class="chevron"></span>
   </div>
-  <div class="sec-body">
+  <div class="sec-body collapsed" id="secBody3">
 
     <div class="fg">
       <label>آدرس‌های IP (هر خط یک IP)</label>
@@ -305,10 +308,10 @@
       <input type="text" id="jsonName" placeholder="در صورت خالی بودن، نام به‌صورت خودکار تعیین می‌شود"/>
       <p class="hint">اگر خالی بماند، پنل نام پیش‌فرض را برای کانفیگ Normal یا Fragment انتخاب خواهد کرد.</p>
     </div>
-
-    <button class="bgen mt-14" id="gb">⚙ ساخت کانفیگ</button>
   </div>
 </div>
+
+<button class="bgen mt-14" id="gb">⚙ ساخت کانفیگ</button>
 
 <div id="results">
   <hr class="dv"/>
