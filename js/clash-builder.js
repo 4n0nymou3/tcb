@@ -1,8 +1,60 @@
+const CLASH_COUNTRY_RULES = {
+  ir: {
+    geosite: { path: './ruleset/geosite-ir.txt', url: 'https://raw.githubusercontent.com/Chocolate4U/Iran-clash-rules/release/ir.txt', format: 'text', behavior: 'domain' },
+    geoip: { path: './ruleset/geoip-ir.txt', url: 'https://raw.githubusercontent.com/Chocolate4U/Iran-clash-rules/release/ircidr.txt', format: 'text', behavior: 'ipcidr' }
+  },
+  cn: {
+    geosite: { path: './ruleset/geosite-cn.yaml', url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/cn.yaml', format: 'yaml', behavior: 'domain' },
+    geoip: { path: './ruleset/geoip-cn.yaml', url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/cn.yaml', format: 'yaml', behavior: 'ipcidr' }
+  },
+  ru: {
+    geosite: { path: './ruleset/geosite-ru.yaml', url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-ru.yaml', format: 'yaml', behavior: 'domain' },
+    geoip: { path: './ruleset/geoip-ru.yaml', url: 'https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/ru.yaml', format: 'yaml', behavior: 'ipcidr' }
+  }
+};
+
+const CLASH_BLOCK_RULES = {
+  ads: [
+    { name: 'category-ads-all', behavior: 'domain', path: './ruleset/category-ads-all.txt', url: 'https://raw.githubusercontent.com/Chocolate4U/Iran-clash-rules/release/category-ads-all.txt' }
+  ],
+  porn: [
+    { name: 'nsfw', behavior: 'domain', path: './ruleset/nsfw.txt', url: 'https://raw.githubusercontent.com/Chocolate4U/Iran-clash-rules/release/nsfw.txt' }
+  ],
+  malware: [
+    { name: 'malware', behavior: 'domain', path: './ruleset/malware.txt', url: 'https://raw.githubusercontent.com/Chocolate4U/Iran-clash-rules/release/malware.txt' },
+    { name: 'malware-cidr', behavior: 'ipcidr', path: './ruleset/malware-cidr.txt', url: 'https://raw.githubusercontent.com/Chocolate4U/Iran-clash-rules/release/malware-ip.txt' }
+  ],
+  phishing: [
+    { name: 'phishing', behavior: 'domain', path: './ruleset/phishing.txt', url: 'https://raw.githubusercontent.com/Chocolate4U/Iran-clash-rules/release/phishing.txt' },
+    { name: 'phishing-cidr', behavior: 'ipcidr', path: './ruleset/phishing-cidr.txt', url: 'https://raw.githubusercontent.com/Chocolate4U/Iran-clash-rules/release/phishing-ip.txt' }
+  ],
+  cryptominers: [
+    { name: 'cryptominers', behavior: 'domain', path: './ruleset/cryptominers.txt', url: 'https://raw.githubusercontent.com/Chocolate4U/Iran-clash-rules/release/cryptominers.txt' }
+  ]
+};
+
+function resolveSelectedCountries(routingCountries) {
+  const codes = ['ir', 'cn', 'ru'];
+  const selected = codes.filter(c => routingCountries && routingCountries[c]);
+  return selected.length ? selected : ['ir'];
+}
+
+function resolveSelectedBlockRules(blockRules) {
+  const codes = ['ads', 'porn', 'malware', 'phishing', 'cryptominers'];
+  return codes.filter(c => blockRules && blockRules[c]);
+}
+
 export function buildClashConfig(token, password, dom, ips, tlsPorts, wsPorts, fp, settings, protocols) {
   const {
     basePath, fakeDnsEnable, ipv6Enable, lanAccess,
-    remoteDnsVal, localDnsVal, tcpFastOpen, echEnable
+    remoteDnsVal, localDnsVal, tcpFastOpen, echEnable, routingCountries, blockRules, pingInterval
   } = settings;
+
+  const selectedCountries = resolveSelectedCountries(routingCountries);
+  const selectedBlockRules = resolveSelectedBlockRules(blockRules);
+  const blockQuic = !!(blockRules && blockRules.quic);
+  const blockProviders = selectedBlockRules.flatMap(c => CLASH_BLOCK_RULES[c] || []);
+  const intervalSeconds = parseInt(pingInterval) > 0 ? parseInt(pingInterval) : 180;
 
   const useVless = !protocols || protocols.vless !== false;
   const useTrojan = !!(protocols && protocols.trojan);
@@ -102,11 +154,12 @@ export function buildClashConfig(token, password, dom, ips, tlsPorts, wsPorts, f
       'use-system-hosts': false,
       listen: `${lanAccess ? '0.0.0.0' : '127.0.0.1'}:1053`,
       ipv6: ipv6Enable,
+      hosts: Object.fromEntries(blockProviders.map(p => ['rule-set:' + p.name, 'rcode://refused'])),
       nameserver: [`${remoteDnsVal}#Best Ping 🚀`],
       'proxy-server-nameserver': [`${localDnsVal}#DIRECT`],
       'direct-nameserver': [`${localDnsVal}#DIRECT`],
       'direct-nameserver-follow-policy': true,
-      'nameserver-policy': { 'rule-set:geosite-ir': `${localDnsVal}#DIRECT` },
+      'nameserver-policy': Object.fromEntries(selectedCountries.map(c => ['rule-set:geosite-' + c, `${localDnsVal}#DIRECT`])),
       'enhanced-mode': fakeDnsEnable ? 'fake-ip' : 'redir-host',
       ...(fakeDnsEnable ? {
         'fake-ip-range': '198.18.0.1/16',
@@ -117,31 +170,44 @@ export function buildClashConfig(token, password, dom, ips, tlsPorts, wsPorts, f
     proxies: proxies,
     'proxy-groups': [
       { name: 'Best Ping 🚀', type: 'select', proxies: selectorTags },
-      { name: '👽 Anonymous TCB', type: 'url-test', proxies: proxyTags, url: 'https://www.gstatic.com/generate_204', interval: 180, tolerance: 50 }
+      { name: '👽 Anonymous TCB', type: 'url-test', proxies: proxyTags, url: 'https://www.gstatic.com/generate_204', interval: intervalSeconds, tolerance: 50 }
     ],
-    'rule-providers': {
-      'geosite-ir': {
+    'rule-providers': Object.fromEntries([
+      ...selectedCountries.flatMap(c => {
+        const rules = CLASH_COUNTRY_RULES[c];
+        return [
+          ['geosite-' + c, {
+            type: 'http',
+            format: rules.geosite.format,
+            behavior: rules.geosite.behavior,
+            path: rules.geosite.path,
+            interval: 86400,
+            url: rules.geosite.url
+          }],
+          ['geoip-' + c, {
+            type: 'http',
+            format: rules.geoip.format,
+            behavior: rules.geoip.behavior,
+            path: rules.geoip.path,
+            interval: 86400,
+            url: rules.geoip.url
+          }]
+        ];
+      }),
+      ...blockProviders.map(p => [p.name, {
         type: 'http',
         format: 'text',
-        behavior: 'domain',
-        path: './ruleset/geosite-ir.txt',
+        behavior: p.behavior,
+        path: p.path,
         interval: 86400,
-        url: 'https://raw.githubusercontent.com/Chocolate4U/Iran-clash-rules/release/ir.txt'
-      },
-      'geoip-ir': {
-        type: 'http',
-        format: 'text',
-        behavior: 'ipcidr',
-        path: './ruleset/geoip-ir.txt',
-        interval: 86400,
-        url: 'https://raw.githubusercontent.com/Chocolate4U/Iran-clash-rules/release/ircidr.txt'
-      }
-    },
+        url: p.url
+      }])
+    ]),
     rules: [
       'GEOIP,lan,DIRECT,no-resolve',
-      'NETWORK,udp,REJECT',
-      'RULE-SET,geosite-ir,DIRECT',
-      'RULE-SET,geoip-ir,DIRECT',
+      ...(blockQuic ? ['NETWORK,udp,REJECT'] : []),
+      ...blockProviders.map(p => `RULE-SET,${p.name},REJECT`),
+      ...selectedCountries.flatMap(c => [`RULE-SET,geosite-${c},DIRECT`, `RULE-SET,geoip-${c},DIRECT`]),
       'MATCH,Best Ping 🚀'
     ],
     ntp: { enable: true, server: 'time.cloudflare.com', port: 123, interval: 30 }
