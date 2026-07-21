@@ -36,6 +36,42 @@ export function buildTrojanConfig(password, dom, ip, port, security, fp, path, l
   return `trojan://${encodeURIComponent(password)}@${h}:${port}?${params}#${name}`;
 }
 
+const COUNTRY_GEOSITE = {
+  ir: ['domain:ir', 'geosite:category-ir'],
+  cn: ['geosite:cn'],
+  ru: ['geosite:category-ru']
+};
+
+const COUNTRY_GEOIP = {
+  ir: ['geoip:ir'],
+  cn: ['geoip:cn'],
+  ru: ['geoip:ru']
+};
+
+const BLOCK_DOMAIN_TAGS = {
+  ads: ['geosite:category-ads-all', 'geosite:category-ads-ir'],
+  porn: ['geosite:category-porn'],
+  malware: ['geosite:malware'],
+  phishing: ['geosite:phishing'],
+  cryptominers: ['geosite:cryptominers']
+};
+
+const BLOCK_IP_TAGS = {
+  malware: ['geoip:malware'],
+  phishing: ['geoip:phishing']
+};
+
+function resolveSelectedCountries(routingCountries) {
+  const codes = ['ir', 'cn', 'ru'];
+  const selected = codes.filter(c => routingCountries && routingCountries[c]);
+  return selected.length ? selected : ['ir'];
+}
+
+function resolveSelectedBlockRules(blockRules) {
+  const codes = ['ads', 'porn', 'malware', 'phishing', 'cryptominers'];
+  return codes.filter(c => blockRules && blockRules[c]);
+}
+
 function buildStreamSettings(dom, path, fp, security, echEnable, echDns, fragEnable, fragPackets, fragLength, fragInterval, fragMaxSplit, outboundSockopt) {
   const streamSettings = { network: 'ws', wsSettings: { headers: { Host: dom }, path: path }, sockopt: outboundSockopt };
   if (security === 'tls') {
@@ -61,12 +97,23 @@ export function buildJsonConfig(token, password, dom, ips, tlsPorts, wsPorts, fp
   const {
     basePath, fragEnable, fragPackets, fragLength, fragInterval, fragMaxSplit,
     fakeDnsEnable, ipv6Enable, lanAccess, remoteDnsVal, localDnsVal,
-    tcpFastOpen, echEnable, echDns, jsonName
+    tcpFastOpen, echEnable, echDns, jsonName, routingCountries, blockRules, pingInterval
   } = settings;
 
   const path = basePath + '?ed=2560';
   const useVless = !protocols || protocols.vless !== false;
   const useTrojan = !!(protocols && protocols.trojan);
+
+  const selectedCountries = resolveSelectedCountries(routingCountries);
+  const directDomains = [...new Set(selectedCountries.flatMap(c => COUNTRY_GEOSITE[c] || []))];
+  const directIps = [...new Set(selectedCountries.flatMap(c => COUNTRY_GEOIP[c] || []))];
+
+  const selectedBlockRules = resolveSelectedBlockRules(blockRules);
+  const blockQuic = !!(blockRules && blockRules.quic);
+  const blockDomains = [...new Set(selectedBlockRules.flatMap(c => BLOCK_DOMAIN_TAGS[c] || []))];
+  const blockIps = [...new Set(selectedBlockRules.flatMap(c => BLOCK_IP_TAGS[c] || []))];
+
+  const intervalSeconds = parseInt(pingInterval) > 0 ? parseInt(pingInterval) : 180;
 
   const outboundSockopt = {
     domainStrategy: 'UseIP',
@@ -111,15 +158,26 @@ export function buildJsonConfig(token, password, dom, ips, tlsPorts, wsPorts, fp
 
   const dnsServers = [];
   if (fakeDnsEnable) {
-    dnsServers.push({ address: 'fakedns', domains: ['geosite:ir', 'domain:ir', 'geosite:category-ir'] });
+    dnsServers.push({ address: 'fakedns', domains: directDomains });
   }
   dnsServers.push(remoteDnsVal);
-  dnsServers.push({ address: localDnsVal, domains: ['domain:ir', 'geosite:category-ir'], skipFallback: true, tag: 'domestic-dns' });
+  const domesticTags = [];
+  selectedCountries.forEach(c => {
+    const tag = 'domestic-dns-' + c;
+    dnsServers.push({
+      address: localDnsVal,
+      domains: COUNTRY_GEOSITE[c] || [],
+      expectIPs: COUNTRY_GEOIP[c] || [],
+      skipFallback: true,
+      tag: tag
+    });
+    domesticTags.push(tag);
+  });
 
   const sniffingDestOverride = fakeDnsEnable ? ['http', 'tls', 'fakedns'] : ['http', 'tls'];
 
   const configObj = {
-    version: { min: '26.2.6' },
+    version: { min: '26.3.27' },
     dns: {
       hosts: {
         'domain:googleapis.cn': 'googleapis.com',
@@ -154,7 +212,7 @@ export function buildJsonConfig(token, password, dom, ips, tlsPorts, wsPorts, fp
       }
     ],
     log: { loglevel: 'none' },
-    observatory: { enableConcurrency: true, probeInterval: '3m', probeUrl: 'https://www.gstatic.com/generate_204', subjectSelector: balancerSelector },
+    observatory: { enableConcurrency: true, probeInterval: intervalSeconds + 's', probeUrl: 'https://www.gstatic.com/generate_204', subjectSelector: balancerSelector },
     outbounds: outbounds,
     policy: {
       levels: { '8': { connIdle: 300, downlinkOnly: 1, handshake: 4, uplinkOnly: 1 } },
@@ -169,12 +227,12 @@ export function buildJsonConfig(token, password, dom, ips, tlsPorts, wsPorts, fp
         { inboundTag: ['dns-in'], outboundTag: 'dns-out', type: 'field' },
         { ip: ['geoip:private'], outboundTag: 'direct', type: 'field' },
         { domain: ['geosite:private'], outboundTag: 'direct', type: 'field' },
-        { network: 'udp', outboundTag: 'block', type: 'field' },
-        { domain: ['geosite:category-ads-all', 'geosite:category-ads-ir', 'geosite:malware', 'geosite:phishing', 'geosite:cryptominers'], outboundTag: 'block', type: 'field' },
-        { ip: ['geoip:malware', 'geoip:phishing'], outboundTag: 'block', type: 'field' },
-        { domain: ['domain:ir', 'geosite:category-ir'], outboundTag: 'direct', type: 'field' },
-        { ip: ['geoip:ir'], outboundTag: 'direct', type: 'field' },
-        { inboundTag: ['domestic-dns'], outboundTag: 'direct', type: 'field' },
+        ...(blockQuic ? [{ network: 'udp', outboundTag: 'block', type: 'field' }] : []),
+        ...(blockDomains.length ? [{ domain: blockDomains, outboundTag: 'block', type: 'field' }] : []),
+        ...(blockIps.length ? [{ ip: blockIps, outboundTag: 'block', type: 'field' }] : []),
+        { domain: directDomains, outboundTag: 'direct', type: 'field' },
+        { ip: directIps, outboundTag: 'direct', type: 'field' },
+        { inboundTag: domesticTags, outboundTag: 'direct', type: 'field' },
         { balancerTag: 'proxy-round', inboundTag: ['dns-module'], type: 'field' },
         { balancerTag: 'proxy-round', network: 'tcp,udp', type: 'field' }
       ]
