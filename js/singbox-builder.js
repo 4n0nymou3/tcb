@@ -2,6 +2,38 @@ function isDomainAddr(addr) {
   return /^(?!-)(?:[A-Za-z0-9-]{1,63}\.)+[A-Za-z]{2,}$/.test(addr);
 }
 
+const SINGBOX_GEOSITE_SUFFIX = { ir: 'ir', cn: 'cn', ru: 'category-ru' };
+const SINGBOX_GEOIP_SUFFIX = { ir: 'ir', cn: 'cn', ru: 'ru' };
+
+const SINGBOX_BLOCK_RULESETS = {
+  ads: ['geosite-category-ads-all'],
+  porn: ['geosite-nsfw'],
+  malware: ['geosite-malware', 'geoip-malware'],
+  phishing: ['geosite-phishing', 'geoip-phishing'],
+  cryptominers: ['geosite-cryptominers']
+};
+
+const SINGBOX_BLOCK_RULESET_URLS = {
+  'geosite-category-ads-all': 'geosite-category-ads-all.srs',
+  'geosite-nsfw': 'geosite-nsfw.srs',
+  'geosite-malware': 'geosite-malware.srs',
+  'geoip-malware': 'geoip-malware.srs',
+  'geosite-phishing': 'geosite-phishing.srs',
+  'geoip-phishing': 'geoip-phishing.srs',
+  'geosite-cryptominers': 'geosite-cryptominers.srs'
+};
+
+function resolveSelectedCountries(routingCountries) {
+  const codes = ['ir', 'cn', 'ru'];
+  const selected = codes.filter(c => routingCountries && routingCountries[c]);
+  return selected.length ? selected : ['ir'];
+}
+
+function resolveSelectedBlockRules(blockRules) {
+  const codes = ['ads', 'porn', 'malware', 'phishing', 'cryptominers'];
+  return codes.filter(c => blockRules && blockRules[c]);
+}
+
 function parseDnsUrl(value) {
   try {
     const u = new URL(value);
@@ -15,8 +47,18 @@ function parseDnsUrl(value) {
 export function buildSingboxConfig(token, password, dom, ips, tlsPorts, wsPorts, fp, settings, protocols) {
   const {
     basePath, fragEnable, fakeDnsEnable, ipv6Enable, lanAccess,
-    remoteDnsVal, localDnsVal, tcpFastOpen
+    remoteDnsVal, localDnsVal, tcpFastOpen, routingCountries, blockRules, pingInterval
   } = settings;
+
+  const selectedCountries = resolveSelectedCountries(routingCountries);
+  const geositeTags = selectedCountries.map(c => 'geosite-' + SINGBOX_GEOSITE_SUFFIX[c]);
+  const geoipTags = selectedCountries.map(c => 'geoip-' + SINGBOX_GEOIP_SUFFIX[c]);
+
+  const selectedBlockRules = resolveSelectedBlockRules(blockRules);
+  const blockQuic = !!(blockRules && blockRules.quic);
+  const blockRulesetTags = [...new Set(selectedBlockRules.flatMap(c => SINGBOX_BLOCK_RULESETS[c] || []))];
+
+  const intervalSeconds = parseInt(pingInterval) > 0 ? parseInt(pingInterval) : 180;
 
   const useVless = !protocols || protocols.vless !== false;
   const useTrojan = !!(protocols && protocols.trojan);
@@ -72,7 +114,7 @@ export function buildSingboxConfig(token, password, dom, ips, tlsPorts, wsPorts,
     tag: '👽 Anonymous TCB',
     outbounds: proxyTags,
     url: 'https://www.gstatic.com/generate_204',
-    interval: '180s',
+    interval: intervalSeconds + 's',
     interrupt_exist_connections: false
   });
   outbounds.push({
@@ -102,13 +144,60 @@ export function buildSingboxConfig(token, password, dom, ips, tlsPorts, wsPorts,
 
   const dnsRules = [
     { clash_mode: 'Direct', server: 'dns-direct' },
-    { clash_mode: 'Global', server: 'dns-remote' },
-    { rule_set: ['geosite-ir'], server: 'dns-direct' }
+    { clash_mode: 'Global', server: 'dns-remote' }
   ];
+
+  if (blockRulesetTags.length) {
+    dnsRules.push({ rule_set: blockRulesetTags, action: 'reject' });
+  }
+
+  dnsRules.push({ rule_set: geositeTags, server: 'dns-direct' });
 
   if (fakeDnsEnable) {
     dnsRules.push({ inbound: 'tun-in', query_type: ['A', 'AAAA'], server: 'dns-fake' });
   }
+
+  const routeRules = [
+    { action: 'sniff' },
+    { protocol: 'dns', action: 'hijack-dns' },
+    { ip_is_private: true, outbound: 'direct' }
+  ];
+
+  if (blockQuic) {
+    routeRules.push({ network: 'udp', action: 'reject' });
+  }
+
+  if (blockRulesetTags.length) {
+    routeRules.push({ rule_set: blockRulesetTags, action: 'reject' });
+  }
+
+  routeRules.push({ rule_set: geositeTags, outbound: 'direct' });
+  routeRules.push({ rule_set: geoipTags, outbound: 'direct' });
+
+  const countryRulesetDefs = selectedCountries.flatMap(c => [
+    {
+      type: 'remote',
+      tag: 'geosite-' + SINGBOX_GEOSITE_SUFFIX[c],
+      format: 'binary',
+      url: 'https://raw.githubusercontent.com/Chocolate4U/Iran-sing-box-rules/rule-set/geosite-' + SINGBOX_GEOSITE_SUFFIX[c] + '.srs',
+      download_detour: 'direct'
+    },
+    {
+      type: 'remote',
+      tag: 'geoip-' + SINGBOX_GEOIP_SUFFIX[c],
+      format: 'binary',
+      url: 'https://raw.githubusercontent.com/Chocolate4U/Iran-sing-box-rules/rule-set/geoip-' + SINGBOX_GEOIP_SUFFIX[c] + '.srs',
+      download_detour: 'direct'
+    }
+  ]);
+
+  const blockRulesetDefs = blockRulesetTags.map(tag => ({
+    type: 'remote',
+    tag: tag,
+    format: 'binary',
+    url: 'https://raw.githubusercontent.com/Chocolate4U/Iran-sing-box-rules/rule-set/' + SINGBOX_BLOCK_RULESET_URLS[tag],
+    download_detour: 'direct'
+  }));
 
   const configObj = {
     log: { disabled: true, timestamp: true },
@@ -145,30 +234,8 @@ export function buildSingboxConfig(token, password, dom, ips, tlsPorts, wsPorts,
     ],
     outbounds: outbounds,
     route: {
-      rules: [
-        { action: 'sniff' },
-        { protocol: 'dns', action: 'hijack-dns' },
-        { ip_is_private: true, outbound: 'direct' },
-        { network: 'udp', action: 'reject' },
-        { rule_set: ['geosite-ir'], outbound: 'direct' },
-        { rule_set: ['geoip-ir'], outbound: 'direct' }
-      ],
-      rule_set: [
-        {
-          type: 'remote',
-          tag: 'geosite-ir',
-          format: 'binary',
-          url: 'https://raw.githubusercontent.com/Chocolate4U/Iran-sing-box-rules/rule-set/geosite-ir.srs',
-          download_detour: 'direct'
-        },
-        {
-          type: 'remote',
-          tag: 'geoip-ir',
-          format: 'binary',
-          url: 'https://raw.githubusercontent.com/Chocolate4U/Iran-sing-box-rules/rule-set/geoip-ir.srs',
-          download_detour: 'direct'
-        }
-      ],
+      rules: routeRules,
+      rule_set: [...countryRulesetDefs, ...blockRulesetDefs],
       auto_detect_interface: true,
       final: 'Best Ping 🚀'
     },
