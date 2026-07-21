@@ -120,7 +120,21 @@ function collectSettings() {
     tcpFastOpen:  document.getElementById('tcpFastOpen').value === '1',
     echEnable:    echEnable && !fragEnable,
     echDns:       document.getElementById('echDns').value.trim() || 'https://cloudflare-dns.com/dns-query',
-    jsonName:     document.getElementById('jsonName').value.trim()
+    jsonName:     document.getElementById('jsonName').value.trim(),
+    routingCountries: {
+      ir: document.getElementById('routeIr').checked,
+      cn: document.getElementById('routeCn').checked,
+      ru: document.getElementById('routeRu').checked
+    },
+    blockRules: {
+      ads: document.getElementById('blockAds').checked,
+      porn: document.getElementById('blockPorn').checked,
+      quic: document.getElementById('blockQuic').checked,
+      malware: document.getElementById('blockMalware').checked,
+      phishing: document.getElementById('blockPhishing').checked,
+      cryptominers: document.getElementById('blockCryptominers').checked
+    },
+    pingInterval: document.getElementById('pingInterval').value.trim() || '180'
   };
 }
 
@@ -147,6 +161,14 @@ function gen() {
   if (!protocols.vless && !protocols.trojan) { toast('حداقل یک پروتکل (VLESS یا Trojan) انتخاب کن'); return; }
 
   const settings  = collectSettings();
+  if (!settings.routingCountries.ir && !settings.routingCountries.cn && !settings.routingCountries.ru) {
+    toast('حداقل یک کشور برای قوانین مسیریابی انتخاب کن');
+    return;
+  }
+  if (!(parseInt(settings.pingInterval) > 0)) {
+    toast('Best Ping Interval باید یک عدد مثبت باشد');
+    return;
+  }
   const allIps    = raw.split('\n').map(s => s.trim()).filter(Boolean);
   const ips       = settings.ipv6Enable ? allIps : allIps.filter(ip => !ip.includes(':'));
 
