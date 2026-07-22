@@ -103,6 +103,7 @@ export function buildClashConfig(token, password, dom, ips, tlsPorts, wsPorts, f
         const proxy = { name: tag, type: 'trojan', password: password, ...baseProxy };
         if (isTls) {
           proxy.sni = dom;
+          if (echEnable) proxy['ech-opts'] = { enable: true, 'query-server-name': dom };
         }
         proxies.push(proxy);
         proxyTags.push(tag);
