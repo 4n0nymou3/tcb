@@ -277,7 +277,7 @@
         <div id="echFields" class="ech-field disabled">
           <label class="adv-lbl mt-8">DNS سرور برای دریافت کلید ECH</label>
           <input type="text" id="echDns" value="https://cloudflare-dns.com/dns-query" placeholder="https://cloudflare-dns.com/dns-query"/>
-          <p class="hint mt-6">فعال کردن چک‌باکس کافی است — Xray کلید رمزنگاری دامنه Worker شما را به صورت خودکار از این سرور DNS دریافت می‌کند. ECH روی کانفیگ‌های JSON و URL (فرمت vless://) اعمال می‌شود. آدرس پیش‌فرض (DoH Cloudflare) بهترین گزینه برای ایران است زیرا یک آدرس <code>https://</code> رمزگذاری‌شده است و برخلاف <code>udp://8.8.8.8</code> در برابر دستکاری DNS توسط ISPها مقاوم است. اگر DoH Proxy شخصی دارید، آدرس آن را اینجا وارد کنید.</p>
+          <p class="hint mt-6">فعال کردن چک‌باکس کافی است — کلید رمزنگاری دامنه Worker شما به صورت خودکار از این سرور DNS دریافت می‌شود. ECH روی هر چهار فرمت خروجی (لینک VLESS/Trojan، JSON برای Xray، JSON برای Sing-box و JSON برای Clash) اعمال می‌شود. آدرس پیش‌فرض (DoH Cloudflare) بهترین گزینه برای ایران است زیرا یک آدرس <code>https://</code> رمزگذاری‌شده است و برخلاف <code>udp://8.8.8.8</code> در برابر دستکاری DNS توسط ISPها مقاوم است. اگر DoH Proxy شخصی دارید، آدرس آن را اینجا وارد کنید.</p>
         </div>
       </div>
       <div class="adv-dns-grid mt-12">
@@ -295,7 +295,7 @@
           <input type="text" id="remoteDns" value="https://cloudflare-dns.com/dns-query" placeholder="https://cloudflare-dns.com/dns-query"/>
         </div>
       </div>
-      <p class="hint mt-10">Local DNS برای resolve دامنه‌های ایرانی استفاده می‌شود. Remote DNS به‌صورت پیشفرض روی Cloudflare DoH تنظیم است و می‌توانید آن را با هر آدرس DoH دلخواه جایگزین کنید. با ابزار DoH Proxy می‌توانید یک سرور DoH اختصاصی روی Cloudflare بسازید و آدرس آن را اینجا وارد کنید. Allow LAN اتصال سایر دستگاه‌های شبکه محلی را فعال می‌کند. ECH فقط در حالت Normal (بدون Fragment) روی کانفیگ JSON و کانفیگ‌های فرمت URL اعمال می‌شود.</p>
+      <p class="hint mt-10">Local DNS برای resolve دامنه‌های داخلی کشورهای انتخاب‌شده استفاده می‌شود. Remote DNS به‌صورت پیشفرض روی Cloudflare DoH تنظیم است و می‌توانید آن را با هر آدرس DoH دلخواه جایگزین کنید. با ابزار DoH Proxy می‌توانید یک سرور DoH اختصاصی روی Cloudflare بسازید و آدرس آن را اینجا وارد کنید. Allow LAN اتصال سایر دستگاه‌های شبکه محلی را فعال می‌کند. ECH فقط در حالت Normal (بدون Fragment) روی هر چهار فرمت خروجی اعمال می‌شود؛ Fragment و ECH را نمی‌توان همزمان فعال کرد.</p>
     </div>
 
     <div class="fg mt-14 settings-box">
@@ -387,7 +387,7 @@
           <div class="code-box" id="singboxDisplay"></div>
         </div>
       </div>
-      <p class="hint mt-10">این کانفیگ مستقیماً برای Sing-box و کلاینت‌های مبتنی بر هسته‌ی Sing-box ساخته شده. به دلیل Deprecated شدن فیلد ECH در نسخه فعلی Sing-box، این کانفیگ بدون ECH ساخته می‌شود (Fragment و سایر تنظیمات شما اعمال شده‌اند).</p>
+      <p class="hint mt-10">این کانفیگ مستقیماً برای Sing-box و کلاینت‌های مبتنی بر هسته‌ی Sing-box ساخته شده و در صورت فعال بودن ECH، این قابلیت روی آن نیز اعمال می‌شود (Fragment و سایر تنظیمات شما نیز اعمال شده‌اند).</p>
     </div>
   </div>
   <div class="sec">
@@ -411,7 +411,7 @@
           <div class="code-box" id="clashDisplay"></div>
         </div>
       </div>
-      <p class="hint mt-10">فرمت و دانلود این کانفیگ با پسوند <code>.yaml</code> انجام می‌شود تا کلاینت‌های Clash/Mihomo آن را به‌عنوان پروفایل بشناسند. توجه: فرمت Clash/Mihomo اصولاً قابلیت Fragment ندارد، بنابراین تنظیمات Fragment روی این کانفیگ اعمال نمی‌شود.</p>
+      <p class="hint mt-10">فرمت و دانلود این کانفیگ با پسوند <code>.yaml</code> انجام می‌شود تا کلاینت‌های Clash/Mihomo آن را به‌عنوان پروفایل بشناسند. در صورت فعال بودن ECH، این قابلیت روی این کانفیگ نیز اعمال می‌شود. توجه: فرمت Clash/Mihomo اصولاً قابلیت Fragment ندارد، بنابراین تنظیمات Fragment روی این کانفیگ اعمال نمی‌شود.</p>
     </div>
   </div>
   <div class="stats">
