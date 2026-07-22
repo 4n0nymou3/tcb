@@ -2,6 +2,15 @@ function isDomainAddr(addr) {
   return /^(?!-)(?:[A-Za-z0-9-]{1,63}\.)+[A-Za-z]{2,}$/.test(addr);
 }
 
+function randomizeCase(str) {
+  let out = '';
+  for (let i = 0; i < str.length; i++) {
+    const ch = str[i];
+    out += Math.random() < 0.5 ? ch.toUpperCase() : ch.toLowerCase();
+  }
+  return out;
+}
+
 const SINGBOX_GEOSITE_SUFFIX = { ir: 'ir', cn: 'cn', ru: 'category-ru' };
 const SINGBOX_GEOIP_SUFFIX = { ir: 'ir', cn: 'cn', ru: 'ru' };
 
@@ -87,7 +96,7 @@ export function buildSingboxConfig(token, password, dom, ips, tlsPorts, wsPorts,
       if (isTls) {
         baseOutbound.tls = {
           enabled: true,
-          server_name: dom,
+          server_name: randomizeCase(dom),
           record_fragment: fragEnable,
           insecure: false,
           alpn: ['http/1.1'],
