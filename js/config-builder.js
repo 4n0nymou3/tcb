@@ -1,3 +1,5 @@
+import { parseChainConfig } from './chain-parser.js';
+
 function randomizeCase(str) {
   let out = '';
   for (let i = 0; i < str.length; i++) {
@@ -102,12 +104,79 @@ function buildStreamSettings(dom, path, fp, security, echEnable, echDns, fragEna
   return streamSettings;
 }
 
+function buildChainStreamSettingsXray(pc) {
+  const streamSettings = { network: pc.network };
+  if (pc.network === 'ws') {
+    streamSettings.wsSettings = { path: pc.path || '/', headers: pc.host ? { Host: pc.host } : {} };
+  } else if (pc.network === 'grpc') {
+    streamSettings.grpcSettings = { serviceName: pc.serviceName || '', multiMode: false };
+  } else {
+    streamSettings.tcpSettings = {};
+  }
+
+  if (pc.security === 'tls') {
+    streamSettings.security = 'tls';
+    streamSettings.tlsSettings = {
+      allowInsecure: false,
+      serverName: pc.sni || pc.address,
+      fingerprint: pc.fp || 'chrome',
+      alpn: pc.alpn
+    };
+  } else if (pc.security === 'reality') {
+    streamSettings.security = 'reality';
+    streamSettings.realitySettings = {
+      serverName: pc.sni || pc.address,
+      fingerprint: pc.fp || 'chrome',
+      publicKey: pc.pbk,
+      shortId: pc.sid || '',
+      spiderX: '/'
+    };
+  }
+
+  return streamSettings;
+}
+
+function buildChainOutboundXray(pc, dialerProxyTag, tag) {
+  const streamSettings = buildChainStreamSettingsXray(pc);
+  streamSettings.sockopt = { dialerProxy: dialerProxyTag };
+
+  let protocol, settingsObj;
+  if (pc.protocol === 'vless') {
+    protocol = 'vless';
+    const user = { id: pc.uuid, encryption: pc.encryption || 'none', level: 8 };
+    if (pc.flow) user.flow = pc.flow;
+    settingsObj = { vnext: [{ address: pc.address, port: pc.port, users: [user] }] };
+  } else if (pc.protocol === 'trojan') {
+    protocol = 'trojan';
+    settingsObj = { servers: [{ address: pc.address, port: pc.port, password: pc.password, level: 8 }] };
+  } else if (pc.protocol === 'shadowsocks') {
+    protocol = 'shadowsocks';
+    settingsObj = { servers: [{ address: pc.address, port: pc.port, method: pc.method, password: pc.password, level: 8 }] };
+  } else if (pc.protocol === 'socks') {
+    protocol = 'socks';
+    settingsObj = { servers: [{ address: pc.address, port: pc.port, users: pc.user ? [{ user: pc.user, pass: pc.pass }] : undefined }] };
+  } else if (pc.protocol === 'http') {
+    protocol = 'http';
+    settingsObj = { servers: [{ address: pc.address, port: pc.port, users: pc.user ? [{ user: pc.user, pass: pc.pass }] : undefined }] };
+  }
+
+  return {
+    protocol: protocol,
+    settings: settingsObj,
+    streamSettings: streamSettings,
+    mux: { concurrency: -1, enabled: false },
+    tag: tag
+  };
+}
+
 export function buildJsonConfig(token, password, dom, ips, tlsPorts, wsPorts, fp, settings, protocols) {
   const {
     basePath, fragEnable, fragPackets, fragLength, fragInterval, fragMaxSplit,
     fakeDnsEnable, ipv6Enable, lanAccess, remoteDnsVal, localDnsVal,
-    tcpFastOpen, echEnable, echDns, jsonName, routingCountries, blockRules, pingInterval
+    tcpFastOpen, echEnable, echDns, jsonName, routingCountries, blockRules, pingInterval, chainConfig
   } = settings;
+
+  const parsedChain = parseChainConfig(chainConfig);
 
   const path = basePath + '?ed=2560';
   const useVless = !protocols || protocols.vless !== false;
@@ -133,6 +202,7 @@ export function buildJsonConfig(token, password, dom, ips, tlsPorts, wsPorts, fp
   const outbounds = [];
   let idx = 1;
   let firstProxyTag = null;
+  let firstChainTag = null;
 
   ips.forEach(ip => {
     [...tlsPorts.map(p => ({ port: p, security: 'tls' })), ...wsPorts.map(p => ({ port: p, security: 'none' }))].forEach(({ port, security }) => {
@@ -146,6 +216,11 @@ export function buildJsonConfig(token, password, dom, ips, tlsPorts, wsPorts, fp
           streamSettings: buildStreamSettings(dom, path, fp, security, echEnable, echDns, fragEnable, fragPackets, fragLength, fragInterval, fragMaxSplit, outboundSockopt),
           tag: tag
         });
+        if (parsedChain) {
+          const chainTag = 'chain-' + tag;
+          if (!firstChainTag) firstChainTag = chainTag;
+          outbounds.push(buildChainOutboundXray(parsedChain, tag, chainTag));
+        }
       }
       if (useTrojan) {
         const tag = 'trojan-proxy-' + idx;
@@ -157,14 +232,25 @@ export function buildJsonConfig(token, password, dom, ips, tlsPorts, wsPorts, fp
           streamSettings: buildStreamSettings(dom, path, fp, security, echEnable, echDns, fragEnable, fragPackets, fragLength, fragInterval, fragMaxSplit, outboundSockopt),
           tag: tag
         });
+        if (parsedChain) {
+          const chainTag = 'chain-' + tag;
+          if (!firstChainTag) firstChainTag = chainTag;
+          outbounds.push(buildChainOutboundXray(parsedChain, tag, chainTag));
+        }
       }
       idx++;
     });
   });
 
   const balancerSelector = [];
-  if (useVless) balancerSelector.push('vless-proxy-');
-  if (useTrojan) balancerSelector.push('trojan-proxy-');
+  if (parsedChain) {
+    if (useVless) balancerSelector.push('chain-vless-proxy-');
+    if (useTrojan) balancerSelector.push('chain-trojan-proxy-');
+  } else {
+    if (useVless) balancerSelector.push('vless-proxy-');
+    if (useTrojan) balancerSelector.push('trojan-proxy-');
+  }
+  const balancerFallbackTag = parsedChain ? firstChainTag : firstProxyTag;
 
   outbounds.push({ protocol: 'freedom', settings: { domainStrategy: 'UseIP' }, tag: 'direct' });
   outbounds.push({ protocol: 'blackhole', settings: { response: { type: 'http' } }, tag: 'block' });
@@ -232,9 +318,9 @@ export function buildJsonConfig(token, password, dom, ips, tlsPorts, wsPorts, fp
       levels: { '8': { connIdle: 300, downlinkOnly: 1, handshake: 4, uplinkOnly: 1 } },
       system: { statsOutboundUplink: true, statsOutboundDownlink: true }
     },
-    remarks: jsonName || (fragEnable ? '👽 Anonymous TCB (Fragment) 🚀' : '👽 Anonymous TCB (Normal) 🚀'),
+    remarks: (jsonName || (fragEnable ? '👽 Anonymous TCB (Fragment) 🚀' : '👽 Anonymous TCB (Normal) 🚀')) + (parsedChain ? ' ⛓️' : ''),
     routing: {
-      balancers: [{ selector: balancerSelector, strategy: { type: 'leastPing' }, tag: 'proxy-round', fallbackTag: firstProxyTag }],
+      balancers: [{ selector: balancerSelector, strategy: { type: 'leastPing' }, tag: 'proxy-round', fallbackTag: balancerFallbackTag }],
       domainStrategy: 'IPIfNonMatch',
       rules: [
         { inboundTag: ['mixed-in'], outboundTag: 'dns-out', port: '53', type: 'field' },
