@@ -2,6 +2,7 @@ import { buildWorker } from './worker-builder.js';
 import { buildConfig, buildTrojanConfig, buildJsonConfig } from './config-builder.js';
 import { buildSingboxConfig } from './singbox-builder.js';
 import { buildClashConfig } from './clash-builder.js';
+import { parseChainConfig } from './chain-parser.js';
 import { toast, getChecked, row, downloadFile, renderCodeBlock, highlightJsonLine, highlightYamlLine, highlightJsLine } from './ui.js';
 import { exportSettingsToString, isValidImportPayload, applyImportedSettings } from './settings-io.js';
 import { generateQRMatrix, qrMatrixToSvg } from './qrcode.js';
@@ -134,7 +135,8 @@ function collectSettings() {
       phishing: document.getElementById('blockPhishing').checked,
       cryptominers: document.getElementById('blockCryptominers').checked
     },
-    pingInterval: document.getElementById('pingInterval').value.trim() || '180'
+    pingInterval: document.getElementById('pingInterval').value.trim() || '180',
+    chainConfig: document.getElementById('chainConfig').value.trim()
   };
 }
 
@@ -168,6 +170,14 @@ function gen() {
   if (!(parseInt(settings.pingInterval) > 0)) {
     toast('Best Ping Interval باید یک عدد مثبت باشد');
     return;
+  }
+  if (settings.chainConfig) {
+    try {
+      parseChainConfig(settings.chainConfig);
+    } catch (e) {
+      toast(e.message);
+      return;
+    }
   }
   const allIps    = raw.split('\n').map(s => s.trim()).filter(Boolean);
   const ips       = settings.ipv6Enable ? allIps : allIps.filter(ip => !ip.includes(':'));
