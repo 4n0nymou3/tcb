@@ -54,6 +54,7 @@ export function collectExportData() {
         cryptominers: document.getElementById('blockCryptominers').checked
       },
       pingInterval: document.getElementById('pingInterval').value,
+      chainConfig: document.getElementById('chainConfig').value,
       jsonName: document.getElementById('jsonName').value
     }
   };
@@ -149,6 +150,12 @@ export function applyImportedSettings(payload) {
     document.getElementById('pingInterval').value = d.pingInterval;
   } else {
     document.getElementById('pingInterval').value = '180';
+  }
+
+  if (typeof d.chainConfig === 'string') {
+    document.getElementById('chainConfig').value = d.chainConfig;
+  } else {
+    document.getElementById('chainConfig').value = '';
   }
 
   if (typeof d.jsonName === 'string') document.getElementById('jsonName').value = d.jsonName;
