@@ -15,7 +15,7 @@
     <div class="hdr">
       <div class="hdr-top">
         <div class="hdr-dot"></div>
-        <h1>Tunnel Config Builder (TCB) v4.9</h1>
+        <h1>Tunnel Config Builder (TCB) v5.0</h1>
       </div>
       <p class="hdr-sub">ساخت کانفیگ VLESS برای Cloudflare Worker — بدون نیاز به VPS</p>
     </div>
@@ -323,6 +323,12 @@
       <label class="box-lbl">فاصله زمانی تست بهترین پینگ</label>
       <input type="text" id="pingInterval" value="180" placeholder="180"/>
       <p class="hint mt-8">فاصله زمانی (بر حسب ثانیه) بین تست‌های Best Ping برای انتخاب سریع‌ترین سرور. مقدار پیش‌فرض ۱۸۰ ثانیه (۳ دقیقه) است؛ برخی کاربران عدد ۳۰ ثانیه را ترجیح می‌دهند. عدد کمتر یعنی سوییچ سریع‌تر بین سرورها اما مصرف بیشتر شبکه برای تست.</p>
+    </div>
+
+    <div class="fg mt-14 settings-box">
+      <label class="box-lbl">Chain Proxy — ثابت کردن IP خروجی (اختیاری)</label>
+      <textarea id="chainConfig" placeholder="vless://... یا trojan://... یا ss://... یا socks://... یا http://..."></textarea>
+      <p class="hint mt-8">یک کانفیگ با فرمت URL از یک سرور دیگر (مثلاً یک VPS با IP ثابت) اینجا وارد کنید تا کانفیگ‌های TCB به آن Chain شوند: ابتدا از طریق Worker شما (برای عبور از فیلترینگ) و سپس از طریق این سرور به اینترنت متصل می‌شوید — یعنی IP خروجی شما همیشه ثابت و برابر با IP همان سرور خواهد بود. فرمت‌های پشتیبانی‌شده: VLESS (tcp/ws/grpc با none/tls/reality)، Trojan (tcp/ws/grpc با tls)، Shadowsocks، SOCKS5 و HTTP. این قابلیت فقط روی کانفیگ‌های JSON برای Xray، Sing-box و Clash اعمال می‌شود (نه روی کانفیگ‌های تکی فرمت لینک)، چون Chain به دو گره هماهنگ نیاز دارد که فقط در یک فایل کانفیگ کامل قابل تعریف است. وقتی این قابلیت فعال باشد، ایموجی ⛓️ کنار نام کانفیگ‌های JSON اضافه می‌شود. برای غیرفعال کردن، این کادر را خالی بگذارید. نکته مهم: کانفیگی که اینجا وارد می‌کنید نباید مربوط به یک Cloudflare Worker دیگر باشد، چون Workerها آی‌پی اختصاصی و ثابت ندارند؛ حتماً از کانفیگ یک سرور واقعی (مثل VPS) با آی‌پی اختصاصی خودش استفاده کنید تا هدف ثابت ماندن IP خروجی برآورده شود.</p>
     </div>
 
     <div class="alert ao mt-14 mb-0">
