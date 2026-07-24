@@ -1,3 +1,5 @@
+import { parseChainConfig } from './chain-parser.js';
+
 function isDomainAddr(addr) {
   return /^(?!-)(?:[A-Za-z0-9-]{1,63}\.)+[A-Za-z]{2,}$/.test(addr);
 }
@@ -9,6 +11,67 @@ function randomizeCase(str) {
     out += Math.random() < 0.5 ? ch.toUpperCase() : ch.toLowerCase();
   }
   return out;
+}
+
+function buildChainTransportSingbox(pc) {
+  if (pc.network === 'ws') {
+    return { type: 'ws', path: pc.path || '/', headers: pc.host ? { Host: pc.host } : {} };
+  }
+  if (pc.network === 'grpc') {
+    return { type: 'grpc', service_name: pc.serviceName || '' };
+  }
+  return undefined;
+}
+
+function buildChainTlsSingbox(pc) {
+  if (pc.security === 'tls') {
+    return {
+      enabled: true,
+      server_name: pc.sni || pc.address,
+      insecure: false,
+      alpn: pc.alpn,
+      utls: { enabled: true, fingerprint: pc.fp || 'chrome' }
+    };
+  }
+  if (pc.security === 'reality') {
+    return {
+      enabled: true,
+      server_name: pc.sni || pc.address,
+      utls: { enabled: true, fingerprint: pc.fp || 'chrome' },
+      reality: { enabled: true, public_key: pc.pbk, short_id: pc.sid || '' }
+    };
+  }
+  return undefined;
+}
+
+function buildChainOutboundSingbox(pc, detourTag, tag) {
+  const transport = buildChainTransportSingbox(pc);
+  const tls = buildChainTlsSingbox(pc);
+  const base = { tag: tag, server: pc.address, server_port: pc.port, detour: detourTag };
+  if (transport) base.transport = transport;
+  if (tls) base.tls = tls;
+
+  if (pc.protocol === 'vless') {
+    const out = { type: 'vless', uuid: pc.uuid, packet_encoding: '', ...base };
+    if (pc.flow) out.flow = pc.flow;
+    return out;
+  }
+  if (pc.protocol === 'trojan') {
+    return { type: 'trojan', password: pc.password, ...base };
+  }
+  if (pc.protocol === 'shadowsocks') {
+    return { type: 'shadowsocks', method: pc.method, password: pc.password, ...base };
+  }
+  if (pc.protocol === 'socks') {
+    const out = { type: 'socks', version: '5', ...base };
+    if (pc.user) { out.username = pc.user; out.password = pc.pass; }
+    return out;
+  }
+  if (pc.protocol === 'http') {
+    const out = { type: 'http', ...base };
+    if (pc.user) { out.username = pc.user; out.password = pc.pass; }
+    return out;
+  }
 }
 
 const SINGBOX_GEOSITE_SUFFIX = { ir: 'ir', cn: 'cn', ru: 'category-ru' };
@@ -56,8 +119,10 @@ function parseDnsUrl(value) {
 export function buildSingboxConfig(token, password, dom, ips, tlsPorts, wsPorts, fp, settings, protocols) {
   const {
     basePath, fragEnable, fakeDnsEnable, ipv6Enable, lanAccess,
-    remoteDnsVal, localDnsVal, tcpFastOpen, routingCountries, blockRules, pingInterval, echEnable
+    remoteDnsVal, localDnsVal, tcpFastOpen, routingCountries, blockRules, pingInterval, echEnable, chainConfig
   } = settings;
+
+  const parsedChain = parseChainConfig(chainConfig);
 
   const selectedCountries = resolveSelectedCountries(routingCountries);
   const geositeTags = selectedCountries.map(c => 'geosite-' + SINGBOX_GEOSITE_SUFFIX[c]);
@@ -74,6 +139,7 @@ export function buildSingboxConfig(token, password, dom, ips, tlsPorts, wsPorts,
 
   const outbounds = [];
   const proxyTags = [];
+  const chainProxyTags = [];
 
   ips.forEach((ip, ipIdx) => {
     const ipLabel = `IP${ipIdx + 1}`;
@@ -112,27 +178,41 @@ export function buildSingboxConfig(token, password, dom, ips, tlsPorts, wsPorts,
         const tag = `VLESS-${ipLabel}-${isTls ? 'TLS' : 'WS'}${port}${isTls ? '-' + fp : ''}`;
         outbounds.push({ type: 'vless', tag: tag, uuid: token, packet_encoding: '', ...baseOutbound });
         proxyTags.push(tag);
+        if (parsedChain) {
+          const chainTag = 'chain-' + tag;
+          outbounds.push(buildChainOutboundSingbox(parsedChain, tag, chainTag));
+          chainProxyTags.push(chainTag);
+        }
       }
       if (useTrojan) {
         const tag = `TROJAN-${ipLabel}-${isTls ? 'TLS' : 'WS'}${port}${isTls ? '-' + fp : ''}`;
         outbounds.push({ type: 'trojan', tag: tag, password: password, ...baseOutbound });
         proxyTags.push(tag);
+        if (parsedChain) {
+          const chainTag = 'chain-' + tag;
+          outbounds.push(buildChainOutboundSingbox(parsedChain, tag, chainTag));
+          chainProxyTags.push(chainTag);
+        }
       }
     });
   });
 
+  const urltestTag = parsedChain ? '👽 Anonymous TCB ⛓️' : '👽 Anonymous TCB';
+  const selectorTag = parsedChain ? 'Best Ping 🚀 ⛓️' : 'Best Ping 🚀';
+  const activeProxyTags = parsedChain ? chainProxyTags : proxyTags;
+
   outbounds.push({
     type: 'urltest',
-    tag: '👽 Anonymous TCB',
-    outbounds: proxyTags,
+    tag: urltestTag,
+    outbounds: activeProxyTags,
     url: 'https://www.gstatic.com/generate_204',
     interval: intervalSeconds + 's',
     interrupt_exist_connections: false
   });
   outbounds.push({
     type: 'selector',
-    tag: 'Best Ping 🚀',
-    outbounds: ['👽 Anonymous TCB', ...proxyTags],
+    tag: selectorTag,
+    outbounds: [urltestTag, ...activeProxyTags],
     interrupt_exist_connections: false
   });
   outbounds.push({ type: 'direct', tag: 'direct', domain_resolver: 'dns-direct' });
@@ -141,7 +221,7 @@ export function buildSingboxConfig(token, password, dom, ips, tlsPorts, wsPorts,
   const localParsed = parseDnsUrl(localDnsVal);
 
   const dnsServers = [
-    { type: remoteParsed.type, server: remoteParsed.host, detour: 'Best Ping 🚀', tag: 'dns-remote' },
+    { type: remoteParsed.type, server: remoteParsed.host, detour: selectorTag, tag: 'dns-remote' },
     { type: localParsed.type, server: localParsed.host, tag: 'dns-direct' }
   ];
 
@@ -249,7 +329,7 @@ export function buildSingboxConfig(token, password, dom, ips, tlsPorts, wsPorts,
       rules: routeRules,
       rule_set: [...countryRulesetDefs, ...blockRulesetDefs],
       auto_detect_interface: true,
-      final: 'Best Ping 🚀'
+      final: selectorTag
     },
     experimental: {
       cache_file: { enabled: true, store_fakeip: true },
