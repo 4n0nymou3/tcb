@@ -8,11 +8,11 @@
 
 # Tunnel Config Builder (TCB) v7.0
 
-ابزار ساخت کانفیگ VLESS و Trojan برای Cloudflare Workers و Cloudflare Pages — بدون نیاز به VPS یا سرور شخصی
+ابزار ساخت کانفیگ VLESS و Trojan و بسته‌ی راه‌اندازی Telegram Web Proxy برای Cloudflare Workers و Cloudflare Pages — بدون نیاز به VPS یا سرور شخصی
 
 ## معرفی
 
-Tunnel Config Builder یک ابزار تحت وب است که به شما امکان می‌دهد بدون هیچ هزینه‌ای و تنها با استفاده از سرویس رایگان Cloudflare Workers یا Cloudflare Pages، کانفیگ‌های VLESS و Trojan بسازید. تمام مراحل از ساخت Worker/Pages تا تولید کانفیگ در همین صفحه انجام می‌شود.
+Tunnel Config Builder یک ابزار تحت وب است که به شما امکان می‌دهد بدون هیچ هزینه‌ای و تنها با استفاده از سرویس رایگان Cloudflare Workers یا Cloudflare Pages، کانفیگ‌های VLESS و Trojan بسازید و همچنین بسته و تنظیمات لازم برای راه‌اندازی Telegram Web Proxy را تولید کنید. ساخت کانفیگ‌ها و تنظیمات پروکسی تلگرام در همین صفحه انجام می‌شود و راهنمای استقرار روی Cloudflare در همین README آمده است.
 
 ## ویژگی‌ها
 
@@ -42,7 +42,7 @@ Tunnel Config Builder یک ابزار تحت وب است که به شما امک
 - نام‌گذاری یکتا برای هر کانفیگ تکی فرمت لینک (شامل پروتکل، شماره IP و پورت) تا هیچ دو کانفیگی نام یکسان نداشته باشند
 - دکمه «🔄 پاکسازی کامل و شروع مجدد» برای بازگرداندن آنی پنل به حالت اولیه و پاک‌سازی کامل و امن تمام اطلاعات وارد شده، مناسب برای استفاده روی سیستم‌های عمومی یا مشترک
 - راهنمای گام‌به‌گام اتصال دامنه شخصی به Worker (کاملاً از طریق داشبورد رسمی Cloudflare، بدون نیاز به هیچ توکن یا تنظیم اضافی در TCB)
-- **Telegram WEB Proxy**: ساخت پروکسی WEB تلگرام روی Cloudflare Workers و Durable Objects، کنار VLESS و Trojan و بدون نیاز به VPS؛ بسته‌ی آماده‌ی استقرار (Worker یا Pages) مستقیماً از پنل دانلود می‌شود (راهنما: [Telegram WEB Proxy](#telegram-web-proxy))
+- **Telegram WEB Proxy**: ساخت پروکسی WEB تلگرام روی Cloudflare Workers و Durable Objects، کنار VLESS و Trojan و بدون نیاز به VPS؛ بسته‌ی آماده‌ی استقرار (Worker یا Pages) مستقیماً از پنل دانلود می‌شود (راهنما: [راهنمای کامل Telegram Web Proxy](#راهنمای-کامل-telegram-web-proxy))
 
 ## محدودیت‌ها
 
@@ -54,11 +54,13 @@ Tunnel Config Builder یک ابزار تحت وب است که به شما امک
 
 ### مرحله ۱ — ساخت Worker یا Pages در Cloudflare
 
-۱. به [dash.cloudflare.com](https://dash.cloudflare.com) بروید و وارد حساب کاربری خود شوید.
+این مرحله و مراحل ۲ تا ۴ برای ساخت کانفیگ VLESS و Trojan با کپی یا آپلود مستقیم کد هستند و به GitHub نیاز ندارند. اگر Telegram Web Proxy می‌خواهید، به [راهنمای کامل Telegram Web Proxy](#راهنمای-کامل-telegram-web-proxy) بروید.
 
-۲. **برای Worker:** از منو Workers and Pages را انتخاب کنید، روی Create Application کلیک کنید، گزینه Create Worker را بزنید، یک نام دلخواه وارد کنید و Deploy کنید.
+۱. به [dash.cloudflare.com](https://dash.cloudflare.com) بروید و وارد حساب کاربری خود شوید. ساخت حساب Cloudflare رایگان است.
 
-**برای Pages:** از همان صفحه‌ی «Ship something new»، پایین صفحه روی «Looking to deploy Pages? Get started» کلیک کنید، سپس گزینه‌ی «Drag and drop your files» را انتخاب کنید. در این حالت به‌جای Edit Code، فایل ZIP مخصوص Pages که در مرحله بعد از ابزار دانلود می‌کنید را مستقیماً در همین صفحه رها (drag & drop) کرده و Deploy site را بزنید.
+۲. **برای Worker:** در داشبورد به صفحه‌ی **Workers & Pages** بروید ← **Create application** ← کنار **Start with Hello World!** روی **Get started** بزنید ← یک نام دلخواه (حروف انگلیسی، عدد و خط تیره) وارد کنید ← **Deploy**. بعد از Deploy، آدرس Worker به شکل `نام.زیردامنه.workers.dev` نمایش داده می‌شود.
+
+**برای Pages:** به صفحه‌ی **Workers & Pages** بروید ← **Create application** ← **Get started** ← **Drag and drop your files** (مطابق مستندات رسمی Cloudflare). اگر داشبورد شما همین گزینه را به شکل لینک «Looking to deploy Pages? Get started» در پایین همان صفحه نشان می‌دهد، همان را بزنید. نام پروژه را وارد کنید؛ آدرس پروژه `نام.pages.dev` خواهد بود (اگر آن نام قبلاً گرفته شده باشد، Cloudflare چند حرف تصادفی به آن اضافه می‌کند). فایل ZIP را در مرحله بعد از ابزار می‌گیرید و در همین صفحه رها می‌کنید.
 
 ### مرحله ۲ — تنظیم Token و آپلود کد
 
@@ -66,9 +68,9 @@ Tunnel Config Builder یک ابزار تحت وب است که به شما امک
 
 ۲. در بخش ساخت کد، تب **Worker** یا تب **Pages** را متناسب با روشی که در مرحله ۱ انتخاب کردید انتخاب کنید.
 
-۳. **برای Worker:** کد Worker که به‌صورت خودکار با Token و Password شما آپدیت شده را با دکمه کپی کد کپی کنید، یا با دکمه دانلود `.js` فایل `worker.js` را دانلود کنید؛ در داشبورد Cloudflare روی Edit Code کلیک کنید، کد پیش‌فرض را پاک کنید، کد کپی‌شده را Paste کنید و Deploy کنید.
+۳. **برای Worker:** کد Worker که به‌صورت خودکار با Token و Password شما آپدیت شده را با دکمه کپی کد کپی کنید، یا با دکمه دانلود `.js` فایل `worker.js` را دانلود کنید. در داشبورد Cloudflare صفحه‌ی همان Worker را باز کنید ← **Edit code** (بالای صفحه) ← کد پیش‌فرض را پاک کنید ← کد کپی‌شده را Paste کنید ← **Deploy**.
 
-**برای Pages:** روی دکمه «↓ دانلود ZIP» کلیک کنید تا فایلی حاوی `_worker.js` (با Token و Password شما جاسازی‌شده) دانلود شود؛ همین فایل ZIP را در صفحه‌ی «Drag and drop your files» رها کنید و Deploy site را بزنید. توجه داشته باشید که فایل داخل ZIP باید دقیقاً با نام `_worker.js` در ریشه‌ی آرشیو باشد تا Cloudflare Pages آن را به‌عنوان یک Worker کامل اجرا کند، نه یک فایل جاوااسکریپت استاتیک ساده.
+**برای Pages:** روی دکمه «↓ دانلود ZIP» کلیک کنید تا فایل `tcb-pages-worker.zip` (حاوی `_worker.js` با Token و Password شما) دانلود شود. همین فایل ZIP را (بدون Extract) در صفحه‌ی «Drag and drop your files» رها کنید و **Deploy site** را بزنید. فایل داخل ZIP باید دقیقاً با نام `_worker.js` در ریشه‌ی آرشیو باشد تا Cloudflare Pages آن را به‌عنوان یک Worker کامل اجرا کند، نه یک فایل جاوااسکریپت استاتیک ساده. برای به‌روزرسانی بعدی: پروژه‌ی Pages را باز کنید ← **Create a new deployment** و ZIP جدید را رها کنید. توجه: پروژه‌ای که با Drag and drop ساخته شود، بعداً قابل تبدیل به پروژه‌ی متصل به Git نیست.
 
 ۴. آدرسی که Cloudflare بعد از Deploy نمایش می‌دهد (مثل `myworker.username.workers.dev` برای Worker یا `myproject.pages.dev` برای Pages) را کپی کنید.
 
@@ -106,6 +108,228 @@ Tunnel Config Builder یک ابزار تحت وب است که به شما امک
 - کانفیگ خروجی Clash (با پسوند `.yaml` دانلود می‌شود) را در کلاینت‌های Clash Meta / Mihomo مانند Clash Verge وارد کنید.
 
 پس از اتمام کار، به‌خصوص اگر از یک سیستم عمومی یا مشترک استفاده می‌کنید، حتماً روی دکمه «🔄 پاکسازی کامل و شروع مجدد» کلیک کنید تا تمام اطلاعات شما به‌طور کامل و امن پاک شوند (توضیحات کامل در بخش [پاکسازی کامل و امنیت](#پاکسازی-کامل-و-امنیت)).
+
+## راهنمای کامل Telegram Web Proxy
+
+TCB علاوه بر کانفیگ VLESS و Trojan، بسته و تنظیمات لازم برای یک پروکسی WEB تلگرام را هم می‌سازد. این پروکسی روی Cloudflare Workers و Durable Objects اجرا می‌شود و به VPS یا سرور شخصی نیاز ندارد. ترافیک تلگرام با رمزنگاری خود تلگرام می‌ماند و Worker فقط بایت‌های رمزشده را منتقل می‌کند. کد VLESS و Trojan هم داخل همین بسته (`tcb-worker.js`) است، پس یک Worker هر سه قابلیت را سرو می‌کند.
+
+برخلاف VLESS و Trojan، این بسته چندفایلی است و با کپی/Paste در Edit code مستقر نمی‌شود. مسیر آن این است: دریافت ZIP از پنل ← بارگذاری فایل‌ها در یک ریپازیتوری **خصوصی** GitHub ← اتصال ریپازیتوری به Cloudflare ← ثبت `TELEGRAM_SECRET`.
+
+### قبل از شروع
+
+- **Token و Password:** بسته شامل کد VLESS/Trojan با همان Token و Password است که در پنل وارد می‌کنید. اگر قبلاً کانفیگ ساخته‌اید و می‌خواهید آن‌ها کار کنند، همان مقدارها را وارد کنید؛ مقدار جدید، کانفیگ‌های قبلی را از کار می‌اندازد.
+- **ریپازیتوری باید Private باشد:** Token و Password داخل `tcb-worker.js` هستند. فایل‌ها را هرگز در ریپازیتوری عمومی قرار ندهید.
+- **کامپیوتر:** بارگذاری پوشه‌ها در GitHub از طریق مرورگر کامپیوتر ساده‌تر است.
+- **Worker یا Pages؟** اگر آدرس شما `workers.dev` است، مسیر Worker (بخش ۴) را دنبال کنید. اگر کانفیگ‌هایتان روی Pages هستند و می‌خواهید تلگرام هم روی همان آدرس `pages.dev` باشد، مسیر Pages (بخش ۵) را دنبال کنید. Pages خودش Durable Object نمی‌سازد؛ برای همین در این حالت یک Worker همراه با نام `نام-پروژه-telegram` هم لازم است.
+- آدرس `workers.dev` و `pages.dev` هر دو پشتیبانی می‌شوند و دامنه‌ی شخصی لازم نیست. اگر دامنه‌ی شخصی دارید، می‌توانید آن را هم استفاده کنید (بخش «دامنه‌ی شخصی» پایین).
+- رابط Cloudflare و GitHub ممکن است بسته به حساب شما کمی متفاوت باشد؛ نام گزینه‌ها در این راهنما مطابق مستندات رسمی جاری آن‌هاست.
+
+### ۱. ساخت حساب GitHub (اگر ندارید)
+
+۱. به [github.com/signup](https://github.com/signup) بروید (یا در github.com روی **Sign up** بزنید).
+
+۲. ایمیل، رمز عبور و نام کاربری را وارد کنید و مراحل ثبت‌نام را (از جمله تأیید «انسان بودن») کامل کنید. به‌جای آن می‌توانید با Google یا Apple هم ثبت‌نام کنید.
+
+۳. GitHub یک کد تأیید به ایمیل شما می‌فرستد؛ آن را در صفحه وارد کنید. بدون ایمیل تأییدشده نمی‌توانید ریپازیتوری بسازید.
+
+۴. توصیه می‌شود احراز هویت دومرحله‌ای (2FA) را هم فعال کنید.
+
+۵. وارد حساب شوید. اگر از قبل حساب دارید، مستقیماً به بخش بعد بروید.
+
+راهنمای رسمی: [Creating an account on GitHub](https://docs.github.com/en/get-started/start-your-journey/creating-an-account-on-github)
+
+### ۲. ساخت ریپازیتوری خصوصی
+
+۱. در گوشه‌ی بالا و راست هر صفحه‌ی GitHub روی علامت **+** بزنید و **New repository** را انتخاب کنید.
+
+۲. در **Owner** حساب خودتان را انتخاب کنید.
+
+۳. در **Repository name** یک نام وارد کنید، مثلاً `tcb-telegram`. فقط حروف انگلیسی، عدد و `.`، `-`، `_` مجاز است.
+
+۴. **Visibility** را روی **Private** بگذارید.
+
+۵. گزینه‌های **Add a README file**، **Add .gitignore** و **Choose a license** را روشن نکنید. این‌ها اجباری نیستند؛ با نساختنشان ریپازیتوری دقیقاً فقط فایل‌های بسته‌ی TCB را دارد و هیچ فایل اضافه‌ای با فایل‌های بسته تداخل پیدا نمی‌کند.
+
+۶. روی **Create repository** بزنید. یک ریپازیتوری خالی می‌بینید.
+
+هر بسته (هر Worker) باید ریپازیتوری مخصوص خودش را داشته باشد. فایل‌های دو بسته‌ی مختلف را در یک ریپازیتوری نریزید. راهنمای رسمی: [Creating a new repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-new-repository)
+
+### ۳. تنظیمات Telegram در پنل TCB
+
+پیش از دریافت ZIP باید آدرس واقعی Worker یا Pages را بدانید، چون نام Worker و Hostname از روی آن ساخته و داخل `wrangler.toml` نوشته می‌شود.
+
+**برای Worker:** اگر هنوز Worker ندارید، اول طبق «مرحله ۱» بالا یک Worker با نام دلخواه بسازید (همان Hello World) و آدرس `نام.زیردامنه.workers.dev` را بردارید. این Worker موقتاً فقط جایگاه نام و آدرس است و بعداً کدش با بسته‌ی GitHub جایگزین می‌شود. نام همین Worker باید با `name` داخل `wrangler.toml` یکی باشد؛ پنل آن را از اولین بخش آدرس (قبل از اولین نقطه) برمی‌دارد؛ اگر آدرس واردشده `workers.dev` یا `pages.dev` نباشد، نام پیش‌فرض `tcb-worker` استفاده می‌شود.
+
+**برای Pages:** نام پروژه‌ی Pages را انتخاب کنید و آدرس را `نام.pages.dev` وارد کنید. اگر بعد از ساخت پروژه معلوم شد Cloudflare آدرس دیگری داده، در پنل آدرس واقعی را وارد کنید و ZIP‌ها را دوباره بگیرید.
+
+۱. در پنل، آدرس Worker یا Pages را در مرحله ۲ وارد کنید؛ Token و Password را وارد یا بسازید.
+
+۲. تب **Worker** یا **Pages** را مطابق مسیر خود انتخاب کنید.
+
+۳. گزینه‌ی **فعال‌سازی Telegram WEB Proxy** را روشن کنید. یک بخش جدید باز می‌شود و دکمه‌های کپی/دانلود کد تک‌فایلی مخفی می‌شوند (کد VLESS/Trojan داخل بسته است).
+
+۴. **Secret:** پنل خودش یک Secret تصادفی (۳۲ کاراکتر هگزادسیمال) می‌سازد. با دکمه‌ی «↺ جدید» Secret تازه بسازید، یا Secret دلخواه خود را (۳۲ کاراکتر هگزادسیمال، با پیشوند `dd` یا بدون آن) مستقیماً در کادر Paste یا تایپ کنید. تا وقتی مقدار نامعتبر باشد، لینک و دانلود بسته غیرفعال می‌ماند و پنل مقدار شما را بدون درخواست خودتان عوض نمی‌کند. این Secret داخل ZIP نوشته نمی‌شود.
+
+۵. **Random padding:** این گزینه پیشوند `dd` را به Secret اضافه می‌کند. هر بار آن را تغییر دهید، Secret نمایش‌داده‌شده هم عوض می‌شود و باید همان مقدار نهایی را در Cloudflare و تلگرام وارد کنید.
+
+۶. **Hostname:** همان آدرسی است که در مرحله ۲ وارد کرده‌اید (در صورت فعال بودن «دامنه شخصی»، همان دامنه). دقیقاً همین را در تلگرام وارد کنید؛ بدون `https://` و بدون پورت. این مقدار داخل `wrangler.toml` به‌عنوان `TELEGRAM_HOSTNAME` نوشته می‌شود و باید با آدرسی که تلگرام به آن وصل می‌شود یکی باشد.
+
+۷. **Link:** لینک افزودن پروکسی به تلگرام (`https://t.me/webproxy?server=...&secret=...`) را می‌توانید کپی کنید.
+
+۸. دکمه‌ی دانلود را بزنید. برای Worker یک فایل `tcb-telegram-worker.zip` و برای Pages دو فایل `tcb-pages-worker.zip` و `tcb-telegram-worker.zip` دانلود می‌شود.
+
+### ۴. مسیر Worker
+
+**۴.۱ — استخراج ZIP و ساختار فایل‌ها**
+
+فایل `tcb-telegram-worker.zip` را Extract کنید (در ویندوز: راست‌کلیک ← Extract All). داخل پوشه‌ی استخراج‌شده باید این ساختار را ببینید:
+
+```
+index.js
+tcb-worker.js
+session-do.js
+tcp-adapter.js
+telegram-router.js
+wrangler.toml
+README-TELEGRAM.txt
+core/
+├── bridge.js
+├── bridge-page.js
+├── capability.js
+├── dc-config.js
+├── do-routing.js
+├── limits.js
+├── obfuscated2.js
+├── protocol-v3.js
+├── session.js
+├── telegram-config.js
+└── token.js
+```
+
+خود فایل ZIP را در GitHub قرار ندهید. باید فایل‌های داخل آن، با همین ساختار، در **ریشه‌ی** ریپازیتوری باشند، یعنی `wrangler.toml` مستقیماً در صفحه‌ی اصلی ریپازیتوری دیده شود و نه داخل یک پوشه‌ی دیگر.
+
+**۴.۲ — بارگذاری در GitHub**
+
+۱. صفحه‌ی ریپازیتوری خصوصی خود را باز کنید.
+
+۲. روی **Add file** ← **Upload files** بزنید (در ریپازیتوری خالی لینک «uploading an existing file» هم همین کار را می‌کند).
+
+۳. پوشه‌ی استخراج‌شده را باز کنید، همه‌ی موارد داخل آن را انتخاب کنید (Ctrl+A) و مستقیماً داخل کادر آپلود صفحه‌ی GitHub بکشید و رها کنید؛ **پوشه‌ی `core` هم باید همراه باشد**. (GitHub اجازه می‌دهد فایل یا پوشه را Drag and drop کنید؛ تا ۱۰۰ فایل در هر بار و هر فایل تا ۲۵ مگابایت. این بسته ۱۸ فایل است.) نکته: اگر خود پوشه‌ی استخراج‌شده را بکشید، فایل‌ها داخل یک پوشه می‌روند و Cloudflare `wrangler.toml` را در ریشه پیدا نمی‌کند.
+
+۴. صبر کنید همه‌ی فایل‌ها در لیست آپلود ظاهر شوند.
+
+۵. در کادر **Commit message** یک متن کوتاه بنویسید (مثلاً `Add TCB Telegram package`).
+
+۶. گزینه‌ی **Commit directly to the main branch** را انتخاب کنید و روی **Commit changes** بزنید. (اگر گزینه‌ی ساخت Branch جدید و **Propose changes** را بزنید، فایل‌ها به Branch دیگری می‌روند و Cloudflare که `main` را دنبال می‌کند آن‌ها را مستقر نمی‌کند.)
+
+**۴.۳ — بررسی ساختار**
+
+در صفحه‌ی اصلی ریپازیتوری باید این‌ها را ببینید: پوشه‌ی `core` و فایل‌های `index.js`، `tcb-worker.js`، `session-do.js`، `tcp-adapter.js`، `telegram-router.js`، `wrangler.toml` و `README-TELEGRAM.txt`. روی `core` کلیک کنید؛ باید ۱۱ فایل داخلش باشد. اگر چیزی کم است، دوباره **Add file** ← **Upload files** را بزنید و فقط همان را اضافه کنید.
+
+**۴.۴ — اتصال ریپازیتوری به Cloudflare**
+
+*روش پیشنهادی: اتصال به Worker موجود (همان Worker که در ۳ ساختید)*
+
+۱. در داشبورد Cloudflare صفحه‌ی **Workers & Pages** را باز کنید و روی همان Worker کلیک کنید.
+
+۲. **Settings** ← **Builds** ← **Connect**.
+
+۳. اگر اولین بار است، گزینه‌ی GitHub را انتخاب کنید و دسترسی را بدهید. در صفحه‌ی GitHub بهتر است **Only select repositories** را بزنید و فقط همین ریپازیتوری را انتخاب کنید.
+
+۴. ریپازیتوری خصوصی خود را انتخاب کنید.
+
+۵. تنظیمات Build را بررسی کنید:
+- **Git branch:** `main` (پیش‌فرض)
+- **Build command:** خالی بگذارید (بسته نیازی به Build ندارد)
+- **Deploy command:** `npx wrangler deploy` (پیش‌فرض Cloudflare؛ همین را نگه دارید)
+- **Root directory:** خالی (چون `wrangler.toml` در ریشه‌ی ریپازیتوری است)
+
+۶. اتصال را ذخیره کنید. طبق مستندات Cloudflare، بعد از اتصال یک Worker موجود، اولین Build با **ارسال یک Commit جدید** به همان Branch شروع می‌شود. ساده‌ترین راه: در GitHub فایل `README-TELEGRAM.txt` را باز کنید ← آیکون مداد (Edit) ← یک خط خالی اضافه کنید ← **Commit changes** (روی `main`).
+
+*روش دوم: Worker جدید از ریپازیتوری (فقط اگر Worker هم‌نام نساخته‌اید)*
+
+اگر می‌دانید آدرس نهایی شما چیست و هنوز Worker نساخته‌اید: **Workers & Pages** ← **Create application** ← کنار **Import a repository** روی **Get started** ← در **Git account** حساب GitHub را انتخاب کنید ← ریپازیتوری را انتخاب کنید ← نام پروژه را دقیقاً برابر `name` داخل `wrangler.toml` بگذارید ← **Save and Deploy**.
+
+**۴.۵ — بررسی Build و Deploy**
+
+صفحه‌ی Worker ← تب **Deployments** ← پایین صفحه **View build history**. Build باید با وضعیت موفق تمام شود و نسخه‌ی جدید در **Deployments** فعال دیده شود. آدرس Worker در **Settings** ← **Domains & Routes** ← بخش `workers.dev` هم دیده می‌شود. اگر Build خطا داد، به بخش «عیب‌یابی» پایین بروید.
+
+مهم: Cloudflare Workers Builds نام Worker داخل داشبورد را با `name` داخل `wrangler.toml` مقایسه می‌کند و اگر یکی نباشند، Build شکست می‌خورد. همچنین از این پس هر Commit روی `main`، به‌صورت خودکار Build و Deploy می‌شود؛ پس بدانید کدام ریپازیتوری و Branch نسخه‌ی در حال استفاده‌ی شما را کنترل می‌کنند. اگر از قبل Worker سالمی دارید که کدش را در Edit code ساخته‌اید، اتصال ریپازیتوری کد آن را با کد بسته جایگزین می‌کند؛ Token و Password را همان قبلی وارد کنید و Worker قدیمی را برای اتصال حذف نکنید.
+
+**۴.۶ — ثبت TELEGRAM_SECRET**
+
+بعد از اولین Deploy موفق: Worker ← **Settings** ← **Variables and Secrets** ← **Add** ← **Type** را **Secret** بگذارید ← **Variable name:** `TELEGRAM_SECRET` ← **Value:** دقیقاً همان مقدار کادر Secret پنل (اگر Random padding روشن است، با پیشوند `dd`) ← **Deploy**.
+
+این مقدار را در بخش «Build variables and secrets» ثبت نکنید؛ آن بخش فقط هنگام Build در دسترس است و Worker در زمان اجرا آن را نمی‌بیند. `TELEGRAM_SECRET` باید در **Variables and Secrets** (Runtime) باشد. بعد از هر تغییر در این بخش **Deploy** بزنید.
+
+**۴.۷ — افزودن پروکسی به تلگرام**
+
+لینک پنل (فیلد **Link**) را باز کنید و تأیید کنید، یا در تنظیمات پروکسی تلگرام Hostname و Secret را دستی وارد کنید. سپس وضعیت اتصال پروکسی را در تلگرام بررسی کنید و یک پیام آزمایشی بفرستید.
+
+### ۵. مسیر Pages
+
+در این مسیر دو بخش جدا دارید: پروژه‌ی Pages (آپلود مستقیم) و Worker همراه (از GitHub). هر دو باید فعال باشند.
+
+۱. در پنل، تب **Pages** را انتخاب کنید و مراحل بخش ۳ را انجام دهید. دو فایل `tcb-pages-worker.zip` و `tcb-telegram-worker.zip` دانلود می‌شود.
+
+۲. **پروژه‌ی Pages:** مطابق «مرحله ۱» بالا (**Create application** ← **Get started** ← **Drag and drop your files**) پروژه را با نام انتخابی بسازید و `tcb-pages-worker.zip` را (بدون Extract) رها کنید و **Deploy site** را بزنید. آدرس را با آدرسی که در پنل وارد کردید مقایسه کنید.
+
+۳. **Worker همراه:** `tcb-telegram-worker.zip` را Extract کنید و مثل بخش ۴ (۴.۱ تا ۴.۳) در یک ریپازیتوری خصوصی **جدید و جدا** بارگذاری کنید. ساختار آن مشابه بسته‌ی Worker است، فقط فایل `tcb-worker.js` را ندارد. سپس **Create application** ← کنار **Import a repository** **Get started** ← ریپازیتوری را انتخاب کنید ← نام پروژه را دقیقاً برابر `name` داخل `wrangler.toml` (همان `نام-پروژه-telegram`) بگذارید ← **Save and Deploy**.
+
+۴. روی Worker همراه، مثل ۴.۶ `TELEGRAM_SECRET` را به‌عنوان Secret در **Variables and Secrets** ثبت کنید.
+
+۵. **اتصال Pages به Worker همراه:** پروژه‌ی Pages ← **Settings** ← **Bindings** ← **Add** ← **Service binding**. در **Variable name** بنویسید `TELEGRAM_WORKER` و در **Service** همان Worker همراه (`نام-پروژه-telegram`) را انتخاب کنید. اگر داشبورد محیط را می‌پرسد، **Production** را انتخاب کنید.
+
+۶. برای اعمال Binding باید پروژه را دوباره Deploy کنید: پروژه‌ی Pages ← **Create a new deployment** و دوباره `tcb-pages-worker.zip` را رها کنید.
+
+۷. در Pages لازم نیست `TELEGRAM_SECRET` ثبت کنید؛ Secret فقط روی Worker همراه است. Hostname تلگرام همان آدرس Pages است (`نام.pages.dev`)؛ آدرس `workers.dev` مربوط به Worker همراه را در تلگرام وارد نکنید.
+
+### متغیرهای Cloudflare: Build در برابر Runtime
+
+متغیرهای **Build** فقط هنگام ساخت پروژه در Cloudflare در دسترس‌اند. متغیرهای **Runtime** هنگام اجرای Worker در دسترس‌اند و Worker فقط همین‌ها را می‌بیند. این دو یکی نیستند.
+
+| نام | نوع | کجا | ضروری؟ |
+|---|---|---|---|
+| `TELEGRAM_SECRET` | Secret | Worker ← Settings ← Variables and Secrets (Runtime) | بله؛ بدون آن قابلیت تلگرام خاموش می‌ماند ولی VLESS/Trojan بدون تغییر کار می‌کنند |
+| `TELEGRAM_HOSTNAME` | متغیر معمولی | داخل `wrangler.toml` بسته نوشته شده؛ دستی نسازید | بله؛ باید با Hostname پنل یکی باشد |
+| `TELEGRAM_DIAG` | متغیر معمولی | Worker ← Settings ← Variables and Secrets (Runtime) | خیر؛ فقط هنگام عیب‌یابی مقدار `1` بگذارید و بعد حذفش کنید. چند رویداد پاک‌سازی‌شده‌ی مرحله‌ی اتصال را لاگ می‌کند، نه محتوای ترافیک |
+
+متغیرهای معمولی که فقط در داشبورد ساخته‌اید (مثل `TELEGRAM_DIAG`) ممکن است با Deploy بعدی از GitHub با تنظیمات `wrangler.toml` جایگزین شوند؛ بعد از هر Deploy وجودشان را دوباره بررسی کنید. بعد از هر Deploy بهتر است وجود `TELEGRAM_SECRET` را هم در **Variables and Secrets** ببینید.
+
+Secret را هرگز داخل GitHub، README یا فایل‌های عمومی نگذارید. اگر Secret یا Random padding را عوض کردید، `TELEGRAM_SECRET` در Cloudflare و Secret در تلگرام هم باید عوض شود.
+
+### دامنه‌ی شخصی
+
+اگر دامنه‌ی شخصی به Worker یا Pages متصل کرده‌اید (بخش [اتصال دامنه شخصی به Worker](#اتصال-دامنه-شخصی-به-worker))، در پنل چک‌باکس دامنه‌ی شخصی را روشن کنید. Hostname Telegram همان دامنه‌ی شخصی می‌شود و باید همان را در تلگرام وارد کنید. نام Worker همچنان از آدرس `workers.dev` یا `pages.dev` ساخته می‌شود.
+
+### به‌روزرسانی و تغییر تنظیمات
+
+- **تغییر Token، Password، دامنه‌ی پوششی یا Hostname:** ZIP جدید بگیرید و فایل‌های همان نام را دوباره از **Add file** ← **Upload files** بارگذاری کنید (فایل هم‌نام جایگزین می‌شود) و روی `main` Commit کنید. Cloudflare خودکار Build و Deploy می‌کند. در مسیر Pages برای `tcb-pages-worker.zip` از **Create a new deployment** استفاده کنید.
+- **تغییر Secret یا Random padding:** فقط `TELEGRAM_SECRET` را در Cloudflare عوض کنید (و **Deploy**) و Secret جدید را در تلگرام وارد کنید.
+- **آدرس تلگرام را عوض کردید؟** باید پنل را با آدرس جدید دوباره ساخته و ZIP تازه را بارگذاری کنید.
+
+### عیب‌یابی
+
+| مشکل | علت و راه‌حل |
+|---|---|
+| Build شکست می‌خورد و خطای نام می‌دهد | نام Worker در Cloudflare با `name` داخل `wrangler.toml` یکی نیست. نام را یکی کنید (نام Worker از اولین بخش آدرس پنل ساخته شده). |
+| Build فایل `wrangler.toml` را پیدا نمی‌کند | فایل‌ها داخل یک پوشه‌ی اضافه رفته‌اند. ساختار ریپازیتوری را با ۴.۳ مقایسه کنید؛ یا در **Settings** ← **Builds** مقدار **Root directory** را روی آن پوشه بگذارید. |
+| تلگرام وصل نمی‌شود | `TELEGRAM_SECRET` ثبت نشده، با Secret تلگرام یکی نیست (یا `dd` اشتباه است)، Deploy بعد از ثبت Secret انجام نشده، یا Hostname تلگرام با Hostname پنل یکی نیست. |
+| Pages کار نمی‌کند ولی Worker همراه سالم است | Service binding ثبت نشده یا بعد از آن Deploy جدید انجام نشده است (مراحل ۵ و ۶ از بخش ۵). |
+| بعد از Commit تغییری Deploy نمی‌شود | Commit روی `main` نبوده یا در Branch دیگری رفته است. |
+
+### لینک‌های رسمی
+
+- [Cloudflare Workers Builds](https://developers.cloudflare.com/workers/ci-cd/builds/)
+- [Workers Builds — Configuration](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/)
+- [Git integration برای Workers](https://developers.cloudflare.com/workers/ci-cd/builds/git-integration/)
+- [GitHub integration برای Workers](https://developers.cloudflare.com/workers/ci-cd/builds/git-integration/github-integration/)
+- [Environment variables در Workers](https://developers.cloudflare.com/workers/configuration/environment-variables/)
+- [Secrets در Workers](https://developers.cloudflare.com/workers/configuration/secrets/)
+- [Pages Direct Upload](https://developers.cloudflare.com/pages/get-started/direct-upload/)
+- [Pages Bindings](https://developers.cloudflare.com/pages/functions/bindings/)
+- [GitHub: Creating a new repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-new-repository)
+- [GitHub: Adding a file to a repository](https://docs.github.com/en/repositories/working-with-files/managing-files/adding-a-file-to-a-repository)
 
 ## راهنمای تنظیمات
 
@@ -248,50 +472,6 @@ ECH یک لایه رمزنگاری اضافه روی TLS handshake است که �
 - کانفیگی که در این کادر وارد می‌کنید نباید مربوط به یک Cloudflare Worker یا Pages دیگر باشد، چون هیچ‌کدام آی‌پی اختصاصی و ثابت ندارند؛ حتماً از کانفیگ یک سرور واقعی (مثل VPS) با آی‌پی اختصاصی خودش استفاده کنید.
 - کانفیگ‌های SOCKS5 و HTTP حتماً باید شامل نام کاربری و رمز عبور باشند (مثلاً `socks://user:pass@host:port`)؛ هسته Xray این دو مورد را برای این دو پروتکل الزامی می‌داند و بدون آن‌ها کانفیگ Chain کار نخواهد کرد. پنل TCB این موضوع را در همان لحظه ساخت کانفیگ بررسی و در صورت نبود، خطای واضحی نمایش می‌دهد.
 - برای غیرفعال کردن این قابلیت، کادر Chain Proxy را خالی بگذارید.
-
-### Telegram WEB Proxy
-
-TCB می‌تواند علاوه بر VLESS و Trojan، یک پروکسی WEB برای تلگرام هم بسازد. این پروکسی روی همان Worker (یا روی Pages با یک Worker همراه) اجرا می‌شود و از Durable Object استفاده می‌کند؛ به VPS یا سرور خارجی نیازی ندارد. ترافیک تلگرام همچنان با رمزنگاری خود تلگرام می‌ماند و Worker فقط بایت‌های رمزشده را منتقل می‌کند.
-
-**ساخت بسته در پنل**
-
-۱. در مرحله ۲ (ساخت کد)، آدرس Worker یا Pages و Token و Password را وارد کنید.
-
-۲. گزینه‌ی **«فعال‌سازی Telegram WEB Proxy»** را روشن کنید. یک Secret تصادفی ساخته می‌شود؛ با دکمه‌ی «↺ جدید» می‌توانید Secret تازه بسازید، یا Secret دلخواه خود را (۳۲ کاراکتر هگزادسیمال، با پیشوند `dd` یا بدون آن) مستقیماً در کادر Paste یا تایپ کنید؛ تا زمانی که مقدار نامعتبر باشد، لینک و دانلود بسته غیرفعال می‌ماند. گزینه‌ی **Random padding** پیشوند `dd` را به Secret اضافه می‌کند. فیلد **Hostname** همان آدرس مرحله ۲ است (دامنه‌ی شخصی در صورت فعال بودن) و فیلد **Link** لینک افزودن پروکسی به تلگرام است.
-
-۳. دکمه‌ی دانلود بسته‌ی Telegram را بزنید. تا وقتی این گزینه روشن است، دکمه‌های کپی/دانلود کد تک‌فایلی مخفی می‌شوند، چون کد VLESS/Trojan داخل بسته (`tcb-worker.js`) قرار دارد.
-
-**استقرار روی Worker** (فایل `tcb-telegram-worker.zip`)
-
-۱. یک مخزن خصوصی جدید در GitHub بسازید و همه‌ی فایل‌های داخل ZIP را در ریشه‌ی آن آپلود کنید.
-
-۲. در Cloudflare: Workers & Pages ← Create ← Import a repository و همان مخزن را انتخاب کنید. نام Worker باید با `name` داخل `wrangler.toml` یکی باشد.
-
-۳. بعد از استقرار: Worker ← Settings ← Variables and Secrets ← Add، از نوع **Secret**، با نام `TELEGRAM_SECRET` و مقدار Secret نمایش‌داده‌شده در TCB.
-
-۴. در تلگرام، پروکسی را با لینک پنل اضافه کنید، یا دستی Hostname و Secret را وارد کنید (Hostname بدون `https://` و بدون پورت).
-
-**استقرار روی Pages** (دو فایل ZIP)
-
-با روشن بودن گزینه‌ی Telegram و انتخاب تب Pages، دو فایل دانلود می‌شود. `tcb-telegram-worker.zip` یک Worker همراه است که Durable Object داخل آن قرار دارد (Pages به‌تنهایی Durable Object نمی‌سازد) و `tcb-pages-worker.zip` شامل `_worker.js` است.
-
-۱. ابتدا Worker همراه را مثل بخش بالا از `tcb-telegram-worker.zip` مستقر کنید. نام پروژه باید دقیقاً همان نامی باشد که در `README-TELEGRAM.txt` داخل ZIP نوشته شده (نام Worker + `-telegram`). سپس `TELEGRAM_SECRET` را به آن اضافه کنید.
-
-۲. فایل `tcb-pages-worker.zip` را مثل قبل در پروژه‌ی Pages آپلود کنید.
-
-۳. در Pages ← Settings ← Bindings ← Add ← Service binding: نام متغیر `TELEGRAM_WORKER` و سرویس برابر نام Worker همراه. سپس یک بار دیگر Pages را Deploy کنید تا binding فعال شود.
-
-**متغیرهای Cloudflare (Runtime، نه Build)**
-
-- `TELEGRAM_SECRET` — از نوع Secret، الزامی. اگر تنظیم نشود قابلیت تلگرام خاموش می‌ماند و VLESS/Trojan بدون تغییر کار می‌کنند.
-- `TELEGRAM_HOSTNAME` — متغیر معمولی؛ در `wrangler.toml` داخل بسته از قبل تنظیم شده و باید با Hostname پنل یکی باشد.
-- `TELEGRAM_DIAG` — اختیاری؛ فقط هنگام عیب‌یابی مقدار `1` بگذارید و بعد حذفش کنید. چند رویداد پاک‌سازی‌شده‌ی مرحله‌ی اتصال را لاگ می‌کند، نه محتوای ترافیک.
-
-**نکته‌ها**
-
-- Secret را در GitHub قرار ندهید؛ فقط به‌عنوان Secret در Cloudflare نگهداری شود. با تغییر Secret یا Random padding، `TELEGRAM_SECRET` در Cloudflare و Secret در تلگرام هم باید عوض شود.
-- مسیرهای `/api/v1/session`، `/api/v1/ws` و پارامتر `?bridge=` روی `/` برای تلگرام رزرو هستند.
-- محدودیت‌های پلن رایگان Cloudflare برای Workers و Durable Objects اعمال می‌شود.
 
 ### فرمت‌های خروجی کانفیگ
 
