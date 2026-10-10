@@ -3,6 +3,10 @@ import { buildConfig, buildTrojanConfig, buildJsonConfig } from './config-builde
 import { buildSingboxConfig } from './singbox-builder.js';
 import { buildClashConfig } from './clash-builder.js';
 import { parseChainConfig } from './chain-parser.js';
+import {
+  generateTelegramBase, composeTelegramSecret, isValidTelegramBase, normalizeTelegramHostname, isValidTelegramHostname,
+  telegramWorkerName, buildTelegramLink, buildTelegramPackages, zipPackage
+} from './telegram-webproxy.js';
 import { toast, getChecked, row, downloadFile, renderCodeBlock, highlightJsonLine, highlightYamlLine, highlightJsLine, flashCopied } from './ui.js';
 import { exportSettingsToString, isValidImportPayload, isCompatibleExport, applyImportedSettings } from './settings-io.js';
 import { generateQRMatrix, qrMatrixToSvg } from './qrcode.js';
@@ -100,6 +104,112 @@ async function dlWorkerZip() {
   toast(t('toast.workerZipDownloaded'));
 }
 
+function telegramHostname() {
+  const custom = document.getElementById('customDomainUsed').checked
+    ? normalizeTelegramHostname(document.getElementById('customDomainInput').value)
+    : '';
+  return custom || normalizeTelegramHostname(document.getElementById('wdom').value);
+}
+
+function telegramSecret() {
+  const base = document.getElementById('tgSecret').dataset.base || '';
+  return composeTelegramSecret(base, document.getElementById('tgPadding').checked);
+}
+
+function parseTelegramSecretInput(raw) {
+  const m = /^(dd)?([0-9a-f]{32})$/.exec(String(raw || '').trim().toLowerCase());
+  return m ? { base: m[2], padded: !!m[1] } : null;
+}
+
+function telegramSecretIsDraft() {
+  return document.getElementById('tgSecret').dataset.draft === '1';
+}
+
+function onTelegramSecretInput() {
+  const input = document.getElementById('tgSecret');
+  const parsed = parseTelegramSecretInput(input.value);
+  if (parsed) {
+    delete input.dataset.draft;
+    input.dataset.base = parsed.base;
+    document.getElementById('tgPadding').checked = parsed.padded;
+  } else {
+    input.dataset.draft = '1';
+  }
+  updateTelegramUi();
+}
+
+function updateTelegramUi() {
+  const enabled = document.getElementById('tgEnable').checked;
+  const secretInput = document.getElementById('tgSecret');
+  document.getElementById('tgBody').style.display = enabled ? 'block' : 'none';
+  ['btn-cp-worker', 'btn-dl-worker'].forEach(id => { document.getElementById(id).style.display = enabled ? 'none' : ''; });
+  const isPages = deployTarget === 'pages';
+  document.getElementById('btn-dl-worker-zip').style.display = (isPages && !enabled) ? '' : 'none';
+  document.getElementById('btn-dl-tg').textContent = t(isPages ? 'tg.downloadPages' : 'tg.download');
+  if (!enabled) return;
+  if (!isValidTelegramBase(secretInput.dataset.base)) secretInput.dataset.base = generateTelegramBase();
+  const secret = telegramSecret();
+  const host = telegramHostname();
+  const draft = telegramSecretIsDraft();
+  if (!draft && secretInput.value !== secret) secretInput.value = secret;
+  secretInput.style.borderColor = draft ? '#e5534b' : '';
+  document.getElementById('tgHost').value = host;
+  const validHost = isValidTelegramHostname(host);
+  document.getElementById('tgLink').value = (validHost && !draft) ? buildTelegramLink(host, secret) : '';
+  const warns = [];
+  if (draft) warns.push(t('tg.warnSecret'));
+  if (!validHost) warns.push(t('tg.warnHost'));
+  if (!document.getElementById('uid').value.trim() || !currentPassword()) warns.push(t('tg.warnCreds'));
+  if (isPages) warns.push(t('tg.warnPagesName'));
+  const box = document.getElementById('tgWarn');
+  box.style.display = warns.length ? 'flex' : 'none';
+  document.getElementById('tgWarnText').textContent = warns.join(' ');
+}
+
+function mkTelegramSecret() {
+  const input = document.getElementById('tgSecret');
+  delete input.dataset.draft;
+  input.dataset.base = generateTelegramBase();
+  updateTelegramUi();
+  toast(t('toast.tgSecretRegenerated'));
+}
+
+function copyFrom(id, toastKey) {
+  return (e) => {
+    const v = document.getElementById(id).value.trim();
+    if (!v) return;
+    const btn = e.currentTarget;
+    navigator.clipboard.writeText(v).then(() => { toast(t(toastKey)); flashCopied(btn); });
+  };
+}
+
+async function dlTelegram() {
+  const host = telegramHostname();
+  const token = document.getElementById('uid').value.trim();
+  const password = currentPassword();
+  if (!isValidTelegramHostname(host)) { toast(t('toast.tgNeedHost')); return; }
+  if (telegramSecretIsDraft()) { toast(t('toast.tgBadSecret')); return; }
+  if (!token || !password) { toast(t('toast.needTokenPasswordEnter')); return; }
+  try {
+    const packages = await buildTelegramPackages({
+      target: deployTarget,
+      token,
+      password,
+      fallbackDomain: currentFallbackDomain(),
+      hostname: host,
+      workerName: telegramWorkerName(document.getElementById('wdom').value, 'tcb-worker'),
+      lang: getLang()
+    });
+    for (let i = 0; i < packages.length; i++) {
+      downloadFile(zipPackage(packages[i]), 'tcb-' + packages[i].filename, 'application/zip');
+      if (i < packages.length - 1) await new Promise(r => setTimeout(r, 400));
+    }
+    toast(t('toast.tgDownloaded'));
+  } catch (err) {
+    toast(t('toast.tgBuildFailed'));
+  }
+}
+
 function updateWsPortsAvailability() {
   const isPages = deployTarget === 'pages';
   document.getElementById('wsPortsRow').classList.toggle('disabled', isPages);
@@ -131,8 +241,8 @@ function switchDeployTab(target) {
   document.getElementById('g3-desc-worker').style.display = isPages ? 'none' : 'block';
   document.getElementById('g3-desc-pages').style.display = isPages ? 'block' : 'none';
   document.getElementById('workerFname').textContent = isPages ? '_worker.js' : 'worker.js';
-  document.getElementById('btn-dl-worker-zip').style.display = isPages ? '' : 'none';
   updateWsPortsAvailability();
+  updateTelegramUi();
 }
 
 function toggleFrag() {
@@ -515,6 +625,8 @@ function resetAll() {
     resetFormElement(el);
   });
 
+  document.getElementById('tgSecret').dataset.base = '';
+  delete document.getElementById('tgSecret').dataset.draft;
   toggleFrag();
   toggleFrag2();
   toggleEch();
@@ -590,6 +702,7 @@ function importSettings(file) {
     const restoredTarget = applyImportedSettings(parsed);
     switchDeployTab(restoredTarget);
     updateCustomDomainField();
+    updateTelegramUi();
     toggleFrag();
     toggleFrag2();
     toggleEch();
@@ -659,6 +772,7 @@ function switchLang(lang, persist) {
   document.getElementById('btn-lang-fa').classList.toggle('active', lang === 'fa');
   document.getElementById('btn-lang-en').classList.toggle('active', lang === 'en');
   updateGenButtonText();
+  updateTelegramUi();
   if (persist) writeStoredValue(STORAGE_LANG_KEY, lang);
 }
 
@@ -686,7 +800,20 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-dl-worker-zip').addEventListener('click', dlWorkerZip);
   document.getElementById('tab-worker').addEventListener('click', () => switchDeployTab('worker'));
   document.getElementById('tab-pages').addEventListener('click', () => switchDeployTab('pages'));
-  document.getElementById('customDomainUsed').addEventListener('change', updateCustomDomainField);
+  document.getElementById('customDomainUsed').addEventListener('change', () => { updateCustomDomainField(); updateTelegramUi(); });
+  document.getElementById('customDomainInput').addEventListener('input', updateTelegramUi);
+  document.getElementById('wdom').addEventListener('input', updateTelegramUi);
+  document.getElementById('uid').addEventListener('input', updateTelegramUi);
+  document.getElementById('tpw').addEventListener('input', updateTelegramUi);
+  document.getElementById('tgEnable').addEventListener('change', updateTelegramUi);
+  document.getElementById('tgPadding').addEventListener('change', updateTelegramUi);
+  document.getElementById('btn-mk-tg').addEventListener('click', mkTelegramSecret);
+  document.getElementById('tgSecret').addEventListener('input', onTelegramSecretInput);
+  const copySecret = copyFrom('tgSecret', 'toast.tgSecretCopied');
+  document.getElementById('btn-cp-tg').addEventListener('click', (e) => { if (!telegramSecretIsDraft()) copySecret(e); });
+  document.getElementById('btn-cp-tg-host').addEventListener('click', copyFrom('tgHost', 'toast.tgHostCopied'));
+  document.getElementById('btn-cp-tg-link').addEventListener('click', copyFrom('tgLink', 'toast.tgLinkCopied'));
+  document.getElementById('btn-dl-tg').addEventListener('click', dlTelegram);
   document.getElementById('btn-mk-token').addEventListener('click', mkToken);
   document.getElementById('btn-cp-token').addEventListener('click', cpToken);
   document.getElementById('btn-mk-pw').addEventListener('click', mkPassword);
