@@ -8,11 +8,11 @@
 
 # Tunnel Config Builder (TCB) v7.0
 
-A tool for building VLESS and Trojan configs for Cloudflare Workers and Cloudflare Pages — no VPS or personal server required
+A tool for building VLESS and Trojan configs and the Telegram Web Proxy setup package for Cloudflare Workers and Cloudflare Pages — no VPS or personal server required
 
 ## Overview
 
-Tunnel Config Builder is a web-based tool that lets you build VLESS and Trojan configs at no cost, using only the free Cloudflare Workers or Cloudflare Pages service. Every step, from creating the Worker/Pages project to generating the configs, happens right on this page.
+Tunnel Config Builder is a web-based tool that lets you build VLESS and Trojan configs at no cost, using only the free Cloudflare Workers or Cloudflare Pages service, and also generate the package and settings needed to set up a Telegram Web Proxy. Building the configs and the Telegram proxy settings happens right on this page, and the Cloudflare deployment guide is included in this README.
 
 ## Features
 
@@ -42,7 +42,7 @@ Tunnel Config Builder is a web-based tool that lets you build VLESS and Trojan c
 - Unique naming for every single link-format config (including protocol, IP number, and port) so no two configs share the same name
 - A "🔄 Clear All & Start Over" button for instantly restoring the panel to its initial state and securely wiping all entered information — suited for use on public or shared computers
 - Step-by-step guide for connecting a custom domain to the Worker (entirely through Cloudflare's official dashboard, with no token or extra setup required in TCB)
-- **Telegram WEB Proxy**: build a Telegram WEB proxy on Cloudflare Workers and Durable Objects alongside VLESS and Trojan, with no VPS; a ready-to-deploy package (Worker or Pages) is downloaded straight from the panel (guide: [Telegram WEB Proxy](#telegram-web-proxy))
+- **Telegram WEB Proxy**: build a Telegram WEB proxy on Cloudflare Workers and Durable Objects alongside VLESS and Trojan, with no VPS; a ready-to-deploy package (Worker or Pages) is downloaded straight from the panel (guide: [Complete Telegram Web Proxy Guide](#complete-telegram-web-proxy-guide))
 
 ## Limitations
 
@@ -54,11 +54,13 @@ Tunnel Config Builder is a web-based tool that lets you build VLESS and Trojan c
 
 ### Step 1 — Create a Worker or Pages Project on Cloudflare
 
-1. Go to [dash.cloudflare.com](https://dash.cloudflare.com) and sign in to your account.
+This step and Steps 2 to 4 are for building VLESS and Trojan configs by copying or uploading the code directly; they do not need GitHub. If you want the Telegram Web Proxy, go to the [Complete Telegram Web Proxy Guide](#complete-telegram-web-proxy-guide).
 
-2. **For a Worker:** from the menu, select Workers and Pages, click Create Application, choose Create Worker, enter a name of your choice, and deploy it.
+1. Go to [dash.cloudflare.com](https://dash.cloudflare.com) and sign in to your account. Creating a Cloudflare account is free.
 
-**For Pages:** on the same "Ship something new" screen, scroll down and click "Looking to deploy Pages? Get started", then choose "Drag and drop your files". Instead of Edit Code, you'll drop the dedicated Pages ZIP file (downloaded from the tool in the next step) directly onto that page and click Deploy site.
+2. **For a Worker:** in the dashboard open the **Workers & Pages** page → **Create application** → next to **Start with Hello World!** click **Get started** → enter a name of your choice (English letters, digits and dashes) → **Deploy**. After deploying, the Worker address is shown in the form `name.subdomain.workers.dev`.
+
+**For Pages:** open the **Workers & Pages** page → **Create application** → **Get started** → **Drag and drop your files** (as in Cloudflare's official documentation). If your dashboard shows the same option as a "Looking to deploy Pages? Get started" link at the bottom of that page, click that instead. Enter a project name; the project address will be `name.pages.dev` (if that name is already taken, Cloudflare adds a few random characters). You get the ZIP file from the tool in the next step and drop it on this same page.
 
 ### Step 2 — Configure the Token and Upload the Code
 
@@ -66,9 +68,9 @@ Tunnel Config Builder is a web-based tool that lets you build VLESS and Trojan c
 
 2. In the code section, select the **Worker** or **Pages** tab depending on which one you set up in Step 1.
 
-3. **For a Worker:** copy the Worker code — which has already been automatically updated with your Token and Password — using the copy code button, or download the `worker.js` file with the download `.js` button; in the Cloudflare dashboard, click Edit Code, delete the default code, paste the copied code, and deploy.
+3. **For a Worker:** copy the Worker code — which has already been automatically updated with your Token and Password — using the copy code button, or download the `worker.js` file with the download `.js` button. In the Cloudflare dashboard open that Worker's page → **Edit code** (top of the page) → delete the default code → paste the copied code → **Deploy**.
 
-**For Pages:** click the "↓ Download ZIP" button to get a file containing `_worker.js` (with your Token and Password already embedded), then drop that same ZIP file onto the "Drag and drop your files" screen and click Deploy site. Note that the file inside the ZIP must be named exactly `_worker.js` at the root of the archive for Cloudflare Pages to run it as a full Worker, rather than serving it as a plain static JavaScript file.
+**For Pages:** click the "↓ Download ZIP" button to get the `tcb-pages-worker.zip` file (containing `_worker.js` with your Token and Password already embedded). Drop that same ZIP file, without extracting it, onto the "Drag and drop your files" screen and click **Deploy site**. The file inside the ZIP must be named exactly `_worker.js` at the root of the archive for Cloudflare Pages to run it as a full Worker, rather than serving it as a plain static JavaScript file. To update later: open the Pages project → **Create a new deployment** and drop the new ZIP. Note: a project created with Drag and drop cannot later be switched to Git integration.
 
 4. Copy the address Cloudflare shows after deploying (something like `myworker.username.workers.dev` for a Worker, or `myproject.pages.dev` for Pages).
 
@@ -106,6 +108,228 @@ This button only accepts a file that was exported from this exact same version o
 - Import the Clash output config (downloaded with a `.yaml` extension) into Clash Meta / Mihomo clients like Clash Verge.
 
 When you're done, especially if you're using a public or shared computer, be sure to click the "🔄 Clear All & Start Over" button so all your information is fully and securely wiped (full details in the [Clear All & Security](#clear-all--security) section).
+
+## Complete Telegram Web Proxy Guide
+
+Besides VLESS and Trojan configs, TCB builds the package and settings needed for a Telegram WEB proxy. It runs on Cloudflare Workers and Durable Objects and needs no VPS or personal server. Telegram traffic stays encrypted with Telegram's own encryption, and the Worker only forwards encrypted bytes. The VLESS and Trojan code is inside the same package (`tcb-worker.js`), so one Worker serves all three.
+
+Unlike VLESS and Trojan, this package has several files and is not deployed by copy/paste into Edit code. The path is: download the ZIP from the panel → upload its files to a **private** GitHub repository → connect the repository to Cloudflare → set `TELEGRAM_SECRET`.
+
+### Before You Start
+
+- **Token and Password:** the package contains the VLESS/Trojan code with the Token and Password you enter in the panel. If you already built configs and want them to keep working, enter the same values; new values break your existing configs.
+- **The repository must be Private:** the Token and Password are inside `tcb-worker.js`. Never put these files in a public repository.
+- **A computer:** uploading folders to GitHub is easier from a desktop browser.
+- **Worker or Pages?** If your address is `workers.dev`, follow the Worker path (Section 4). If your configs run on Pages and you want Telegram on the same `pages.dev` address, follow the Pages path (Section 5). Pages cannot create a Durable Object itself, so this case also needs a companion Worker named `project-name-telegram`.
+- Both `workers.dev` and `pages.dev` addresses are supported; a custom domain is not required. If you have a custom domain you can use it too (see "Custom Domain" below).
+- The Cloudflare and GitHub interfaces may differ slightly by account; option names in this guide follow their current official documentation.
+
+### 1. Create a GitHub Account (if you don't have one)
+
+1. Go to [github.com/signup](https://github.com/signup) (or click **Sign up** on github.com).
+
+2. Enter your email, a password and a username, and complete the sign-up steps (including the "are you human" check). You can also sign up with Google or Apple.
+
+3. GitHub sends a verification code to your email; enter it on the page. Without a verified email you cannot create a repository.
+
+4. Enabling two-factor authentication (2FA) is recommended.
+
+5. Sign in. If you already have an account, go straight to the next section.
+
+Official guide: [Creating an account on GitHub](https://docs.github.com/en/get-started/start-your-journey/creating-an-account-on-github)
+
+### 2. Create a Private Repository
+
+1. In the upper-right corner of any GitHub page, click **+** and choose **New repository**.
+
+2. In **Owner**, choose your account.
+
+3. In **Repository name**, enter a name, for example `tcb-telegram`. Only English letters, digits and `.`, `-`, `_` are allowed.
+
+4. Set **Visibility** to **Private**.
+
+5. Do not turn on **Add a README file**, **Add .gitignore** or **Choose a license**. They are not required; leaving them off means the repository contains only the TCB package files and nothing extra can conflict with them.
+
+6. Click **Create repository**. You will see an empty repository.
+
+Each package (each Worker) needs its own repository. Never mix the files of two packages in one repository. Official guide: [Creating a new repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-new-repository)
+
+### 3. Telegram Settings in the TCB Panel
+
+Before downloading the ZIP you must know the real Worker or Pages address, because the Worker name and Hostname are built from it and written into `wrangler.toml`.
+
+**For a Worker:** if you don't have a Worker yet, first create one following "Step 1" above, with any name (the Hello World template), and note its `name.subdomain.workers.dev` address. This Worker is only a temporary placeholder for the name and address; its code is replaced later by the GitHub package. This Worker's name must equal `name` in `wrangler.toml`; the panel takes it from the first part of the address (before the first dot).
+
+**For Pages:** choose the Pages project name and enter the address as `name.pages.dev`. If Cloudflare turns out to give a different address after you create the project, enter the real address in the panel and download the ZIP files again.
+
+1. In the panel, enter the Worker or Pages address in Step 2; enter or generate the Token and Password.
+
+2. Select the **Worker** or **Pages** tab that matches your path.
+
+3. Turn on **Enable Telegram WEB Proxy**. A new section opens and the single-file copy/download buttons are hidden (the VLESS/Trojan code is inside the package).
+
+4. **Secret:** the panel generates a random Secret (32 hexadecimal characters). Use "↺ New" for a fresh one, or paste or type your own Secret (32 hexadecimal characters, with or without the `dd` prefix) directly into the box. While the value is invalid, the link and package download stay disabled, and the panel never replaces your value on its own. This Secret is not written into the ZIP.
+
+5. **Random padding:** this option adds the `dd` prefix to the Secret. Each time you change it, the displayed Secret changes too, and you must enter that final value in Cloudflare and in Telegram.
+
+6. **Hostname:** this is the address you entered in Step 2 (the custom domain if the custom domain option is on). Enter exactly this in Telegram, without `https://` and without a port. It is written into `wrangler.toml` as `TELEGRAM_HOSTNAME` and must equal the address Telegram connects to.
+
+7. **Link:** you can copy the link that adds the proxy to Telegram (`https://t.me/webproxy?server=...&secret=...`).
+
+8. Click the download button. For a Worker you get one file, `tcb-telegram-worker.zip`; for Pages you get two files, `tcb-pages-worker.zip` and `tcb-telegram-worker.zip`.
+
+### 4. The Worker Path
+
+**4.1 — Extract the ZIP and check the file layout**
+
+Extract `tcb-telegram-worker.zip` (on Windows: right-click → Extract All). Inside the extracted folder you should see this layout:
+
+```
+index.js
+tcb-worker.js
+session-do.js
+tcp-adapter.js
+telegram-router.js
+wrangler.toml
+README-TELEGRAM.txt
+core/
+├── bridge.js
+├── bridge-page.js
+├── capability.js
+├── dc-config.js
+├── do-routing.js
+├── limits.js
+├── obfuscated2.js
+├── protocol-v3.js
+├── session.js
+├── telegram-config.js
+└── token.js
+```
+
+Do not upload the ZIP file itself to GitHub. The files inside it, with this same layout, must be at the **root** of the repository: `wrangler.toml` must be visible directly on the repository's main page, not inside another folder.
+
+**4.2 — Upload to GitHub**
+
+1. Open your private repository's page.
+
+2. Click **Add file** → **Upload files** (in an empty repository the "uploading an existing file" link does the same).
+
+3. Open the extracted folder, select everything inside it (Ctrl+A), and drag and drop it directly into the GitHub upload area; **the `core` folder must be included**. (GitHub lets you drag and drop files or folders; up to 100 files at a time, each up to 25 MiB. This package has 18 files.) Note: if you drag the extracted folder itself, the files go inside one extra folder and Cloudflare will not find `wrangler.toml` at the root.
+
+4. Wait until all files appear in the upload list.
+
+5. In **Commit message**, type a short text (for example `Add TCB Telegram package`).
+
+6. Choose **Commit directly to the main branch** and click **Commit changes**. (If you choose to create a new branch and click **Propose changes**, the files go to another branch and Cloudflare, which follows `main`, will not deploy them.)
+
+**4.3 — Verify the layout**
+
+On the repository's main page you should see the `core` folder and the files `index.js`, `tcb-worker.js`, `session-do.js`, `tcp-adapter.js`, `telegram-router.js`, `wrangler.toml` and `README-TELEGRAM.txt`. Click `core`; it should hold 11 files. If something is missing, click **Add file** → **Upload files** again and add only that.
+
+**4.4 — Connect the repository to Cloudflare**
+
+*Recommended: connect to the existing Worker (the one you created in step 3)*
+
+1. In the Cloudflare dashboard open the **Workers & Pages** page and click that Worker.
+
+2. **Settings** → **Builds** → **Connect**.
+
+3. If this is your first time, choose GitHub and grant access. On the GitHub page it is better to choose **Only select repositories** and pick only this repository.
+
+4. Select your private repository.
+
+5. Check the build settings:
+- **Git branch:** `main` (default)
+- **Build command:** leave empty (the package needs no build step)
+- **Deploy command:** `npx wrangler deploy` (Cloudflare's default; keep it)
+- **Root directory:** empty (because `wrangler.toml` is at the repository root)
+
+6. Save the connection. According to Cloudflare's documentation, after connecting an existing Worker the first build starts when you **push a new commit** to that branch. The simplest way: in GitHub open `README-TELEGRAM.txt` → the pencil (Edit) icon → add an empty line → **Commit changes** (on `main`).
+
+*Second way: a new Worker from the repository (only if you have not created a Worker with the same name)*
+
+If you know your final address and have not created a Worker yet: **Workers & Pages** → **Create application** → next to **Import a repository** click **Get started** → choose your GitHub account in **Git account** → choose the repository → set the project name exactly equal to `name` in `wrangler.toml` → **Save and Deploy**.
+
+**4.5 — Check the build and deployment**
+
+Worker page → **Deployments** tab → at the bottom, **View build history**. The build should finish successfully and the new version should show as active under **Deployments**. The Worker address is also shown under **Settings** → **Domains & Routes** in the `workers.dev` section. If the build fails, see "Troubleshooting" below.
+
+Important: Cloudflare Workers Builds compares the Worker name in the dashboard with `name` in `wrangler.toml`, and the build fails if they differ. From now on every commit to `main` is built and deployed automatically, so know which repository and branch control the Worker you are using. If you already have a working Worker whose code you created in Edit code, connecting a repository replaces its code with the package code; enter the same Token and Password as before, and do not delete the old Worker just to connect it.
+
+**4.6 — Set TELEGRAM_SECRET**
+
+After the first successful deployment: Worker → **Settings** → **Variables and Secrets** → **Add** → set **Type** to **Secret** → **Variable name:** `TELEGRAM_SECRET` → **Value:** exactly the value in the panel's Secret box (with the `dd` prefix if Random padding is on) → **Deploy**.
+
+Do not put this value under "Build variables and secrets"; that area is only available during the build and the running Worker does not see it. `TELEGRAM_SECRET` must be in **Variables and Secrets** (Runtime). Click **Deploy** after any change there.
+
+**4.7 — Add the proxy in Telegram**
+
+Open the panel's link (the **Link** field) and confirm, or enter the Hostname and Secret manually in Telegram's proxy settings. Then check the proxy's connection status in Telegram and send a test message.
+
+### 5. The Pages Path
+
+This path has two separate parts: the Pages project (direct upload) and a companion Worker (from GitHub). Both must be active.
+
+1. In the panel, select the **Pages** tab and complete Section 3. Two files are downloaded: `tcb-pages-worker.zip` and `tcb-telegram-worker.zip`.
+
+2. **The Pages project:** following "Step 1" above (**Create application** → **Get started** → **Drag and drop your files**), create the project with your chosen name, drop `tcb-pages-worker.zip` (without extracting it) and click **Deploy site**. Compare the resulting address with the address you entered in the panel.
+
+3. **The companion Worker:** extract `tcb-telegram-worker.zip` and, like Section 4 (4.1 to 4.3), upload it to a **new, separate** private repository. Its layout is like the Worker package but without `tcb-worker.js`. Then **Create application** → next to **Import a repository** click **Get started** → choose the repository → set the project name exactly equal to `name` in `wrangler.toml` (that is `project-name-telegram`) → **Save and Deploy**.
+
+4. On the companion Worker, set `TELEGRAM_SECRET` as a Secret under **Variables and Secrets**, as in 4.6.
+
+5. **Bind Pages to the companion Worker:** Pages project → **Settings** → **Bindings** → **Add** → **Service binding**. In **Variable name** enter `TELEGRAM_WORKER` and in **Service** choose the companion Worker (`project-name-telegram`). If the dashboard asks for the environment, choose **Production**.
+
+6. The binding only takes effect after a new deployment: Pages project → **Create a new deployment** and drop `tcb-pages-worker.zip` again.
+
+7. You do not need to set `TELEGRAM_SECRET` in Pages; the Secret lives only on the companion Worker. The Telegram Hostname is the Pages address (`name.pages.dev`); do not enter the companion Worker's `workers.dev` address in Telegram.
+
+### Cloudflare Variables: Build vs Runtime
+
+**Build** variables are available only while Cloudflare builds the project. **Runtime** variables are available while the Worker runs, and the Worker sees only these. They are not the same thing.
+
+| Name | Type | Where | Required? |
+|---|---|---|---|
+| `TELEGRAM_SECRET` | Secret | Worker → Settings → Variables and Secrets (Runtime) | Yes; without it the Telegram feature stays off but VLESS/Trojan keep working unchanged |
+| `TELEGRAM_HOSTNAME` | Plain variable | Already written in the package's `wrangler.toml`; do not create it by hand | Yes; must equal the panel's Hostname |
+| `TELEGRAM_DIAG` | Plain variable | Worker → Settings → Variables and Secrets (Runtime) | No; set it to `1` only while troubleshooting and remove it afterwards. It logs a few sanitized connection-stage events, not traffic content |
+
+Plain variables you created only in the dashboard (such as `TELEGRAM_DIAG`) may be replaced by the `wrangler.toml` settings on the next deployment from GitHub; check that they still exist after each deployment. It is also a good idea to confirm `TELEGRAM_SECRET` is still listed under **Variables and Secrets** after each deployment.
+
+Never put the Secret on GitHub, in a README or in public files. If you change the Secret or Random padding, update `TELEGRAM_SECRET` in Cloudflare and the secret in Telegram too.
+
+### Custom Domain
+
+If you connected a custom domain to the Worker or Pages (see [Connect a Custom Domain to the Worker](#connect-a-custom-domain-to-the-worker)), turn on the custom domain checkbox in the panel. The Telegram Hostname becomes that custom domain and you must enter it in Telegram. The Worker name is still built from the `workers.dev` or `pages.dev` address.
+
+### Updating and Changing Settings
+
+- **Changing the Token, Password, Fallback Domain or Hostname:** download a new ZIP and upload the files of the same names again through **Add file** → **Upload files** (a file with the same name is replaced), committing to `main`. Cloudflare builds and deploys automatically. On the Pages path use **Create a new deployment** for `tcb-pages-worker.zip`.
+- **Changing the Secret or Random padding:** only change `TELEGRAM_SECRET` in Cloudflare (and **Deploy**) and enter the new Secret in Telegram.
+- **Changed the Telegram address?** Rebuild the package in the panel with the new address and upload the fresh ZIP.
+
+### Troubleshooting
+
+| Problem | Cause and fix |
+|---|---|
+| The build fails with a name error | The Worker name in Cloudflare differs from `name` in `wrangler.toml`. Make them the same (the Worker name was built from the first part of the panel address). |
+| The build cannot find `wrangler.toml` | The files went into an extra folder. Compare the repository layout with 4.3; or set **Root directory** under **Settings** → **Builds** to that folder. |
+| Telegram does not connect | `TELEGRAM_SECRET` is not set, differs from Telegram's secret (or the `dd` prefix is wrong), Deploy was not run after setting the Secret, or the Hostname in Telegram differs from the panel's Hostname. |
+| Pages does not work but the companion Worker is fine | The Service binding is missing or no new deployment was made after it (steps 5 and 6 of Section 5). |
+| Nothing is deployed after a commit | The commit was not on `main` or went to another branch. |
+
+### Official Links
+
+- [Cloudflare Workers Builds](https://developers.cloudflare.com/workers/ci-cd/builds/)
+- [Workers Builds — Configuration](https://developers.cloudflare.com/workers/ci-cd/builds/configuration/)
+- [Git integration for Workers](https://developers.cloudflare.com/workers/ci-cd/builds/git-integration/)
+- [GitHub integration for Workers](https://developers.cloudflare.com/workers/ci-cd/builds/git-integration/github-integration/)
+- [Environment variables in Workers](https://developers.cloudflare.com/workers/configuration/environment-variables/)
+- [Secrets in Workers](https://developers.cloudflare.com/workers/configuration/secrets/)
+- [Pages Direct Upload](https://developers.cloudflare.com/pages/get-started/direct-upload/)
+- [Pages Bindings](https://developers.cloudflare.com/pages/functions/bindings/)
+- [GitHub: Creating a new repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-new-repository)
+- [GitHub: Adding a file to a repository](https://docs.github.com/en/repositories/working-with-files/managing-files/adding-a-file-to-a-repository)
 
 ## Settings Guide
 
@@ -248,50 +472,6 @@ Important notes:
 - The config you enter in this box must not belong to another Cloudflare Worker or Pages project, since neither has a dedicated fixed IP; be sure to use a config from a real server (like a VPS) with its own dedicated IP.
 - SOCKS5 and HTTP configs must include a username and password (e.g. `socks://user:pass@host:port`); the Xray core requires both for these two protocols, and the Chain config won't work without them. TCB checks for this at config-generation time and shows a clear error if they're missing.
 - To disable this feature, leave the Chain Proxy box empty.
-
-### Telegram WEB Proxy
-
-Besides VLESS and Trojan, TCB can build a Telegram WEB proxy. It runs on the same Worker (or on Pages with a companion Worker) and uses a Durable Object; no VPS or external server is needed. Telegram traffic stays encrypted with Telegram's own encryption; the Worker only forwards encrypted bytes.
-
-**Building the package in the panel**
-
-1. In Step 2 (code generation), enter the Worker or Pages address, the Token and the Password.
-
-2. Turn on **Enable Telegram WEB Proxy**. A random Secret is generated; use "↺ New" for a fresh one, or paste or type your own Secret (32 hexadecimal characters, with or without the `dd` prefix) directly into the box; while the value is invalid the link and package download stay disabled. **Random padding** adds the `dd` prefix to the Secret. The **Hostname** field is the address from Step 2 (the custom domain if enabled) and the **Link** field is the link that adds the proxy to Telegram.
-
-3. Click the Telegram package download button. While this option is on, the single-file copy/download buttons are hidden because the VLESS/Trojan code is inside the package (`tcb-worker.js`).
-
-**Deploying on a Worker** (`tcb-telegram-worker.zip`)
-
-1. Create a new private GitHub repository and upload every file in the ZIP to its root.
-
-2. In Cloudflare: Workers & Pages → Create → Import a repository, and choose that repository. The Worker name must equal `name` in `wrangler.toml`.
-
-3. After deployment: Worker → Settings → Variables and Secrets → Add, type **Secret**, name `TELEGRAM_SECRET`, value = the Secret shown in TCB.
-
-4. In Telegram, add the proxy with the panel link, or enter the Hostname and Secret manually (Hostname without `https://` and without a port).
-
-**Deploying on Pages** (two ZIP files)
-
-With the Telegram option on and the Pages tab selected, two files are downloaded. `tcb-telegram-worker.zip` is a companion Worker that holds the Durable Object (Pages alone cannot create one) and `tcb-pages-worker.zip` contains `_worker.js`.
-
-1. First deploy the companion Worker from `tcb-telegram-worker.zip` as above. Its project name must be exactly the name written in the `README-TELEGRAM.txt` inside the ZIP (Worker name + `-telegram`). Then add `TELEGRAM_SECRET` to it.
-
-2. Upload `tcb-pages-worker.zip` to your Pages project as before.
-
-3. In Pages → Settings → Bindings → Add → Service binding: variable name `TELEGRAM_WORKER`, service = the companion Worker's name. Then deploy Pages once more so the binding becomes active.
-
-**Cloudflare variables (Runtime, not Build)**
-
-- `TELEGRAM_SECRET` — type Secret, required. If missing, the Telegram feature stays off and VLESS/Trojan keep working unchanged.
-- `TELEGRAM_HOSTNAME` — plain variable; already set in the package's `wrangler.toml` and must equal the panel's Hostname.
-- `TELEGRAM_DIAG` — optional; set it to `1` only while troubleshooting and remove it afterwards. It logs a few sanitized connection-stage events, not traffic content.
-
-**Notes**
-
-- Do not put the Secret on GitHub; keep it only as a Cloudflare Secret. After changing the Secret or Random padding, update `TELEGRAM_SECRET` in Cloudflare and the secret in Telegram too.
-- The paths `/api/v1/session` and `/api/v1/ws` and the `?bridge=` query on `/` are reserved for Telegram.
-- Cloudflare free-plan limits for Workers and Durable Objects apply.
 
 ### Config Output Formats
 
