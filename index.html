@@ -29,7 +29,7 @@
       </div>
       <p class="hdr-sub" data-i18n="hdr.sub">ساخت کانفیگ VLESS/TROJAN برای Cloudflare Worker و Pages</p>
       <div class="badges">
-        <span class="badge"><span class="badge-label">TCB</span><span class="badge-value bv-blue">v6.8</span></span>
+        <span class="badge"><span class="badge-label">TCB</span><span class="badge-value bv-blue">v7.0</span></span>
         <span class="badge"><span class="badge-label">license</span><span class="badge-value bv-purple">MIT</span></span>
       </div>
     </div>
@@ -77,6 +77,42 @@
           </div>
           <div class="gdesc" id="g3-desc-worker" data-i18n="g3.descWorker">Token به‌صورت خودکار داخل کد جاگذاری می‌شود. می‌توانی کد را کپی کنی یا فایل <code>worker.js</code> را مستقیم دانلود کنی. در Worker: <code>Edit Code</code> ← همه را پاک کن ← Paste کن ← <code>Deploy</code>. برای آپلود فایل نیز می‌توانی از گزینه Upload در داشبورد استفاده کنی.</div>
           <div class="gdesc" id="g3-desc-pages" data-i18n="g3.descPages" style="display:none">Token به‌صورت خودکار داخل کد جاگذاری می‌شود. دکمه‌ی «دانلود ZIP» را بزن تا فایلی حاوی <code>_worker.js</code> دانلود شود، سپس همین فایل ZIP را در صفحه‌ی «Drag and drop your files» کلادفلر رها کن و <code>Deploy site</code> را بزن. توجه: فایل باید دقیقاً با نام <code>_worker.js</code> در ریشه‌ی ZIP باشد تا Pages آن را به‌عنوان Worker اجرا کند، نه یک فایل استاتیک ساده.</div>
+          <div class="fg mt-14" id="tgBlock">
+            <label class="ck-lbl-wide"><input type="checkbox" id="tgEnable"> <span data-i18n="tg.enable">فعال‌سازی Telegram WEB Proxy</span></label>
+            <div id="tgBody" style="display:none">
+              <p class="hint" data-i18n="tg.intro">با فعال‌سازی، به‌جای کد تک‌فایلی یک بسته‌ی چندفایلی (Worker + Durable Object) ساخته می‌شود که علاوه بر VLESS/Trojan، پروکسی WEB تلگرام را هم سرو می‌کند. استقرار از مسیر GitHub و Cloudflare انجام می‌شود، نه copy/paste.</p>
+              <label class="lbl-ltr">Secret</label>
+              <div class="urow">
+                <input type="text" id="tgSecret" autocomplete="off" spellcheck="false" autocapitalize="off"/>
+                <div class="ubtns">
+                  <button class="bsm" id="btn-mk-tg" data-i18n="btn.new">↺ جدید</button>
+                  <button class="bsm" id="btn-cp-tg" data-i18n="btn.copy">⎘ کپی</button>
+                </div>
+              </div>
+              <label class="ck-lbl-wide mt-8"><input type="checkbox" id="tgPadding"> <span data-i18n="tg.padding">Random padding (پیشوند dd)</span></label>
+              <p class="hint" data-i18n="tg.secretHint">این secret را در فایل یا GitHub قرار نده؛ فقط به‌عنوان Secret با نام TELEGRAM_SECRET در Cloudflare ذخیره می‌شود.</p>
+              <label class="lbl-ltr">Hostname</label>
+              <div class="urow">
+                <input type="text" id="tgHost" readonly autocomplete="off"/>
+                <div class="ubtns">
+                  <button class="bsm" id="btn-cp-tg-host" data-i18n="btn.copy">⎘ کپی</button>
+                </div>
+              </div>
+              <p class="hint" data-i18n="tg.hostHint">همان آدرسی است که در مرحله ۲ وارد کردی (دامنه شخصی اگر فعال باشد). دقیقاً همین را در تلگرام وارد کن.</p>
+              <div class="alert ao mb-8" id="tgWarn" style="display:none"><span class="aico">⚠</span><div id="tgWarnText"></div></div>
+              <label class="lbl-ltr">Link</label>
+              <div class="urow">
+                <input type="text" id="tgLink" readonly autocomplete="off"/>
+                <div class="ubtns">
+                  <button class="bsm" id="btn-cp-tg-link" data-i18n="btn.copy">⎘ کپی</button>
+                </div>
+              </div>
+              <div class="mt-8">
+                <button class="btn-cpscript" id="btn-dl-tg" data-i18n="tg.download">⬇ دانلود بسته‌ی Telegram (ZIP)</button>
+              </div>
+              <p class="hint" data-i18n="tg.note">وقتی این گزینه فعال است، دکمه‌های کپی/دانلود کد تک‌فایلی مخفی می‌شوند؛ کد VLESS/Trojan داخل بسته (tcb-worker.js) هست.</p>
+            </div>
+          </div>
           <div class="code-viewer">
             <div class="code-viewer-header">
               <div class="code-viewer-filename"><span class="lang-dot dot-js"></span><span class="fname" id="workerFname">worker.js</span></div>
