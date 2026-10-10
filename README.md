@@ -6,7 +6,7 @@
 
 <div align="right" dir="rtl">
 
-# Tunnel Config Builder (TCB) v6.8
+# Tunnel Config Builder (TCB) v7.0
 
 ابزار ساخت کانفیگ VLESS و Trojan برای Cloudflare Workers و Cloudflare Pages — بدون نیاز به VPS یا سرور شخصی
 
@@ -42,6 +42,7 @@ Tunnel Config Builder یک ابزار تحت وب است که به شما امک
 - نام‌گذاری یکتا برای هر کانفیگ تکی فرمت لینک (شامل پروتکل، شماره IP و پورت) تا هیچ دو کانفیگی نام یکسان نداشته باشند
 - دکمه «🔄 پاکسازی کامل و شروع مجدد» برای بازگرداندن آنی پنل به حالت اولیه و پاک‌سازی کامل و امن تمام اطلاعات وارد شده، مناسب برای استفاده روی سیستم‌های عمومی یا مشترک
 - راهنمای گام‌به‌گام اتصال دامنه شخصی به Worker (کاملاً از طریق داشبورد رسمی Cloudflare، بدون نیاز به هیچ توکن یا تنظیم اضافی در TCB)
+- **Telegram WEB Proxy**: ساخت پروکسی WEB تلگرام روی Cloudflare Workers و Durable Objects، کنار VLESS و Trojan و بدون نیاز به VPS؛ بسته‌ی آماده‌ی استقرار (Worker یا Pages) مستقیماً از پنل دانلود می‌شود (راهنما: [Telegram WEB Proxy](#telegram-web-proxy))
 
 ## محدودیت‌ها
 
@@ -247,6 +248,50 @@ ECH یک لایه رمزنگاری اضافه روی TLS handshake است که �
 - کانفیگی که در این کادر وارد می‌کنید نباید مربوط به یک Cloudflare Worker یا Pages دیگر باشد، چون هیچ‌کدام آی‌پی اختصاصی و ثابت ندارند؛ حتماً از کانفیگ یک سرور واقعی (مثل VPS) با آی‌پی اختصاصی خودش استفاده کنید.
 - کانفیگ‌های SOCKS5 و HTTP حتماً باید شامل نام کاربری و رمز عبور باشند (مثلاً `socks://user:pass@host:port`)؛ هسته Xray این دو مورد را برای این دو پروتکل الزامی می‌داند و بدون آن‌ها کانفیگ Chain کار نخواهد کرد. پنل TCB این موضوع را در همان لحظه ساخت کانفیگ بررسی و در صورت نبود، خطای واضحی نمایش می‌دهد.
 - برای غیرفعال کردن این قابلیت، کادر Chain Proxy را خالی بگذارید.
+
+### Telegram WEB Proxy
+
+TCB می‌تواند علاوه بر VLESS و Trojan، یک پروکسی WEB برای تلگرام هم بسازد. این پروکسی روی همان Worker (یا روی Pages با یک Worker همراه) اجرا می‌شود و از Durable Object استفاده می‌کند؛ به VPS یا سرور خارجی نیازی ندارد. ترافیک تلگرام همچنان با رمزنگاری خود تلگرام می‌ماند و Worker فقط بایت‌های رمزشده را منتقل می‌کند.
+
+**ساخت بسته در پنل**
+
+۱. در مرحله ۲ (ساخت کد)، آدرس Worker یا Pages و Token و Password را وارد کنید.
+
+۲. گزینه‌ی **«فعال‌سازی Telegram WEB Proxy»** را روشن کنید. یک Secret تصادفی ساخته می‌شود؛ با دکمه‌ی «↺ جدید» می‌توانید Secret تازه بسازید، یا Secret دلخواه خود را (۳۲ کاراکتر هگزادسیمال، با پیشوند `dd` یا بدون آن) مستقیماً در کادر Paste یا تایپ کنید؛ تا زمانی که مقدار نامعتبر باشد، لینک و دانلود بسته غیرفعال می‌ماند. گزینه‌ی **Random padding** پیشوند `dd` را به Secret اضافه می‌کند. فیلد **Hostname** همان آدرس مرحله ۲ است (دامنه‌ی شخصی در صورت فعال بودن) و فیلد **Link** لینک افزودن پروکسی به تلگرام است.
+
+۳. دکمه‌ی دانلود بسته‌ی Telegram را بزنید. تا وقتی این گزینه روشن است، دکمه‌های کپی/دانلود کد تک‌فایلی مخفی می‌شوند، چون کد VLESS/Trojan داخل بسته (`tcb-worker.js`) قرار دارد.
+
+**استقرار روی Worker** (فایل `tcb-telegram-worker.zip`)
+
+۱. یک مخزن خصوصی جدید در GitHub بسازید و همه‌ی فایل‌های داخل ZIP را در ریشه‌ی آن آپلود کنید.
+
+۲. در Cloudflare: Workers & Pages ← Create ← Import a repository و همان مخزن را انتخاب کنید. نام Worker باید با `name` داخل `wrangler.toml` یکی باشد.
+
+۳. بعد از استقرار: Worker ← Settings ← Variables and Secrets ← Add، از نوع **Secret**، با نام `TELEGRAM_SECRET` و مقدار Secret نمایش‌داده‌شده در TCB.
+
+۴. در تلگرام، پروکسی را با لینک پنل اضافه کنید، یا دستی Hostname و Secret را وارد کنید (Hostname بدون `https://` و بدون پورت).
+
+**استقرار روی Pages** (دو فایل ZIP)
+
+با روشن بودن گزینه‌ی Telegram و انتخاب تب Pages، دو فایل دانلود می‌شود. `tcb-telegram-worker.zip` یک Worker همراه است که Durable Object داخل آن قرار دارد (Pages به‌تنهایی Durable Object نمی‌سازد) و `tcb-pages-worker.zip` شامل `_worker.js` است.
+
+۱. ابتدا Worker همراه را مثل بخش بالا از `tcb-telegram-worker.zip` مستقر کنید. نام پروژه باید دقیقاً همان نامی باشد که در `README-TELEGRAM.txt` داخل ZIP نوشته شده (نام Worker + `-telegram`). سپس `TELEGRAM_SECRET` را به آن اضافه کنید.
+
+۲. فایل `tcb-pages-worker.zip` را مثل قبل در پروژه‌ی Pages آپلود کنید.
+
+۳. در Pages ← Settings ← Bindings ← Add ← Service binding: نام متغیر `TELEGRAM_WORKER` و سرویس برابر نام Worker همراه. سپس یک بار دیگر Pages را Deploy کنید تا binding فعال شود.
+
+**متغیرهای Cloudflare (Runtime، نه Build)**
+
+- `TELEGRAM_SECRET` — از نوع Secret، الزامی. اگر تنظیم نشود قابلیت تلگرام خاموش می‌ماند و VLESS/Trojan بدون تغییر کار می‌کنند.
+- `TELEGRAM_HOSTNAME` — متغیر معمولی؛ در `wrangler.toml` داخل بسته از قبل تنظیم شده و باید با Hostname پنل یکی باشد.
+- `TELEGRAM_DIAG` — اختیاری؛ فقط هنگام عیب‌یابی مقدار `1` بگذارید و بعد حذفش کنید. چند رویداد پاک‌سازی‌شده‌ی مرحله‌ی اتصال را لاگ می‌کند، نه محتوای ترافیک.
+
+**نکته‌ها**
+
+- Secret را در GitHub قرار ندهید؛ فقط به‌عنوان Secret در Cloudflare نگهداری شود. با تغییر Secret یا Random padding، `TELEGRAM_SECRET` در Cloudflare و Secret در تلگرام هم باید عوض شود.
+- مسیرهای `/api/v1/session`، `/api/v1/ws` و پارامتر `?bridge=` روی `/` برای تلگرام رزرو هستند.
+- محدودیت‌های پلن رایگان Cloudflare برای Workers و Durable Objects اعمال می‌شود.
 
 ### فرمت‌های خروجی کانفیگ
 
@@ -533,7 +578,7 @@ kill -9 2341
 
 ## مجوز
 
-این پروژه تحت [مجوز MIT](LICENSE) منتشر شده است — استفاده آزاد
+این پروژه تحت [مجوز MIT](LICENSE) منتشر شده است — استفاده آزاد. فونت‌های JetBrains Mono و Vazirmatn داخل `css/fonts.css` تحت مجوز مستقل SIL OFL 1.1 خودشان هستند ([JetBrains Mono](https://github.com/JetBrains/JetBrainsMono)، [Vazirmatn](https://github.com/rastikerdar/vazirmatn)).
 
 ---
 
