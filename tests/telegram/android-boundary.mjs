@@ -5,7 +5,7 @@ import { JSDOM } from 'jsdom';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const { buildPageScript } = await import(path.join(root, 'manual-worker/telegram/core/bridge-page.js'));
 
-const HOST = 'tcb.axoz.ir';
+const HOST = 'tcb-test.example.workers.dev';
 const NONCE = 'AbCdEfGhIjKlMnOpQrStUvWxYz0123456789_-AbCdE';
 const BOOTSTRAP = 'B'.repeat(43);
 const SESSION = 'S'.repeat(43);
