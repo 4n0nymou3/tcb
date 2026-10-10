@@ -6,7 +6,7 @@
 
 <div align="left" dir="ltr">
 
-# Tunnel Config Builder (TCB) v6.8
+# Tunnel Config Builder (TCB) v7.0
 
 A tool for building VLESS and Trojan configs for Cloudflare Workers and Cloudflare Pages — no VPS or personal server required
 
@@ -42,6 +42,7 @@ Tunnel Config Builder is a web-based tool that lets you build VLESS and Trojan c
 - Unique naming for every single link-format config (including protocol, IP number, and port) so no two configs share the same name
 - A "🔄 Clear All & Start Over" button for instantly restoring the panel to its initial state and securely wiping all entered information — suited for use on public or shared computers
 - Step-by-step guide for connecting a custom domain to the Worker (entirely through Cloudflare's official dashboard, with no token or extra setup required in TCB)
+- **Telegram WEB Proxy**: build a Telegram WEB proxy on Cloudflare Workers and Durable Objects alongside VLESS and Trojan, with no VPS; a ready-to-deploy package (Worker or Pages) is downloaded straight from the panel (guide: [Telegram WEB Proxy](#telegram-web-proxy))
 
 ## Limitations
 
@@ -247,6 +248,50 @@ Important notes:
 - The config you enter in this box must not belong to another Cloudflare Worker or Pages project, since neither has a dedicated fixed IP; be sure to use a config from a real server (like a VPS) with its own dedicated IP.
 - SOCKS5 and HTTP configs must include a username and password (e.g. `socks://user:pass@host:port`); the Xray core requires both for these two protocols, and the Chain config won't work without them. TCB checks for this at config-generation time and shows a clear error if they're missing.
 - To disable this feature, leave the Chain Proxy box empty.
+
+### Telegram WEB Proxy
+
+Besides VLESS and Trojan, TCB can build a Telegram WEB proxy. It runs on the same Worker (or on Pages with a companion Worker) and uses a Durable Object; no VPS or external server is needed. Telegram traffic stays encrypted with Telegram's own encryption; the Worker only forwards encrypted bytes.
+
+**Building the package in the panel**
+
+1. In Step 2 (code generation), enter the Worker or Pages address, the Token and the Password.
+
+2. Turn on **Enable Telegram WEB Proxy**. A random Secret is generated; use "↺ New" for a fresh one, or paste or type your own Secret (32 hexadecimal characters, with or without the `dd` prefix) directly into the box; while the value is invalid the link and package download stay disabled. **Random padding** adds the `dd` prefix to the Secret. The **Hostname** field is the address from Step 2 (the custom domain if enabled) and the **Link** field is the link that adds the proxy to Telegram.
+
+3. Click the Telegram package download button. While this option is on, the single-file copy/download buttons are hidden because the VLESS/Trojan code is inside the package (`tcb-worker.js`).
+
+**Deploying on a Worker** (`tcb-telegram-worker.zip`)
+
+1. Create a new private GitHub repository and upload every file in the ZIP to its root.
+
+2. In Cloudflare: Workers & Pages → Create → Import a repository, and choose that repository. The Worker name must equal `name` in `wrangler.toml`.
+
+3. After deployment: Worker → Settings → Variables and Secrets → Add, type **Secret**, name `TELEGRAM_SECRET`, value = the Secret shown in TCB.
+
+4. In Telegram, add the proxy with the panel link, or enter the Hostname and Secret manually (Hostname without `https://` and without a port).
+
+**Deploying on Pages** (two ZIP files)
+
+With the Telegram option on and the Pages tab selected, two files are downloaded. `tcb-telegram-worker.zip` is a companion Worker that holds the Durable Object (Pages alone cannot create one) and `tcb-pages-worker.zip` contains `_worker.js`.
+
+1. First deploy the companion Worker from `tcb-telegram-worker.zip` as above. Its project name must be exactly the name written in the `README-TELEGRAM.txt` inside the ZIP (Worker name + `-telegram`). Then add `TELEGRAM_SECRET` to it.
+
+2. Upload `tcb-pages-worker.zip` to your Pages project as before.
+
+3. In Pages → Settings → Bindings → Add → Service binding: variable name `TELEGRAM_WORKER`, service = the companion Worker's name. Then deploy Pages once more so the binding becomes active.
+
+**Cloudflare variables (Runtime, not Build)**
+
+- `TELEGRAM_SECRET` — type Secret, required. If missing, the Telegram feature stays off and VLESS/Trojan keep working unchanged.
+- `TELEGRAM_HOSTNAME` — plain variable; already set in the package's `wrangler.toml` and must equal the panel's Hostname.
+- `TELEGRAM_DIAG` — optional; set it to `1` only while troubleshooting and remove it afterwards. It logs a few sanitized connection-stage events, not traffic content.
+
+**Notes**
+
+- Do not put the Secret on GitHub; keep it only as a Cloudflare Secret. After changing the Secret or Random padding, update `TELEGRAM_SECRET` in Cloudflare and the secret in Telegram too.
+- The paths `/api/v1/session` and `/api/v1/ws` and the `?bridge=` query on `/` are reserved for Telegram.
+- Cloudflare free-plan limits for Workers and Durable Objects apply.
 
 ### Config Output Formats
 
@@ -533,7 +578,7 @@ kill -9 2341
 
 ## License
 
-This project is released under the [MIT License](LICENSE) — free to use
+This project is released under the [MIT License](LICENSE) — free to use. The fonts embedded in `css/fonts.css`, JetBrains Mono and Vazirmatn, remain under their own SIL OFL 1.1 license ([JetBrains Mono](https://github.com/JetBrains/JetBrainsMono), [Vazirmatn](https://github.com/rastikerdar/vazirmatn)).
 
 ---
 
