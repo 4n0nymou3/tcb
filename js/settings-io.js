@@ -1,5 +1,6 @@
 const APP_ID = 'tcb';
-const SCHEMA_VERSION = 5;
+const SCHEMA_VERSION = 6;
+const LEGACY_SCHEMA_VERSION = 5;
 
 export function collectExportData() {
   return {
@@ -97,7 +98,12 @@ export function collectExportData() {
         leastLoadTimeout: document.getElementById('leastLoadTimeout').value
       },
       chainConfig: document.getElementById('chainConfig').value,
-      jsonName: document.getElementById('jsonName').value
+      jsonName: document.getElementById('jsonName').value,
+      telegramWebProxy: {
+        enabled: document.getElementById('tgEnable').checked,
+        secretBase: document.getElementById('tgSecret').dataset.base || '',
+        randomPadding: document.getElementById('tgPadding').checked
+      }
     }
   };
 }
@@ -132,7 +138,15 @@ function isPlainObject(v) {
   return !!v && typeof v === 'object' && !Array.isArray(v);
 }
 
-function hasExactExportShape(d) {
+function hasValidTelegramShape(t) {
+  if (!isPlainObject(t)) return false;
+  if (!isBool(t.enabled)) return false;
+  if (!isBool(t.randomPadding)) return false;
+  if (!isStr(t.secretBase)) return false;
+  return t.secretBase === '' || /^[0-9a-f]{32}$/.test(t.secretBase);
+}
+
+function hasExactExportShape(d, version) {
   if (!isPlainObject(d)) return false;
   if (!isStr(d.token)) return false;
   if (!isStr(d.trojanPassword)) return false;
@@ -224,11 +238,15 @@ function hasExactExportShape(d) {
   if (!isStr(d.chainConfig)) return false;
   if (!isStr(d.jsonName)) return false;
 
+  if (version === SCHEMA_VERSION && !hasValidTelegramShape(d.telegramWebProxy)) return false;
+
   return true;
 }
 
 export function isCompatibleExport(payload) {
-  return payload.schemaVersion === SCHEMA_VERSION && hasExactExportShape(payload.data);
+  if (payload.schemaVersion === SCHEMA_VERSION) return hasExactExportShape(payload.data, SCHEMA_VERSION);
+  if (payload.schemaVersion === LEGACY_SCHEMA_VERSION) return hasExactExportShape(payload.data, LEGACY_SCHEMA_VERSION);
+  return false;
 }
 
 export function applyImportedSettings(payload) {
@@ -318,6 +336,12 @@ export function applyImportedSettings(payload) {
 
   document.getElementById('chainConfig').value = d.chainConfig;
   document.getElementById('jsonName').value = d.jsonName;
+
+  const tg = payload.schemaVersion === SCHEMA_VERSION ? d.telegramWebProxy : { enabled: false, secretBase: '', randomPadding: false };
+  document.getElementById('tgEnable').checked = tg.enabled;
+  document.getElementById('tgPadding').checked = tg.randomPadding;
+  document.getElementById('tgSecret').dataset.base = tg.secretBase;
+  delete document.getElementById('tgSecret').dataset.draft;
 
   return d.deployTarget;
 }
