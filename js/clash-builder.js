@@ -1,4 +1,4 @@
-import { randomizeCase, resolveSelectedCountries, resolveSelectedBlockRules, resolveSelectedSanctionRules, durationToSeconds, resolveTcbLabel } from './proxy-utils.js';
+import { randomizeCase, resolveSelectedCountries, resolveSelectedBlockRules, resolveSelectedSanctionRules, durationToSeconds, resolveTcbLabel, resolveLanAuth } from './proxy-utils.js';
 
 const CLASH_COUNTRY_RULES = {
   ir: {
@@ -123,10 +123,12 @@ function buildChainProxyClash(pc, dialerProxyName, name) {
 
 export function buildClashConfig(token, password, dom, ips, tlsPorts, wsPorts, fp, settings, protocols) {
   const {
-    basePath, fragEnable, fakeDnsEnable, ipv6Enable, lanAccess,
+    basePath, fragEnable, fakeDnsEnable, ipv6Enable, lanAccess, lanUsername, lanPassword,
     remoteDnsVal, localDnsVal, tcpFastOpen, echEnable, routingCountries, blockRules, leastPingInterval, parsedChain, jsonName, customDomainUsed, customDomain,
     sanctionDnsVal, sanctionBypass, customBypassRules, customBlockRules, customSanctionRules
   } = settings;
+
+  const lanAuth = resolveLanAuth(lanAccess, lanUsername, lanPassword);
 
   const selectedCountries = resolveSelectedCountries(routingCountries);
   const selectedBlockRules = resolveSelectedBlockRules(blockRules);
@@ -275,6 +277,7 @@ export function buildClashConfig(token, password, dom, ips, tlsPorts, wsPorts, f
     'mixed-port': 7890,
     ipv6: true,
     'allow-lan': lanAccess,
+    ...(lanAuth ? { authentication: [lanAuth.username + ':' + lanAuth.password] } : {}),
     'unified-delay': false,
     'log-level': 'silent',
     mode: 'rule',
