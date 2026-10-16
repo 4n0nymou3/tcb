@@ -27,7 +27,7 @@
         <div class="hdr-dot"></div>
         <h1>Tunnel Config Builder (TCB)</h1>
       </div>
-      <p class="hdr-sub" data-i18n="hdr.sub">ساخت کانفیگ VLESS/TROJAN برای Cloudflare Worker و Pages</p>
+      <p class="hdr-sub" data-i18n="hdr.sub">ساخت کانفیگ‌های VLESS و Trojan برای Cloudflare Worker و Pages، به‌همراه قابلیت Telegram Web Proxy</p>
       <div class="badges">
         <span class="badge"><span class="badge-label">TCB</span><span class="badge-value bv-blue">v7.1</span></span>
         <span class="badge"><span class="badge-label">license</span><span class="badge-value bv-purple">MIT</span></span>
@@ -36,8 +36,8 @@
 
     <div class="steps">
       <div class="step active" id="sn1"><div class="step-n">1</div><span data-i18n="steps.1">ساخت CF W/P</span></div>
-      <div class="step" id="sn2"><div class="step-n">2</div><span data-i18n="steps.2">Token + دامنه</span></div>
-      <div class="step" id="sn3"><div class="step-n">3</div><span data-i18n="steps.3">IP های سالم</span></div>
+      <div class="step" id="sn2"><div class="step-n">2</div><span data-i18n="steps.2">تنظیم Token + دامنه</span></div>
+      <div class="step" id="sn3"><div class="step-n">3</div><span data-i18n="steps.3">آدرس IP های سالم</span></div>
       <div class="step" id="sn4"><div class="step-n">4</div><span data-i18n="steps.4">کانفیگ‌ها</span></div>
     </div>
   </div>
@@ -75,12 +75,12 @@
             <button class="deploy-tab active" id="tab-worker" type="button" role="tab" aria-selected="true" data-i18n="tab.worker">⚙️ Worker</button>
             <button class="deploy-tab" id="tab-pages" type="button" role="tab" aria-selected="false" data-i18n="tab.pages">📄 Pages</button>
           </div>
-          <div class="gdesc" id="g3-desc-worker" data-i18n="g3.descWorker">Token به‌صورت خودکار داخل کد جاگذاری می‌شود. می‌توانی کد را کپی کنی یا فایل <code>worker.js</code> را مستقیم دانلود کنی. در Worker: <code>Edit Code</code> ← همه را پاک کن ← Paste کن ← <code>Deploy</code>. برای آپلود فایل نیز می‌توانی از گزینه Upload در داشبورد استفاده کنی.</div>
-          <div class="gdesc" id="g3-desc-pages" data-i18n="g3.descPages" style="display:none">Token به‌صورت خودکار داخل کد جاگذاری می‌شود. دکمه‌ی «دانلود ZIP» را بزن تا فایلی حاوی <code>_worker.js</code> دانلود شود، سپس همین فایل ZIP را در صفحه‌ی «Drag and drop your files» کلادفلر رها کن و <code>Deploy site</code> را بزن. توجه: فایل باید دقیقاً با نام <code>_worker.js</code> در ریشه‌ی ZIP باشد تا Pages آن را به‌عنوان Worker اجرا کند، نه یک فایل استاتیک ساده.</div>
+          <div class="gdesc" id="g3-desc-worker" data-i18n="g3.descWorker">مقدار Token به‌صورت خودکار داخل کد جاگذاری می‌شود. می‌توانی کد را کپی کنی یا فایل <code>worker.js</code> را مستقیم دانلود کنی. در Worker: <code>Edit Code</code> ← همه را پاک کن ← Paste کن ← <code>Deploy</code>. برای آپلود فایل نیز می‌توانی از گزینه Upload در داشبورد استفاده کنی.</div>
+          <div class="gdesc" id="g3-desc-pages" data-i18n="g3.descPages" style="display:none">مقدار Token به‌صورت خودکار داخل کد جاگذاری می‌شود. دکمه‌ی «دانلود ZIP» را بزن تا فایلی حاوی <code>_worker.js</code> دانلود شود، سپس همین فایل ZIP را در صفحه‌ی «Drag and drop your files» کلادفلر رها کن و <code>Deploy site</code> را بزن. توجه: فایل باید دقیقاً با نام <code>_worker.js</code> در ریشه‌ی ZIP باشد تا Pages آن را به‌عنوان Worker اجرا کند، نه یک فایل استاتیک ساده.</div>
           <div class="fg mt-14" id="tgBlock">
             <label class="ck-lbl-wide"><input type="checkbox" id="tgEnable"> <span data-i18n="tg.enable">فعال‌سازی Telegram WEB Proxy</span></label>
             <div id="tgBody" style="display:none">
-              <p class="hint" data-i18n="tg.intro">با فعال‌سازی، به‌جای کد تک‌فایلی یک بسته‌ی چندفایلی (Worker + Durable Object) ساخته می‌شود که علاوه بر VLESS/Trojan، پروکسی WEB تلگرام را هم سرو می‌کند. استقرار از مسیر GitHub و Cloudflare انجام می‌شود، نه copy/paste.</p>
+              <p class="hint" data-i18n="tg.intro">با فعال‌سازی، به‌جای کد تک‌فایلی یک بسته‌ی چندفایلی (<bdi>Worker + Durable Object</bdi>) ساخته می‌شود که علاوه بر VLESS/Trojan، پروکسی WEB تلگرام را هم سرو می‌کند. استقرار از مسیر GitHub و Cloudflare انجام می‌شود، نه copy/paste.</p>
               <label class="lbl-ltr">Secret</label>
               <div class="urow">
                 <input type="text" id="tgSecret" autocomplete="off" spellcheck="false" autocapitalize="off"/>
@@ -89,8 +89,8 @@
                   <button class="bsm" id="btn-cp-tg" data-i18n="btn.copy">⎘ کپی</button>
                 </div>
               </div>
-              <label class="ck-lbl-wide mt-8"><input type="checkbox" id="tgPadding"> <span data-i18n="tg.padding">Random padding (پیشوند dd)</span></label>
-              <p class="hint" data-i18n="tg.secretHint">این secret را در فایل یا GitHub قرار نده؛ فقط به‌عنوان Secret با نام TELEGRAM_SECRET در Cloudflare ذخیره می‌شود.</p>
+              <label class="ck-lbl-wide mt-8"><input type="checkbox" id="tgPadding"> <span data-i18n="tg.padding">فعال‌سازی Random padding (پیشوند dd)</span></label>
+              <p class="hint" data-i18n="tg.secretHint">این secret را در فایل یا GitHub قرار نده؛ فقط به‌عنوان Secret با نام TELEGRAM_SECRET در Cloudflare ذخیره می‌شود. می‌توانی Secret دلخواه خودت را هم در این کادر Paste یا تایپ کنی.</p>
               <label class="lbl-ltr">Hostname</label>
               <div class="urow">
                 <input type="text" id="tgHost" readonly autocomplete="off"/>
@@ -214,7 +214,7 @@
    <div class="sec-body">
 
     <div class="fg settings-box">
-      <label class="box-lbl" data-i18n="lbl.ipSettingsBox">IP های سالم</label>
+      <label class="box-lbl" data-i18n="lbl.ipSettingsBox">آدرس IP های سالم</label>
       <label for="ips" data-i18n="lbl.ipAddresses">آدرس‌های IP (هر خط یک IP)</label>
       <div class="alert ab mb-10">
         <span class="aico">ℹ</span>
@@ -272,7 +272,7 @@
       </div>
 
       <div class="fg mt-10">
-      <label class="mb-9" for="fpSelect" data-i18n="lbl.fingerprint">TLS Fingerprint — جهت دور زدن DPI</label>
+      <label class="mb-9" for="fpSelect" data-i18n="lbl.fingerprint">انتخاب TLS Fingerprint — جهت دور زدن DPI</label>
       <select id="fpSelect">
         <option value="chrome" selected>chrome</option>
         <option value="firefox">firefox</option>
@@ -307,15 +307,15 @@
       <div class="frag-grid disabled" id="fragFields">
         <div>
           <label class="adv-lbl" for="fragPackets">Fragment Packets</label>
-          <input type="text" id="fragPackets" value="tlshello" placeholder="tlshello یا 1-2" data-i18n-placeholder="ph.fragPackets"/>
+          <input type="text" id="fragPackets" value="tlshello" placeholder="مثال: tlshello یا 1-2" data-i18n-placeholder="ph.fragPackets"/>
         </div>
         <div>
           <label class="adv-lbl" for="fragInterval">Fragment Interval</label>
-          <input type="text" id="fragInterval" value="10-20" placeholder="10-20 یا 0,1,2" data-i18n-placeholder="ph.fragIntervalMulti"/>
+          <input type="text" id="fragInterval" value="10-20" placeholder="مثال: 10-20 یا 0,1,2" data-i18n-placeholder="ph.fragIntervalMulti"/>
         </div>
         <div>
           <label class="adv-lbl" for="fragLength">Fragment Length</label>
-          <input type="text" id="fragLength" value="10-20" placeholder="10-20 یا 5,94,1" data-i18n-placeholder="ph.fragLengthMulti"/>
+          <input type="text" id="fragLength" value="10-20" placeholder="مثال: 10-20 یا 5,94,1" data-i18n-placeholder="ph.fragLengthMulti"/>
         </div>
         <div>
           <label class="adv-lbl" for="fragMaxSplit">Fragment Max Split</label>
@@ -332,15 +332,15 @@
         <div class="frag-grid disabled" id="frag2Fields">
           <div>
             <label class="adv-lbl" for="frag2Packets">Stage 2 Packets</label>
-            <input type="text" id="frag2Packets" value="1-1" placeholder="tlshello یا 1-2" data-i18n-placeholder="ph.fragPackets"/>
+            <input type="text" id="frag2Packets" value="1-1" placeholder="مثال: tlshello یا 1-2" data-i18n-placeholder="ph.fragPackets"/>
           </div>
           <div>
             <label class="adv-lbl" for="frag2Interval">Stage 2 Interval</label>
-            <input type="text" id="frag2Interval" value="10-20" placeholder="10-20 یا 0,1,2" data-i18n-placeholder="ph.fragIntervalMulti"/>
+            <input type="text" id="frag2Interval" value="10-20" placeholder="مثال: 10-20 یا 0,1,2" data-i18n-placeholder="ph.fragIntervalMulti"/>
           </div>
           <div>
             <label class="adv-lbl" for="frag2Length">Stage 2 Length</label>
-            <input type="text" id="frag2Length" value="100-200" placeholder="100-200 یا 109,1" data-i18n-placeholder="ph.fragLengthMulti"/>
+            <input type="text" id="frag2Length" value="100-200" placeholder="مثال: 10-20 یا 5,94,1" data-i18n-placeholder="ph.fragLengthMulti"/>
           </div>
           <div>
             <label class="adv-lbl" for="frag2MaxSplit">Stage 2 Max Split</label>
@@ -352,7 +352,7 @@
         <label class="ck-lbl-wide mt-14 mb-10"><input type="checkbox" id="fpUnsafeXray"> <span data-i18n="lbl.fpUnsafeXray">استفاده از فینگرپرینت خام به‌جای فینگرپرینت بالا</span></label>
 
         <div class="fg mt-10 mb-0">
-          <label class="adv-lbl" data-i18n="lbl.cipherSuitesXray">Cipher Suites سفارشی (اختیاری، فقط JSON هسته Xray)</label>
+          <label class="adv-lbl txt-dir" data-i18n="lbl.cipherSuitesXray">فهرست Cipher Suites سفارشی (اختیاری، فقط JSON هسته Xray)</label>
           <textarea id="cipherSuitesXray" class="cs-textarea" placeholder="مثال: TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256" data-i18n-placeholder="ph.cipherSuites"></textarea>
         </div>
         <p class="hint mt-8" data-i18n="hint.fpUnsafeInfo">این دو گزینه طول واقعی بسته ClientHello را ثابت و قابل پیش‌بینی می‌کنند تا نقاط شکستن Fragment همیشه درست بیفتند. برای غیرفعال کردن هرکدام، تیک را بردارید یا کادر را خالی بگذارید.</p>
@@ -394,11 +394,11 @@
       <div id="lanAuthWrap" class="mt-12" style="display:none">
         <div class="adv-dns-grid">
           <div>
-            <label class="adv-lbl" for="lanUsername" data-i18n="lbl.lanUsername">نام کاربری</label>
+            <label class="adv-lbl txt-dir" for="lanUsername" data-i18n="lbl.lanUsername">نام کاربری</label>
             <input type="text" id="lanUsername" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"/>
           </div>
           <div>
-            <label class="adv-lbl" for="lanPassword" data-i18n="lbl.lanPassword">رمز عبور</label>
+            <label class="adv-lbl txt-dir" for="lanPassword" data-i18n="lbl.lanPassword">رمز عبور</label>
             <input type="password" id="lanPassword" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false"/>
           </div>
         </div>
@@ -409,7 +409,7 @@
           <label class="ck-lbl"><input type="checkbox" id="echEnable"> ECH</label>
         </div>
         <div id="echFields" class="ech-field disabled">
-          <label class="adv-lbl mt-8" for="echDns" data-i18n="lbl.echDnsServer">DNS سرور برای دریافت کلید ECH</label>
+          <label class="adv-lbl mt-8 txt-dir" for="echDns" data-i18n="lbl.echDnsServer">سرور DNS برای دریافت کلید ECH</label>
           <input type="text" id="echDns" value="https://cloudflare-dns.com/dns-query" placeholder="https://cloudflare-dns.com/dns-query"/>
           <p class="hint mt-6" data-i18n="hint.echInfo">فعال کردن چک‌باکس کافی است — کلید رمزنگاری دامنه Worker یا Pages شما به صورت خودکار از این سرور DNS دریافت می‌شود. ECH روی هر چهار فرمت خروجی (لینک VLESS/Trojan، JSON برای Xray، JSON برای Sing-box و JSON برای Clash) اعمال می‌شود. آدرس پیش‌فرض (DoH Cloudflare) بهترین گزینه برای ایران است زیرا یک آدرس <code>https://</code> رمزگذاری‌شده است و برخلاف <code>udp://8.8.8.8</code> در برابر دستکاری DNS توسط ISPها مقاوم است. اگر DoH Proxy شخصی دارید، آدرس آن را اینجا وارد کنید.</p>
         </div>
@@ -429,19 +429,19 @@
           <input type="text" id="remoteDns" value="https://cloudflare-dns.com/dns-query" placeholder="https://cloudflare-dns.com/dns-query"/>
         </div>
       </div>
-      <p class="hint mt-10" data-i18n="hint.dnsInfo">Local DNS برای resolve دامنه‌های داخلی کشورهای انتخاب‌شده استفاده می‌شود. Remote DNS به‌صورت پیشفرض روی Cloudflare DoH تنظیم است و می‌توانید آن را با هر آدرس DoH دلخواه جایگزین کنید. با ابزار DoH Proxy می‌توانید یک سرور DoH اختصاصی روی Cloudflare بسازید و آدرس آن را اینجا وارد کنید. Allow LAN اتصال سایر دستگاه‌های شبکه محلی را فعال می‌کند. ECH فقط در حالت Normal (بدون Fragment) روی هر چهار فرمت خروجی اعمال می‌شود؛ Fragment و ECH را نمی‌توان همزمان فعال کرد.</p>
+      <p class="hint mt-10" data-i18n="hint.dnsInfo">آدرس Local DNS برای resolve دامنه‌های داخلی کشورهای انتخاب‌شده استفاده می‌شود. آدرس Remote DNS به‌صورت پیشفرض روی Cloudflare DoH تنظیم است و می‌توانید آن را با هر آدرس DoH دلخواه جایگزین کنید. با ابزار DoH Proxy می‌توانید یک سرور DoH اختصاصی روی Cloudflare بسازید و آدرس آن را اینجا وارد کنید. گزینه‌ی Allow LAN اتصال سایر دستگاه‌های شبکه محلی را فعال می‌کند. قابلیت ECH فقط در حالت Normal (بدون Fragment) روی هر چهار فرمت خروجی اعمال می‌شود؛ Fragment و ECH را نمی‌توان همزمان فعال کرد.</p>
     </div>
 
     <div class="fg mt-14 settings-box">
       <label class="box-lbl" data-i18n="lbl.routingRules">قوانین مسیریابی</label>
-      <label class="adv-lbl mb-8" data-i18n="lbl.bypassRules">Bypass rules — کشورهایی که به‌صورت مستقیم مسیریابی شوند</label>
+      <label class="adv-lbl mb-8 txt-dir" data-i18n="lbl.bypassRules">دور زدن پروکسی (Bypass rules) — کشورهایی که به‌صورت مستقیم مسیریابی شوند</label>
       <div class="port-row mb-10">
         <label class="ck-lbl"><input type="checkbox" id="routeIr" checked> <span data-i18n="country.ir">ایران</span></label>
         <label class="ck-lbl"><input type="checkbox" id="routeCn"> <span data-i18n="country.cn">چین</span></label>
         <label class="ck-lbl"><input type="checkbox" id="routeRu"> <span data-i18n="country.ru">روسیه</span></label>
       </div>
       <p class="hint mt-8" data-i18n="hint.bypassInfo">کشورهایی که تیک می‌زنید، ترافیک و DNS مربوط به دامنه‌ها و آی‌پی‌های همان کشور به‌صورت مستقیم (بدون عبور از پروکسی) مسیریابی می‌شود؛ این قوانین در هر سه فرمت خروجی JSON، Sing-box و Clash اعمال می‌شوند. حداقل یک کشور باید انتخاب شده باشد.</p>
-      <label class="adv-lbl mb-8 mt-12" data-i18n="lbl.blockRules">Block rules — دسته‌هایی که مسدود شوند</label>
+      <label class="adv-lbl mb-8 mt-12 txt-dir" data-i18n="lbl.blockRules">مسدودسازی (Block rules) — دسته‌هایی که مسدود شوند</label>
       <div class="port-row mb-10">
         <label class="ck-lbl"><input type="checkbox" id="blockPromo"> Ads</label>
         <label class="ck-lbl"><input type="checkbox" id="blockPorn"> Porn</label>
@@ -452,9 +452,9 @@
       </div>
       <p class="hint mt-8" data-i18n="hint.blockInfo">دسته‌هایی که تیک می‌زنید در هر سه فرمت خروجی مسدود می‌شوند. QUIC یعنی مسدود شدن ترافیک UDP (شامل HTTP/3) تا مرورگر به‌صورت خودکار روی HTTPS معمولی که از تانل شما عبور می‌کند سوییچ کند.</p>
 
-      <label class="adv-lbl mb-8 mt-12" data-i18n="lbl.sanctionBypass">Bypass Sanctions — دور زدن مستقیم سرویس‌های تحریمی</label>
+      <label class="adv-lbl mb-8 mt-12 txt-dir" data-i18n="lbl.sanctionBypass">ضدتحریم (Bypass Sanctions) — دور زدن مستقیم سرویس‌های تحریمی</label>
       <div class="fg mb-8">
-        <label class="adv-lbl" for="sanctionDns" data-i18n="lbl.sanctionDns">DNS ضدتحریم</label>
+        <label class="adv-lbl txt-dir" for="sanctionDns" data-i18n="lbl.sanctionDns">آدرس DNS ضدتحریم</label>
         <input type="text" id="sanctionDns" value="178.22.122.100" placeholder="178.22.122.100"/>
       </div>
       <div class="port-row mb-10">
@@ -476,15 +476,15 @@
       </div>
       <p class="hint mt-8" data-i18n="hint.sanctionInfo">سرویس‌هایی که تیک می‌زنید همیشه مستقیم (با DNS بالا) مسیریابی می‌شوند، حتی اگر IP خروجی شما ایرانی تشخیص داده شود.</p>
 
-      <label class="adv-lbl mb-8 mt-12" data-i18n="lbl.customSanctionRules">دامنه‌های سفارشی ضدتحریم — هر خط یک دامنه (فقط دامنه، بدون IP)</label>
+      <label class="adv-lbl mb-8 mt-12 txt-dir" data-i18n="lbl.customSanctionRules">دامنه‌های سفارشی ضدتحریم — هر خط یک دامنه (فقط دامنه، بدون IP)</label>
       <textarea id="customSanctionRules" placeholder="example.com" autocomplete="off"></textarea>
-      <p class="hint mt-8" data-i18n="hint.customSanctionRulesInfo">این دامنه‌ها هم مستقیم مسیریابی می‌شوند و هم از DNS ضدتحریم بالا استفاده می‌کنند. چون DNS فقط دامنه Resolve می‌کند، این کادر فقط دامنه قبول می‌کند؛ برای IP/CIDR از کادر Custom Bypass Rules پایین‌تر استفاده کنید.</p>
+      <p class="hint mt-8" data-i18n="hint.customSanctionRulesInfo">این دامنه‌ها هم مستقیم مسیریابی می‌شوند و هم از DNS ضدتحریم بالا استفاده می‌کنند. چون DNS فقط دامنه Resolve می‌کند، این کادر فقط دامنه قبول می‌کند؛ برای IP/CIDR از کادر قوانین سفارشی Bypass پایین‌تر استفاده کنید.</p>
 
-      <label class="adv-lbl mb-8 mt-12" data-i18n="lbl.customBypassRules">Custom Bypass Rules — هر خط یک دامنه/IP/CIDR</label>
+      <label class="adv-lbl mb-8 mt-12 txt-dir" data-i18n="lbl.customBypassRules">قوانین سفارشی Bypass — هر خط یک دامنه/IP/CIDR</label>
       <textarea id="customBypassRules" placeholder="example.com&#10;192.168.1.1&#10;192.168.1.0/24" autocomplete="off"></textarea>
       <p class="hint mt-8" data-i18n="hint.customRulesInfo">دامنه‌ی وارد شده و همه زیردامنه‌هایش هم شامل می‌شود.</p>
 
-      <label class="adv-lbl mb-8 mt-12" data-i18n="lbl.customBlockRules">Custom Block Rules — هر خط یک دامنه/IP/CIDR</label>
+      <label class="adv-lbl mb-8 mt-12 txt-dir" data-i18n="lbl.customBlockRules">قوانین سفارشی Block — هر خط یک دامنه/IP/CIDR</label>
       <textarea id="customBlockRules" placeholder="example.com&#10;192.168.1.1&#10;192.168.1.0/24" autocomplete="off"></textarea>
       <p class="hint mt-8" data-i18n="hint.customRulesInfo">دامنه‌ی وارد شده و همه زیردامنه‌هایش هم شامل می‌شود.</p>
     </div>
@@ -520,8 +520,8 @@
     </div>
 
     <div class="fg mt-14 settings-box">
-      <label class="box-lbl" data-i18n="lbl.chainProxy">Chain Proxy — ثابت کردن IP خروجی (اختیاری)</label>
-      <textarea id="chainConfig" placeholder="vless://... یا trojan://... یا ss://... یا socks://... یا http://..." data-i18n-placeholder="ph.chainConfig" autocomplete="off"></textarea>
+      <label class="box-lbl" data-i18n="lbl.chainProxy">قابلیت Chain Proxy — ثابت کردن IP خروجی (اختیاری)</label>
+      <textarea id="chainConfig" placeholder="مثال: vless://... یا trojan://... یا ss://... یا socks://... یا http://..." data-i18n-placeholder="ph.chainConfig" autocomplete="off"></textarea>
       <p class="hint mt-8" data-i18n="hint.chainInfo">یک کانفیگ با فرمت URL از یک سرور دیگر (مثلاً یک VPS با IP ثابت) اینجا وارد کنید تا کانفیگ‌های TCB به آن Chain شوند: ابتدا از طریق Worker یا Pages شما (برای عبور از فیلترینگ) و سپس از طریق این سرور به اینترنت متصل می‌شوید — یعنی IP خروجی شما همیشه ثابت و برابر با IP همان سرور خواهد بود. فرمت‌های پشتیبانی‌شده: VLESS (tcp/ws/grpc با none/tls/reality)، Trojan (tcp/ws/grpc با tls)، Shadowsocks، SOCKS5 و HTTP. این قابلیت فقط روی کانفیگ‌های JSON برای Xray، Sing-box و Clash اعمال می‌شود (نه روی کانفیگ‌های تکی فرمت لینک)، چون Chain به دو گره هماهنگ نیاز دارد که فقط در یک فایل کانفیگ کامل قابل تعریف است. وقتی این قابلیت فعال باشد، ایموجی ⛓️ کنار نام کانفیگ‌های JSON اضافه می‌شود. برای غیرفعال کردن، این کادر را خالی بگذارید. نکته مهم: کانفیگی که اینجا وارد می‌کنید نباید مربوط به یک Cloudflare Worker یا Pages دیگر باشد، چون هیچ‌کدام آی‌پی اختصاصی و ثابت ندارند؛ حتماً از کانفیگ یک سرور واقعی (مثل VPS) با آی‌پی اختصاصی خودش استفاده کنید تا هدف ثابت ماندن IP خروجی برآورده شود.</p>
     </div>
 
