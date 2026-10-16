@@ -1,4 +1,4 @@
-import { randomizeCase, resolveSelectedCountries, resolveSelectedBlockRules, resolveSelectedSanctionRules, durationToSeconds, resolveTcbLabel } from './proxy-utils.js';
+import { randomizeCase, resolveSelectedCountries, resolveSelectedBlockRules, resolveSelectedSanctionRules, durationToSeconds, resolveTcbLabel, resolveLanAuth } from './proxy-utils.js';
 
 function isDomainAddr(addr) {
   return /^(?!-)(?:[A-Za-z0-9-]{1,63}\.)+[A-Za-z]{2,}$/.test(addr);
@@ -121,10 +121,12 @@ function parseDnsUrl(value) {
 
 export function buildSingboxConfig(token, password, dom, ips, tlsPorts, wsPorts, fp, settings, protocols) {
   const {
-    basePath, fragEnable, fakeDnsEnable, ipv6Enable, lanAccess,
+    basePath, fragEnable, fakeDnsEnable, ipv6Enable, lanAccess, lanUsername, lanPassword,
     remoteDnsVal, localDnsVal, tcpFastOpen, routingCountries, blockRules, leastPingInterval, echEnable, parsedChain, jsonName, customDomainUsed, customDomain,
     sanctionDnsVal, sanctionBypass, customBypassRules, customBlockRules, customSanctionRules
   } = settings;
+
+  const lanAuth = resolveLanAuth(lanAccess, lanUsername, lanPassword);
 
   const selectedCountries = resolveSelectedCountries(routingCountries);
   const geositeTags = selectedCountries.map(c => 'geosite-' + SINGBOX_GEOSITE_SUFFIX[c]);
@@ -434,7 +436,8 @@ export function buildSingboxConfig(token, password, dom, ips, tlsPorts, wsPorts,
         type: 'mixed',
         tag: 'mixed-in',
         listen: lanAccess ? '0.0.0.0' : '127.0.0.1',
-        listen_port: 2080
+        listen_port: 2080,
+        ...(lanAuth ? { users: [{ username: lanAuth.username, password: lanAuth.password }] } : {})
       }
     ],
     outbounds: outbounds,
