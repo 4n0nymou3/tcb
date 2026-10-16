@@ -74,9 +74,23 @@ export function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
+function highlightTokens(line, regex, render) {
+  let out = '';
+  let last = 0;
+  line.replace(regex, function () {
+    const args = Array.prototype.slice.call(arguments);
+    const offset = args[args.length - 2];
+    const match = args[0];
+    out += escapeHtml(line.slice(last, offset)) + render.apply(null, args.slice(0, args.length - 2));
+    last = offset + match.length;
+    return match;
+  });
+  return out + escapeHtml(line.slice(last));
+}
+
 export function highlightJsonLine(line) {
-  const escaped = escapeHtml(line);
-  return escaped.replace(
+  return highlightTokens(
+    line,
     /("(?:\\.|[^"\\])*"(\s*:)?|\btrue\b|\bfalse\b|\bnull\b|-?\d+(?:\.\d+)?)/g,
     function (match) {
       let cls = 'jn';
@@ -87,42 +101,42 @@ export function highlightJsonLine(line) {
       } else if (/^null$/.test(match)) {
         cls = 'jz';
       }
-      return '<span class="' + cls + '">' + match + '</span>';
+      return '<span class="' + cls + '">' + escapeHtml(match) + '</span>';
     }
   );
 }
 
 function highlightYamlRest(text) {
-  if (!text) return text;
-  return text.replace(
+  if (!text) return '';
+  return highlightTokens(
+    text,
     /(#.*$)|("(?:\\.|[^"\\])*")|(\btrue\b|\bfalse\b|\bnull\b)|(-?\b\d+(?:\.\d+)?\b)/g,
     function (match, comment, str, bool, num) {
-      if (comment) return '<span class="jc">' + comment + '</span>';
-      if (str) return '<span class="js">' + str + '</span>';
-      if (bool) return '<span class="jb">' + bool + '</span>';
-      if (num) return '<span class="jn">' + num + '</span>';
-      return match;
+      if (comment) return '<span class="jc">' + escapeHtml(comment) + '</span>';
+      if (str) return '<span class="js">' + escapeHtml(str) + '</span>';
+      if (bool) return '<span class="jb">' + escapeHtml(bool) + '</span>';
+      if (num) return '<span class="jn">' + escapeHtml(num) + '</span>';
+      return escapeHtml(match);
     }
   );
 }
 
 export function highlightYamlLine(line) {
-  const escaped = escapeHtml(line);
-  const kv = escaped.match(/^(\s*(?:-\s+)?)([A-Za-z0-9_.-]+)(:)(.*)$/);
+  const kv = line.match(/^(\s*(?:-\s+)?)([A-Za-z0-9_.-]+)(:)(.*)$/);
   if (kv) {
-    return kv[1] + '<span class="jk">' + kv[2] + kv[3] + '</span>' + highlightYamlRest(kv[4]);
+    return escapeHtml(kv[1]) + '<span class="jk">' + escapeHtml(kv[2] + kv[3]) + '</span>' + highlightYamlRest(kv[4]);
   }
-  return highlightYamlRest(escaped);
+  return highlightYamlRest(line);
 }
 
 export function highlightJsLine(line) {
-  const escaped = escapeHtml(line);
-  return escaped.replace(
+  return highlightTokens(
+    line,
     /('(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"|\b(?:import|from|const|let|async|await|return|if|else|for|of|new|try|catch|null|true|false|export|default|function)\b|\b\d+\b)/g,
     function (match) {
-      if (/^['"]/.test(match)) return '<span class="s">' + match + '</span>';
-      if (/^\d/.test(match)) return '<span class="n">' + match + '</span>';
-      return '<span class="k">' + match + '</span>';
+      if (/^['"]/.test(match)) return '<span class="s">' + escapeHtml(match) + '</span>';
+      if (/^\d/.test(match)) return '<span class="n">' + escapeHtml(match) + '</span>';
+      return '<span class="k">' + escapeHtml(match) + '</span>';
     }
   );
 }
