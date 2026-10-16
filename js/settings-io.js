@@ -1,7 +1,5 @@
 const APP_ID = 'tcb';
 const SCHEMA_VERSION = 7;
-const PREVIOUS_SCHEMA_VERSION = 6;
-const LEGACY_SCHEMA_VERSION = 5;
 
 export function collectExportData() {
   return {
@@ -9,9 +7,14 @@ export function collectExportData() {
     schemaVersion: SCHEMA_VERSION,
     exportedAt: new Date().toISOString(),
     data: {
+      deployTarget: document.getElementById('tab-pages') && document.getElementById('tab-pages').classList.contains('active') ? 'pages' : 'worker',
+      telegramWebProxy: {
+        enabled: document.getElementById('tgEnable').checked,
+        secretBase: document.getElementById('tgSecret').dataset.base || '',
+        randomPadding: document.getElementById('tgPadding').checked
+      },
       token: document.getElementById('uid').value.trim(),
       trojanPassword: document.getElementById('tpw').value.trim(),
-      deployTarget: document.getElementById('tab-pages') && document.getElementById('tab-pages').classList.contains('active') ? 'pages' : 'worker',
       workerDomain: document.getElementById('wdom').value.trim(),
       customDomainUsed: document.getElementById('customDomainUsed').checked,
       customDomain: document.getElementById('customDomainInput').value,
@@ -101,12 +104,7 @@ export function collectExportData() {
         leastLoadTimeout: document.getElementById('leastLoadTimeout').value
       },
       chainConfig: document.getElementById('chainConfig').value,
-      jsonName: document.getElementById('jsonName').value,
-      telegramWebProxy: {
-        enabled: document.getElementById('tgEnable').checked,
-        secretBase: document.getElementById('tgSecret').dataset.base || '',
-        randomPadding: document.getElementById('tgPadding').checked
-      }
+      jsonName: document.getElementById('jsonName').value
     }
   };
 }
@@ -149,7 +147,12 @@ function hasValidTelegramShape(t) {
   return t.secretBase === '' || /^[0-9a-f]{32}$/.test(t.secretBase);
 }
 
-function hasExactExportShape(d, version) {
+function isOptionOf(id, value) {
+  const el = document.getElementById(id);
+  return !!el && [...el.options].some(o => o.value === value);
+}
+
+function hasExactExportShape(d) {
   if (!isPlainObject(d)) return false;
   if (!isStr(d.token)) return false;
   if (!isStr(d.trojanPassword)) return false;
@@ -164,8 +167,8 @@ function hasExactExportShape(d, version) {
   if (!isBool(d.protocols.trojan)) return false;
   if (!isStrArray(d.tlsPorts)) return false;
   if (!isStrArray(d.wsPorts)) return false;
-  if (!isStr(d.fingerprint)) return false;
-  if (!isStr(d.wsPath)) return false;
+  if (!isStr(d.fingerprint) || !isOptionOf('fpSelect', d.fingerprint)) return false;
+  if (!isStr(d.wsPath) || !isOptionOf('pathSelect', d.wsPath)) return false;
 
   if (!isPlainObject(d.fragment)) return false;
   if (!isBool(d.fragment.enabled)) return false;
@@ -184,14 +187,12 @@ function hasExactExportShape(d, version) {
   if (!isStr(d.fragment.xrayTls.cipherSuites)) return false;
 
   if (!isPlainObject(d.advancedJson)) return false;
-  if (!isStr(d.advancedJson.fakeDns)) return false;
-  if (!isStr(d.advancedJson.ipv6)) return false;
-  if (!isStr(d.advancedJson.lanAccess)) return false;
-  if (!isStr(d.advancedJson.tcpFastOpen)) return false;
-  if (version === SCHEMA_VERSION) {
-    if (!isStr(d.advancedJson.lanUsername)) return false;
-    if (!isStr(d.advancedJson.lanPassword)) return false;
-  }
+  if (!isStr(d.advancedJson.fakeDns) || !isOptionOf('fakeDns', d.advancedJson.fakeDns)) return false;
+  if (!isStr(d.advancedJson.ipv6) || !isOptionOf('ipv6', d.advancedJson.ipv6)) return false;
+  if (!isStr(d.advancedJson.lanAccess) || !isOptionOf('lanAccess', d.advancedJson.lanAccess)) return false;
+  if (!isStr(d.advancedJson.tcpFastOpen) || !isOptionOf('tcpFastOpen', d.advancedJson.tcpFastOpen)) return false;
+  if (!isStr(d.advancedJson.lanUsername)) return false;
+  if (!isStr(d.advancedJson.lanPassword)) return false;
 
   if (!isPlainObject(d.ech)) return false;
   if (!isBool(d.ech.enabled)) return false;
@@ -245,16 +246,13 @@ function hasExactExportShape(d, version) {
   if (!isStr(d.chainConfig)) return false;
   if (!isStr(d.jsonName)) return false;
 
-  if (version !== LEGACY_SCHEMA_VERSION && !hasValidTelegramShape(d.telegramWebProxy)) return false;
+  if (!hasValidTelegramShape(d.telegramWebProxy)) return false;
 
   return true;
 }
 
 export function isCompatibleExport(payload) {
-  if (payload.schemaVersion === SCHEMA_VERSION) return hasExactExportShape(payload.data, SCHEMA_VERSION);
-  if (payload.schemaVersion === PREVIOUS_SCHEMA_VERSION) return hasExactExportShape(payload.data, PREVIOUS_SCHEMA_VERSION);
-  if (payload.schemaVersion === LEGACY_SCHEMA_VERSION) return hasExactExportShape(payload.data, LEGACY_SCHEMA_VERSION);
-  return false;
+  return payload.schemaVersion === SCHEMA_VERSION && hasExactExportShape(payload.data);
 }
 
 export function applyImportedSettings(payload) {
@@ -298,8 +296,8 @@ export function applyImportedSettings(payload) {
   document.getElementById('ipv6').value = d.advancedJson.ipv6;
   document.getElementById('lanAccess').value = d.advancedJson.lanAccess;
   document.getElementById('tcpFastOpen').value = d.advancedJson.tcpFastOpen;
-  document.getElementById('lanUsername').value = payload.schemaVersion === SCHEMA_VERSION ? d.advancedJson.lanUsername : '';
-  document.getElementById('lanPassword').value = payload.schemaVersion === SCHEMA_VERSION ? d.advancedJson.lanPassword : '';
+  document.getElementById('lanUsername').value = d.advancedJson.lanUsername;
+  document.getElementById('lanPassword').value = d.advancedJson.lanPassword;
 
   document.getElementById('echEnable').checked = d.ech.enabled;
   document.getElementById('echDns').value = d.ech.dns;
@@ -347,7 +345,7 @@ export function applyImportedSettings(payload) {
   document.getElementById('chainConfig').value = d.chainConfig;
   document.getElementById('jsonName').value = d.jsonName;
 
-  const tg = payload.schemaVersion !== LEGACY_SCHEMA_VERSION ? d.telegramWebProxy : { enabled: false, secretBase: '', randomPadding: false };
+  const tg = d.telegramWebProxy;
   document.getElementById('tgEnable').checked = tg.enabled;
   document.getElementById('tgPadding').checked = tg.randomPadding;
   document.getElementById('tgSecret').dataset.base = tg.secretBase;
