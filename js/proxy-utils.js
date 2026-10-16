@@ -95,3 +95,32 @@ export function resolveTcbLabel(jsonName, echEnable, fragEnable, customDomainUse
   const base = jsonName || (echEnable ? '👽 Anonymous TCB (ECH) 🚀' : (fragEnable ? '👽 Anonymous TCB (Fragment) 🚀' : '👽 Anonymous TCB (Normal) 🚀'));
   return base + (customDomainUsed ? ' 🌐' : '');
 }
+
+const LAN_AUTH_MAX_BYTES = 255;
+
+function lanAuthHasControlChars(value) {
+  return /[\u0000-\u001f\u007f]/.test(value);
+}
+
+function lanAuthByteLength(value) {
+  return new TextEncoder().encode(value).length;
+}
+
+export function validateLanAuth(lanAccess, lanUsername, lanPassword) {
+  if (!lanAccess) return null;
+  const user = typeof lanUsername === 'string' ? lanUsername : '';
+  const pass = typeof lanPassword === 'string' ? lanPassword : '';
+  if (user === '' && pass === '') return null;
+  if (user === '' || pass === '') return 'toast.lanAuthIncomplete';
+  if (user.includes(':')) return 'toast.lanAuthUserColon';
+  if (lanAuthHasControlChars(user) || lanAuthHasControlChars(pass)) return 'toast.lanAuthControlChars';
+  if (lanAuthByteLength(user) > LAN_AUTH_MAX_BYTES || lanAuthByteLength(pass) > LAN_AUTH_MAX_BYTES) return 'toast.lanAuthTooLong';
+  return null;
+}
+
+export function resolveLanAuth(lanAccess, lanUsername, lanPassword) {
+  const errorKey = validateLanAuth(lanAccess, lanUsername, lanPassword);
+  if (errorKey) throw new Error(errorKey);
+  if (!lanAccess || !lanUsername) return null;
+  return { username: lanUsername, password: lanPassword };
+}
