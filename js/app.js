@@ -163,7 +163,7 @@ function updateTelegramUi() {
   if (isPages) warns.push(t('tg.warnPagesName'));
   const box = document.getElementById('tgWarn');
   box.style.display = warns.length ? 'flex' : 'none';
-  document.getElementById('tgWarnText').textContent = warns.join(' ');
+  document.getElementById('tgWarnText').innerHTML = warns.join(' ');
 }
 
 function mkTelegramSecret() {
