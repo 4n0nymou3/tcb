@@ -1,4 +1,4 @@
-import { randomizeCase, resolveSelectedCountries, resolveSelectedBlockRules, resolveSelectedSanctionRules, resolveTcbLabel } from './proxy-utils.js';
+import { randomizeCase, resolveSelectedCountries, resolveSelectedBlockRules, resolveSelectedSanctionRules, resolveTcbLabel, resolveLanAuth } from './proxy-utils.js';
 
 export function buildConfig(token, dom, ip, port, security, fp, path, label, echActive, echDns) {
   const h = ip.includes(':') ? `[${ip}]` : ip;
@@ -189,11 +189,13 @@ export function buildJsonConfig(token, password, dom, ips, tlsPorts, wsPorts, fp
     basePath, fragEnable, fragPackets, fragLength, fragInterval, fragMaxSplit,
     frag2Enable, frag2Packets, frag2Length, frag2Interval, frag2MaxSplit,
     fpUnsafeXray, cipherSuitesXray,
-    fakeDnsEnable, ipv6Enable, lanAccess, remoteDnsVal, localDnsVal,
+    fakeDnsEnable, ipv6Enable, lanAccess, lanUsername, lanPassword, remoteDnsVal, localDnsVal,
     tcpFastOpen, echEnable, echDns, jsonName, customDomainUsed, customDomain, routingCountries, blockRules,
     leastPingInterval, leastLoadInterval, leastLoadMode, leastLoadSampling, leastLoadTimeout, parsedChain,
     sanctionDnsVal, sanctionBypass, customBypassRules, customBlockRules, customSanctionRules
   } = settings;
+
+  const lanAuth = resolveLanAuth(lanAccess, lanUsername, lanPassword);
 
   const advTls = { frag2Enable, frag2Packets, frag2Length, frag2Interval, frag2MaxSplit, fpUnsafeXray, cipherSuitesXray };
 
@@ -384,7 +386,9 @@ export function buildJsonConfig(token, password, dom, ips, tlsPorts, wsPorts, fp
         listen: lanAccess ? '0.0.0.0' : '127.0.0.1',
         port: 10808,
         protocol: 'mixed',
-        settings: { auth: 'noauth', udp: true, userLevel: 8 },
+        settings: lanAuth
+          ? { auth: 'password', accounts: [{ user: lanAuth.username, pass: lanAuth.password }], udp: true, userLevel: 8 }
+          : { auth: 'noauth', udp: true, userLevel: 8 },
         sniffing: { destOverride: sniffingDestOverride, enabled: true, routeOnly: true },
         tag: 'mixed-in'
       },
