@@ -152,23 +152,101 @@ check('settings: v7 payload passes compatibility check', w.IO.isCompatibleExport
 setCk('tgEnable', false); setCk('tgPadding', false); $('tgSecret').dataset.base = '';
 w.IO.applyImportedSettings(payload);
 check('settings: import restores enabled, padding and secret base', $('tgEnable').checked && $('tgPadding').checked && $('tgSecret').dataset.base === baseBefore);
-const legacy = JSON.parse(exportedText);
-legacy.schemaVersion = 5; delete legacy.data.telegramWebProxy;
-check('settings: legacy v5 payload is still accepted', w.IO.isCompatibleExport(legacy));
-w.IO.applyImportedSettings(legacy);
-check('settings: importing v5 turns telegram off', !$('tgEnable').checked);
 const broken = JSON.parse(exportedText); broken.data.telegramWebProxy.secretBase = 'zz';
 check('settings: v7 payload with invalid secret base is rejected', !w.IO.isCompatibleExport(broken));
 const missing = JSON.parse(exportedText); delete missing.data.telegramWebProxy;
 check('settings: v7 payload without telegram block is rejected', !w.IO.isCompatibleExport(missing));
-const v6 = JSON.parse(exportedText);
-v6.schemaVersion = 6; delete v6.data.advancedJson.lanUsername; delete v6.data.advancedJson.lanPassword;
-check('settings: legacy v6 payload is still accepted', w.IO.isCompatibleExport(v6));
-$('lanUsername').value = 'x'; $('lanPassword').value = 'y';
-w.IO.applyImportedSettings(v6);
-check('settings: importing v6 leaves LAN credentials empty', $('lanUsername').value === '' && $('lanPassword').value === '');
 const v7NoLan = JSON.parse(exportedText); delete v7NoLan.data.advancedJson.lanPassword;
 check('settings: v7 payload without LAN password is rejected', !w.IO.isCompatibleExport(v7NoLan));
+const badSelect = JSON.parse(exportedText); badSelect.data.fingerprint = 'nonexistent';
+check('settings: v7 payload with an unknown select value is rejected', !w.IO.isCompatibleExport(badSelect));
+const asVersion = (v) => { const c = JSON.parse(exportedText); if (v === undefined) delete c.schemaVersion; else c.schemaVersion = v; return c; };
+check('settings: v6 file with current fields present is rejected', !w.IO.isCompatibleExport(asVersion(6)));
+const v6Plain = asVersion(6); delete v6Plain.data.advancedJson.lanUsername; delete v6Plain.data.advancedJson.lanPassword;
+check('settings: genuine v6 file is rejected', !w.IO.isCompatibleExport(v6Plain));
+const v5Plain = asVersion(5); delete v5Plain.data.advancedJson.lanUsername; delete v5Plain.data.advancedJson.lanPassword; delete v5Plain.data.telegramWebProxy;
+check('settings: genuine v5 file is rejected', !w.IO.isCompatibleExport(v5Plain));
+check('settings: v5 file with current fields present is rejected', !w.IO.isCompatibleExport(asVersion(5)));
+check('settings: missing, string and future schema versions are rejected', !w.IO.isCompatibleExport(asVersion(undefined)) && !w.IO.isCompatibleExport(asVersion('7')) && !w.IO.isCompatibleExport(asVersion(8)) && !w.IO.isCompatibleExport(asVersion(null)));
+const wrongApp = JSON.parse(exportedText); wrongApp.appId = 'other';
+check('settings: wrong appId is not a valid import payload', !w.IO.isValidImportPayload(wrongApp));
+
+const translations = (() => { const src = fs.readFileSync(path.join(root, 'js/i18n.js'), 'utf8').replace(/export /g, ''); return new Function(`${src}; return translations;`)(); })();
+const comparable = () => { const c = JSON.parse(w.IO.exportSettingsToString()); delete c.exportedAt; return JSON.stringify(c); };
+const importFile = async (text) => {
+  const input = $('importFileInput');
+  Object.defineProperty(input, 'files', { value: [new w.File([text], 'TCB_Settings.json')], configurable: true });
+  input.dispatchEvent(new w.Event('change'));
+  await sleep(150);
+};
+setVal('fragPackets', 'sentinel-before');
+const stateBefore = comparable();
+const rejectedInputs = {
+  'v6 file': JSON.stringify(v6Plain),
+  'v5 file': JSON.stringify(v5Plain),
+  'v6 with current fields': JSON.stringify(asVersion(6)),
+  'broken structure': JSON.stringify(broken),
+  'not json': '{oops',
+  'foreign app': JSON.stringify(wrongApp)
+};
+for (const [label, text] of Object.entries(rejectedInputs)) {
+  await importFile(text);
+  check(`settings: rejected import (${label}) leaves every setting untouched`, comparable() === stateBefore);
+}
+await importFile(JSON.stringify(v6Plain));
+check('settings: rejected old file shows the translated error toast', $('toast').textContent === translations.fa['toast.oldSettingsFile']);
+const goodFile = JSON.parse(exportedText); goodFile.data.fragment.packets = 'sentinel-after';
+await importFile(JSON.stringify(goodFile));
+check('settings: valid v7 file imports through the real file input', $('fragPackets').value === 'sentinel-after');
+
+const topKeys = Object.keys(JSON.parse(exportedText));
+check('export: metadata keys come first in a fixed order', JSON.stringify(topKeys) === JSON.stringify(['appId', 'schemaVersion', 'exportedAt', 'data']));
+const expectedDataKeys = ['deployTarget', 'telegramWebProxy', 'token', 'trojanPassword', 'workerDomain', 'customDomainUsed', 'customDomain', 'fallbackDomain', 'ips', 'protocols', 'tlsPorts', 'wsPorts', 'fingerprint', 'wsPath', 'fragment', 'advancedJson', 'ech', 'dns', 'routingCountries', 'blockRules', 'sanctionDns', 'sanctionBypass', 'customSanctionRules', 'customBypassRules', 'customBlockRules', 'observatory', 'chainConfig', 'jsonName'];
+check('export: data keys follow the exact panel order', JSON.stringify(Object.keys(JSON.parse(exportedText).data)) === JSON.stringify(expectedDataKeys), Object.keys(JSON.parse(exportedText).data).join());
+const controlFor = {
+  deployTarget: 'tab-worker', 'telegramWebProxy.enabled': 'tgEnable', 'telegramWebProxy.secretBase': 'tgSecret', 'telegramWebProxy.randomPadding': 'tgPadding',
+  token: 'uid', trojanPassword: 'tpw', workerDomain: 'wdom', customDomainUsed: 'customDomainUsed', customDomain: 'customDomainInput', fallbackDomain: 'fallbackDomain', ips: 'ips',
+  'protocols.vless': 'protoVless', 'protocols.trojan': 'protoTrojan', tlsPorts: '.ptls', wsPorts: '.pws', fingerprint: 'fpSelect', wsPath: 'pathSelect',
+  'fragment.enabled': 'fragEnable', 'fragment.packets': 'fragPackets', 'fragment.interval': 'fragInterval', 'fragment.length': 'fragLength', 'fragment.maxSplit': 'fragMaxSplit',
+  'fragment.stage2.enabled': 'frag2Enable', 'fragment.stage2.packets': 'frag2Packets', 'fragment.stage2.interval': 'frag2Interval', 'fragment.stage2.length': 'frag2Length', 'fragment.stage2.maxSplit': 'frag2MaxSplit',
+  'fragment.xrayTls.unsafeFingerprint': 'fpUnsafeXray', 'fragment.xrayTls.cipherSuites': 'cipherSuitesXray',
+  'advancedJson.fakeDns': 'fakeDns', 'advancedJson.ipv6': 'ipv6', 'advancedJson.lanAccess': 'lanAccess', 'advancedJson.tcpFastOpen': 'tcpFastOpen', 'advancedJson.lanUsername': 'lanUsername', 'advancedJson.lanPassword': 'lanPassword',
+  'ech.enabled': 'echEnable', 'ech.dns': 'echDns', 'dns.local': 'localDns', 'dns.remote': 'remoteDns',
+  'routingCountries.ir': 'routeIr', 'routingCountries.cn': 'routeCn', 'routingCountries.ru': 'routeRu',
+  'blockRules.ads': 'blockPromo', 'blockRules.porn': 'blockPorn', 'blockRules.quic': 'blockQuic', 'blockRules.malware': 'blockMalware', 'blockRules.phishing': 'blockPhishing', 'blockRules.cryptominers': 'blockCryptominers',
+  sanctionDns: 'sanctionDns',
+  'sanctionBypass.openai': 'sanctionOpenai', 'sanctionBypass.googleai': 'sanctionGoogleai', 'sanctionBypass.anthropic': 'sanctionAnthropic', 'sanctionBypass.xai': 'sanctionXai', 'sanctionBypass.microsoft': 'sanctionMicrosoft', 'sanctionBypass.oracle': 'sanctionOracle', 'sanctionBypass.docker': 'sanctionDocker', 'sanctionBypass.adobe': 'sanctionAdobe', 'sanctionBypass.epicgames': 'sanctionEpicgames', 'sanctionBypass.intel': 'sanctionIntel', 'sanctionBypass.amd': 'sanctionAmd', 'sanctionBypass.nvidia': 'sanctionNvidia', 'sanctionBypass.asus': 'sanctionAsus', 'sanctionBypass.hp': 'sanctionHp', 'sanctionBypass.lenovo': 'sanctionLenovo',
+  customSanctionRules: 'customSanctionRules', customBypassRules: 'customBypassRules', customBlockRules: 'customBlockRules',
+  'observatory.leastPingInterval': 'leastPingInterval', 'observatory.leastLoadInterval': 'leastLoadInterval', 'observatory.leastLoadMode': 'leastLoadMode', 'observatory.leastLoadSampling': 'leastLoadSampling', 'observatory.leastLoadTimeout': 'leastLoadTimeout',
+  chainConfig: 'chainConfig', jsonName: 'jsonName'
+};
+const leafPaths = [];
+const walk = (obj, prefix) => { for (const [k, v] of Object.entries(obj)) { const pth = prefix ? `${prefix}.${k}` : k; if (v && typeof v === 'object' && !Array.isArray(v)) walk(v, pth); else leafPaths.push(pth); } };
+walk(JSON.parse(exportedText).data, '');
+check('export: every exported leaf is mapped to a panel control', leafPaths.every((lp) => lp in controlFor), leafPaths.filter((lp) => !(lp in controlFor)).join());
+const domOrder = (sel) => { const el = sel.startsWith('.') ? w.document.querySelector(sel) : $(sel); return el; };
+let orderOk = true; let orderMsg = '';
+for (let i = 1; i < leafPaths.length; i++) {
+  const prev = domOrder(controlFor[leafPaths[i - 1]]); const cur = domOrder(controlFor[leafPaths[i]]);
+  if (!(prev.compareDocumentPosition(cur) & w.Node.DOCUMENT_POSITION_FOLLOWING)) { orderOk = false; orderMsg = `${leafPaths[i - 1]} -> ${leafPaths[i]}`; break; }
+}
+check('export: leaf order matches the on-screen order of the controls', orderOk, orderMsg);
+
+const faKeys = Object.keys(translations.fa); const enKeys = Object.keys(translations.en);
+check('i18n: fa and en define exactly the same keys', faKeys.length === enKeys.length && faKeys.every((k) => k in translations.en));
+const firstLetter = (str) => { const plain = str.replace(/<[^>]*>/g, ''); for (const ch of plain) if (/\p{L}/u.test(ch)) return ch; return ''; };
+const identifierOnly = new Set(['lbl.leastPingInterval', 'lbl.leastLoadInterval', 'lbl.leastLoadMode', 'lbl.leastLoadSampling', 'lbl.leastLoadTimeout', 'tab.worker', 'tab.pages']);
+const latinStart = faKeys.filter((k) => !identifierOnly.has(k) && /[A-Za-z]/.test(firstLetter(translations.fa[k])));
+check('i18n: every Persian text starts with a Persian word', latinStart.length === 0, latinStart.join());
+const digitStart = faKeys.filter((k) => /^\s*(\{[a-z]+\}|[0-9])/.test(translations.fa[k].replace(/<[^>]*>/g, '')));
+check('i18n: no Persian text starts with a number or placeholder', digitStart.length === 0, digitStart.join());
+check('i18n: header description mentions Telegram Web Proxy in both languages', translations.fa['hdr.sub'].includes('Telegram Web Proxy') && translations.en['hdr.sub'].includes('Telegram Web Proxy') && translations.fa['hdr.sub'].includes('VLESS') && translations.fa['hdr.sub'].includes('Trojan') && translations.en['hdr.sub'].includes('Trojan'));
+check('i18n: rendered header description follows the selected language', (() => { $('btn-lang-en').dispatchEvent(new w.MouseEvent('click', { bubbles: true })); const en = w.document.querySelector('.hdr-sub').textContent; $('btn-lang-fa').dispatchEvent(new w.MouseEvent('click', { bubbles: true })); const fa = w.document.querySelector('.hdr-sub').textContent; return en === translations.en['hdr.sub'] && fa === translations.fa['hdr.sub']; })());
+const indexSource = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const txtDirLabels = [...indexSource.matchAll(/<label class="adv-lbl[^"]*txt-dir[^"]*"[^>]*data-i18n="([^"]+)"/g)].map((m) => m[1]);
+check('rtl: descriptive labels that contain Persian follow the page direction', txtDirLabels.length >= 11 && txtDirLabels.every((k) => /[\u0600-\u06FF]/.test(translations.fa[k])), txtDirLabels.join());
+const css = fs.readFileSync(path.join(root, 'css/style.css'), 'utf8');
+check('rtl: technical inputs, code boxes and inline code stay LTR in the stylesheet', /input,textarea,select\{[^}]*direction:ltr/.test(css) && /\.code-viewer-body\{[^}]*direction:ltr/.test(css) && /\ncode\{[^}]*direction:ltr;unicode-bidi:isolate/.test(css));
 
 const grab = async (id) => { click(id); await sleep(30); return clip; };
 const resultsOf = async () => { click('gb'); await sleep(700); return { xray: await grab('btn-cp-json'), sing: await grab('btn-cp-singbox'), clash: await grab('btn-cp-clash') }; };
