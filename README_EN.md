@@ -6,7 +6,7 @@
 
 <div align="left" dir="ltr">
 
-# Tunnel Config Builder (TCB) v7.0
+# Tunnel Config Builder (TCB) v7.1
 
 A tool for building VLESS and Trojan configs and the Telegram Web Proxy setup package for Cloudflare Workers and Cloudflare Pages — no VPS or personal server required
 
