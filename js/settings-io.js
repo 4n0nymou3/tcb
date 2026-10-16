@@ -1,5 +1,6 @@
 const APP_ID = 'tcb';
-const SCHEMA_VERSION = 6;
+const SCHEMA_VERSION = 7;
+const PREVIOUS_SCHEMA_VERSION = 6;
 const LEGACY_SCHEMA_VERSION = 5;
 
 export function collectExportData() {
@@ -46,7 +47,9 @@ export function collectExportData() {
         fakeDns: document.getElementById('fakeDns').value,
         ipv6: document.getElementById('ipv6').value,
         lanAccess: document.getElementById('lanAccess').value,
-        tcpFastOpen: document.getElementById('tcpFastOpen').value
+        tcpFastOpen: document.getElementById('tcpFastOpen').value,
+        lanUsername: document.getElementById('lanUsername').value,
+        lanPassword: document.getElementById('lanPassword').value
       },
       ech: {
         enabled: document.getElementById('echEnable').checked,
@@ -185,6 +188,10 @@ function hasExactExportShape(d, version) {
   if (!isStr(d.advancedJson.ipv6)) return false;
   if (!isStr(d.advancedJson.lanAccess)) return false;
   if (!isStr(d.advancedJson.tcpFastOpen)) return false;
+  if (version === SCHEMA_VERSION) {
+    if (!isStr(d.advancedJson.lanUsername)) return false;
+    if (!isStr(d.advancedJson.lanPassword)) return false;
+  }
 
   if (!isPlainObject(d.ech)) return false;
   if (!isBool(d.ech.enabled)) return false;
@@ -238,13 +245,14 @@ function hasExactExportShape(d, version) {
   if (!isStr(d.chainConfig)) return false;
   if (!isStr(d.jsonName)) return false;
 
-  if (version === SCHEMA_VERSION && !hasValidTelegramShape(d.telegramWebProxy)) return false;
+  if (version !== LEGACY_SCHEMA_VERSION && !hasValidTelegramShape(d.telegramWebProxy)) return false;
 
   return true;
 }
 
 export function isCompatibleExport(payload) {
   if (payload.schemaVersion === SCHEMA_VERSION) return hasExactExportShape(payload.data, SCHEMA_VERSION);
+  if (payload.schemaVersion === PREVIOUS_SCHEMA_VERSION) return hasExactExportShape(payload.data, PREVIOUS_SCHEMA_VERSION);
   if (payload.schemaVersion === LEGACY_SCHEMA_VERSION) return hasExactExportShape(payload.data, LEGACY_SCHEMA_VERSION);
   return false;
 }
@@ -290,6 +298,8 @@ export function applyImportedSettings(payload) {
   document.getElementById('ipv6').value = d.advancedJson.ipv6;
   document.getElementById('lanAccess').value = d.advancedJson.lanAccess;
   document.getElementById('tcpFastOpen').value = d.advancedJson.tcpFastOpen;
+  document.getElementById('lanUsername').value = payload.schemaVersion === SCHEMA_VERSION ? d.advancedJson.lanUsername : '';
+  document.getElementById('lanPassword').value = payload.schemaVersion === SCHEMA_VERSION ? d.advancedJson.lanPassword : '';
 
   document.getElementById('echEnable').checked = d.ech.enabled;
   document.getElementById('echDns').value = d.ech.dns;
@@ -337,7 +347,7 @@ export function applyImportedSettings(payload) {
   document.getElementById('chainConfig').value = d.chainConfig;
   document.getElementById('jsonName').value = d.jsonName;
 
-  const tg = payload.schemaVersion === SCHEMA_VERSION ? d.telegramWebProxy : { enabled: false, secretBase: '', randomPadding: false };
+  const tg = payload.schemaVersion !== LEGACY_SCHEMA_VERSION ? d.telegramWebProxy : { enabled: false, secretBase: '', randomPadding: false };
   document.getElementById('tgEnable').checked = tg.enabled;
   document.getElementById('tgPadding').checked = tg.randomPadding;
   document.getElementById('tgSecret').dataset.base = tg.secretBase;
