@@ -11,7 +11,7 @@ import { toast, getChecked, row, downloadFile, renderCodeBlock, highlightJsonLin
 import { exportSettingsToString, isValidImportPayload, isCompatibleExport, applyImportedSettings } from './settings-io.js';
 import { generateQRMatrix, qrMatrixToSvg } from './qrcode.js';
 import { t, getLang, setLang, applyI18n } from './i18n.js';
-import { parseCustomRuleList } from './proxy-utils.js';
+import { parseCustomRuleList, validateLanAuth } from './proxy-utils.js';
 
 let allC = [];
 let lastJsonStr = '';
@@ -285,6 +285,11 @@ function sanitizeIntegerInput(e) {
   e.target.value = digits;
 }
 
+function toggleLanAuth() {
+  const en = document.getElementById('lanAccess').value === '1';
+  document.getElementById('lanAuthWrap').style.display = en ? '' : 'none';
+}
+
 function toggleEch() {
   const en = document.getElementById('echEnable').checked;
   const ef = document.getElementById('echFields');
@@ -321,6 +326,8 @@ function collectSettings() {
     fakeDnsEnable: document.getElementById('fakeDns').value === '1',
     ipv6Enable:   document.getElementById('ipv6').value === '1',
     lanAccess:    document.getElementById('lanAccess').value === '1',
+    lanUsername:  document.getElementById('lanUsername').value,
+    lanPassword:  document.getElementById('lanPassword').value,
     remoteDnsVal: document.getElementById('remoteDns').value.trim() || 'https://cloudflare-dns.com/dns-query',
     localDnsVal:  document.getElementById('localDns').value.trim()  || '8.8.8.8',
     tcpFastOpen:  document.getElementById('tcpFastOpen').value === '1',
@@ -398,6 +405,8 @@ function gen() {
   if (!protocols.vless && !protocols.trojan) { toast(t('toast.selectOneProtocol')); return; }
 
   const settings  = collectSettings();
+  const lanAuthError = validateLanAuth(settings.lanAccess, settings.lanUsername, settings.lanPassword);
+  if (lanAuthError) { toast(t(lanAuthError)); return; }
   if (settings.customDomainUsed && !settings.customDomain) { toast(t('toast.enterCustomDomain')); return; }
   if (!settings.routingCountries.ir && !settings.routingCountries.cn && !settings.routingCountries.ru) {
     toast(t('toast.selectOneCountry'));
@@ -588,7 +597,7 @@ function wipeClipboardBestEffort() {
 }
 
 function silentWipeSensitiveState() {
-  ['uid', 'tpw', 'wdom', 'ips', 'chainConfig', 'jsonName'].forEach(id => {
+  ['uid', 'tpw', 'wdom', 'ips', 'chainConfig', 'jsonName', 'lanUsername', 'lanPassword'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
@@ -630,6 +639,7 @@ function resetAll() {
   toggleFrag();
   toggleFrag2();
   toggleEch();
+  toggleLanAuth();
   switchDeployTab('worker');
   updateCustomDomainField();
 
@@ -706,6 +716,7 @@ function importSettings(file) {
     toggleFrag();
     toggleFrag2();
     toggleEch();
+    toggleLanAuth();
     renderWorker(document.getElementById('uid').value.trim(), currentPassword(), currentFallbackDomain());
     toast(t('toast.settingsImported'));
   };
@@ -821,6 +832,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('fragEnable').addEventListener('change', toggleFrag);
   document.getElementById('frag2Enable').addEventListener('change', toggleFrag2);
   document.getElementById('echEnable').addEventListener('change', toggleEch);
+  document.getElementById('lanAccess').addEventListener('change', toggleLanAuth);
+  toggleLanAuth();
   document.getElementById('blockMalware').addEventListener('change', warnBlockRuleToggle);
   document.getElementById('blockPhishing').addEventListener('change', warnBlockRuleToggle);
   document.getElementById('blockCryptominers').addEventListener('change', warnBlockRuleToggle);
