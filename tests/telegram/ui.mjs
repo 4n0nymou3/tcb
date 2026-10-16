@@ -287,5 +287,25 @@ check('lan auth: pagehide wipes credentials', $('lanUsername').value === '' && $
 setCk('tgEnable', true); setCk('tgEnable', false);
 check('disable: classic buttons return and body hides', $('btn-cp-worker').style.display === '' && $('tgBody').style.display === 'none');
 
+click('btn-mk-token'); click('btn-mk-pw');
+await sleep(100);
+click('btn-cp-worker');
+await sleep(50);
+const rawWorker = clip;
+const shownLines = [...$('workerDisplay').querySelectorAll('.code-content')].map((el) => el.textContent);
+check('code view: worker code is rendered and the copy button yields it', rawWorker.length > 1000 && shownLines.length > 20, `${rawWorker.length} ${shownLines.length}`);
+check('code view: visible text equals the copied code exactly (no entities)', shownLines.join('\n') === rawWorker.replace(/\n$/, '').split('\n').map((l) => l || ' ').join('\n'));
+check('code view: no HTML entity text leaks into the visible worker code', !/&#39;|&quot;|&amp;|&lt;|&gt;/.test(shownLines.join('\n')));
+check('code view: single-quoted strings are highlighted as whole strings', [...$('workerDisplay').querySelectorAll('span.s')].some((el) => el.textContent === "'cloudflare:sockets'"));
+check('code view: numbers inside entities no longer get highlighted', [...$('workerDisplay').querySelectorAll('span.n')].every((el) => /^\d+$/.test(el.textContent)));
+const uiMod = w.eval(execFileSync(esbuildBin, ['--bundle', '--format=iife', '--global-name=UIM', '--log-level=error'], { input: `export * from '${path.join(root, 'js/ui.js')}';`, encoding: 'utf8' }) + ';UIM');
+const strip = (h) => { const d = w.document.createElement('div'); d.innerHTML = h; return d.textContent; };
+const samples = ["import{a as b}from'x\\'y';", 'const s="a&b<c>"; // 5', '"key": "v<1>&\'q\'", 7,'];
+check('code view: every highlighter preserves its input text exactly', samples.every((sm) => strip(uiMod.highlightJsLine(sm)) === sm && strip(uiMod.highlightJsonLine(sm)) === sm && strip(uiMod.highlightYamlLine(sm)) === sm));
+check('code view: JSON keys and strings are highlighted', uiMod.highlightJsonLine('  "a": "b",').includes('<span class="jk">&quot;a&quot;:</span>') && uiMod.highlightJsonLine('  "a": "b",').includes('<span class="js">&quot;b&quot;</span>'));
+check('code view: special characters stay escaped in generated markup', uiMod.highlightJsLine("x = '<b>';").includes('&lt;b&gt;') && !uiMod.highlightJsLine("x = '<b>';").includes('<b>'));
+const cssNow = fs.readFileSync(path.join(root, 'css/style.css'), 'utf8');
+check('rtl: inline code wraps only when a string cannot fit, not mid-word', /\ncode\{[^}]*overflow-wrap:anywhere/.test(cssNow) && !/\ncode\{[^}]*word-break:break-all/.test(cssNow));
+
 console.log(`\n${pass}/${pass + fail} ui checks passed.`);
 process.exit(fail ? 1 : 0);
