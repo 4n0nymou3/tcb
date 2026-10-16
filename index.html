@@ -29,7 +29,7 @@
       </div>
       <p class="hdr-sub" data-i18n="hdr.sub">ساخت کانفیگ VLESS/TROJAN برای Cloudflare Worker و Pages</p>
       <div class="badges">
-        <span class="badge"><span class="badge-label">TCB</span><span class="badge-value bv-blue">v7.0</span></span>
+        <span class="badge"><span class="badge-label">TCB</span><span class="badge-value bv-blue">v7.1</span></span>
         <span class="badge"><span class="badge-label">license</span><span class="badge-value bv-purple">MIT</span></span>
       </div>
     </div>
@@ -390,6 +390,19 @@
             <option value="1">Enabled</option>
           </select>
         </div>
+      </div>
+      <div id="lanAuthWrap" class="mt-12" style="display:none">
+        <div class="adv-dns-grid">
+          <div>
+            <label class="adv-lbl" for="lanUsername" data-i18n="lbl.lanUsername">نام کاربری</label>
+            <input type="text" id="lanUsername" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"/>
+          </div>
+          <div>
+            <label class="adv-lbl" for="lanPassword" data-i18n="lbl.lanPassword">رمز عبور</label>
+            <input type="password" id="lanPassword" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false"/>
+          </div>
+        </div>
+        <p class="hint mt-8" data-i18n="hint.lanAuth">اختیاری — اگر هر دو کادر را خالی بگذارید، Allow LAN بدون احراز هویت فعال می‌ماند. اگر هر دو را پر کنید، ورودی اصلی پروکسی در هر سه خروجی (Xray، Sing-box و Clash) فقط با همین نام کاربری و رمز عبور قابل استفاده می‌شود. پر کردن فقط یکی از دو کادر مجاز نیست و نام کاربری نمی‌تواند شامل «:» باشد. ورودی‌های کمکی DNS تحت‌تأثیر این احراز هویت نیستند.</p>
       </div>
       <div id="echWrap" class="mt-12">
         <div class="toggle-row">
