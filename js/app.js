@@ -7,7 +7,7 @@ import {
   generateTelegramBase, composeTelegramSecret, isValidTelegramBase, normalizeTelegramHostname, isValidTelegramHostname,
   telegramWorkerName, buildTelegramLink, buildTelegramPackages, zipPackage
 } from './telegram-webproxy.js';
-import { toast, getChecked, row, downloadFile, renderCodeBlock, highlightJsonLine, highlightYamlLine, highlightJsLine, flashCopied } from './ui.js';
+import { toast, getChecked, row, downloadFile, renderCodeBlock, highlightJsonLine, highlightJsLine, flashCopied } from './ui.js';
 import { exportSettingsToString, isValidImportPayload, isCompatibleExport, applyImportedSettings } from './settings-io.js';
 import { generateQRMatrix, qrMatrixToSvg } from './qrcode.js';
 import { t, getLang, setLang, applyI18n } from './i18n.js';
@@ -511,7 +511,7 @@ function gen() {
 
     const clashStr = buildClashConfig(token, password, dom, ips, tlsPorts, wsPorts, fp, settings, protocols);
     lastClashStr = clashStr;
-    renderCodeBlock('clashDisplay', clashStr, highlightYamlLine);
+    renderCodeBlock('clashDisplay', clashStr, highlightJsonLine);
 
     document.getElementById('results').style.display = 'block';
     document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
