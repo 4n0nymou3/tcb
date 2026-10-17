@@ -307,5 +307,22 @@ check('code view: special characters stay escaped in generated markup', uiMod.hi
 const cssNow = fs.readFileSync(path.join(root, 'css/style.css'), 'utf8');
 check('rtl: inline code wraps only when a string cannot fit, not mid-word', /\ncode\{[^}]*overflow-wrap:anywhere/.test(cssNow) && !/\ncode\{[^}]*word-break:break-all/.test(cssNow));
 
+setVal('wdom', 'myworker.someone.workers.dev');
+setVal('ips', '104.16.0.1');
+click('gb');
+await sleep(800);
+click('btn-cp-clash');
+await sleep(50);
+const rawClash = clip;
+const clashLines = [...$('clashDisplay').querySelectorAll('.code-content')].map((el) => el.textContent);
+const clashKeys = [...$('clashDisplay').querySelectorAll('span.jk')].map((el) => el.textContent);
+check('clash view: visible text equals the copied Clash config exactly', clashLines.join('\n') === rawClash.replace(/\n$/, '').split('\n').map((l) => l || ' ').join('\n'));
+check('clash view: top-level keys use the JSON key class', clashKeys.includes('"mixed-port":') && clashKeys.includes('"allow-lan":') && clashKeys.includes('"proxies":'), clashKeys.slice(0, 5).join());
+check('clash view: every quoted key is highlighted as a key', clashLines.filter((l) => /^\s*"[^"]*"\s*:/.test(l)).length === clashKeys.length);
+check('clash view: strings, numbers and booleans are highlighted', $('clashDisplay').querySelectorAll('span.js').length > 0 && $('clashDisplay').querySelectorAll('span.jn').length > 0 && $('clashDisplay').querySelectorAll('span.jb').length > 0);
+check('clash view: copied config is still valid JSON text with the same mixed-port', JSON.parse(rawClash)['mixed-port'] === 7890);
+click('btn-dl-clash');
+check('clash view: download keeps the .yaml name', downloads.some((d) => d.anchor === 'TCB.yaml' || (d.anchor && d.anchor.endsWith('.yaml'))), JSON.stringify(downloads.filter((d) => d.anchor).map((d) => d.anchor)));
+
 console.log(`\n${pass}/${pass + fail} ui checks passed.`);
 process.exit(fail ? 1 : 0);
