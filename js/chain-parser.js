@@ -238,11 +238,18 @@ export function parseChainConfig(raw) {
   if (!schemeMatch) throw new Error(t('err.chainLinkInvalid'));
   const scheme = schemeMatch[1].toLowerCase();
 
-  if (scheme === 'vless') return parseVless(input);
-  if (scheme === 'trojan') return parseTrojan(input);
-  if (scheme === 'ss') return parseShadowsocks(input);
-  if (scheme === 'socks' || scheme === 'socks5') return parseSocksHttp(input, 'socks');
-  if (scheme === 'http' || scheme === 'https') return parseSocksHttp(input, 'http');
-
-  throw new Error(t('err.chainUnsupported'));
+  let parsed;
+  try {
+    if (scheme === 'vless') parsed = parseVless(input);
+    else if (scheme === 'trojan') parsed = parseTrojan(input);
+    else if (scheme === 'ss') parsed = parseShadowsocks(input);
+    else if (scheme === 'socks' || scheme === 'socks5') parsed = parseSocksHttp(input, 'socks');
+    else if (scheme === 'http' || scheme === 'https') parsed = parseSocksHttp(input, 'http');
+    else throw new Error(t('err.chainUnsupported'));
+  } catch (e) {
+    if (e instanceof URIError) throw new Error(t('err.chainLinkInvalid'));
+    throw e;
+  }
+  if (!Number.isInteger(parsed.port) || parsed.port < 1 || parsed.port > 65535) throw new Error(t('err.chainPortInvalid'));
+  return parsed;
 }
