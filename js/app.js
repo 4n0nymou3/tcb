@@ -42,18 +42,18 @@ async function copyText(text) {
       return true;
     }
   } catch (e) {}
+  const area = document.createElement('textarea');
   try {
-    const area = document.createElement('textarea');
     area.value = text;
     area.setAttribute('readonly', '');
     area.style.cssText = 'position:fixed;top:0;left:-9999px;opacity:0';
     document.body.appendChild(area);
     area.select();
-    const copied = document.execCommand('copy');
-    document.body.removeChild(area);
-    return copied;
+    return document.execCommand('copy');
   } catch (e) {
     return false;
+  } finally {
+    area.remove();
   }
 }
 
@@ -476,7 +476,22 @@ function gen() {
   btn.classList.add('loading');
 
   setTimeout(() => {
-    const previous = { cfgs: allC, json: lastJsonStr, singbox: lastSingboxStr, clash: lastClashStr };
+    const resultsEl = document.getElementById('results');
+    const previous = {
+      cfgs: allC,
+      json: lastJsonStr,
+      singbox: lastSingboxStr,
+      clash: lastClashStr,
+      display: resultsEl.style.display,
+      nodes: ['lAll', 'sv', 'si', 'sa', 'cb2', 'jsonDisplay', 'singboxDisplay', 'clashDisplay'].map(id => {
+        const el = document.getElementById(id);
+        return { el, html: el.innerHTML, gutter: el.style.getPropertyValue('--gutter-digits') };
+      }),
+      steps: ['sn1', 'sn2', 'sn3', 'sn4'].map(id => {
+        const el = document.getElementById(id);
+        return { el, cls: el.className };
+      })
+    };
     try {
       allC = [];
       let tlsCount = 0, wsCount = 0;
@@ -559,6 +574,15 @@ function gen() {
       lastClashStr = previous.clash;
       btn.disabled = false;
       btn.classList.remove('loading');
+      previous.nodes.forEach(node => {
+        try {
+          node.el.innerHTML = node.html;
+          if (node.gutter) node.el.style.setProperty('--gutter-digits', node.gutter);
+          else node.el.style.removeProperty('--gutter-digits');
+        } catch (e) {}
+      });
+      previous.steps.forEach(step => { step.el.className = step.cls; });
+      resultsEl.style.display = previous.display;
       updateGenButtonText();
       toast(t('toast.generateFailed'));
     }
