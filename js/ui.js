@@ -48,8 +48,8 @@ export function row(c, n) {
     <span class="cn">${String(n).padStart(2, '0')}</span>
     <span class="ctg" style="color:${color};background:${color}1a">${c.tag}</span>
     <span class="ctx" title="${safeCfg}">${safeCfg}</span>
-    <button class="bqr" data-cfg="${s}" title="${t('title.showQr')}" aria-label="${t('title.showQr')}">▦</button>
-    <button class="bcp" data-cfg="${s}">${t('btn.copyPlain')}</button>
+    <button class="bqr" data-cfg="${s}" data-i18n-title="title.showQr" title="${t('title.showQr')}" aria-label="${t('title.showQr')}">▦</button>
+    <button class="bcp" data-cfg="${s}" data-i18n="btn.copyPlain">${t('btn.copyPlain')}</button>
   </div>`;
 }
 
