@@ -35,6 +35,36 @@ function genPassword() {
   return out;
 }
 
+async function copyText(text) {
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch (e) {}
+  try {
+    const area = document.createElement('textarea');
+    area.value = text;
+    area.setAttribute('readonly', '');
+    area.style.cssText = 'position:fixed;top:0;left:-9999px;opacity:0';
+    document.body.appendChild(area);
+    area.select();
+    const copied = document.execCommand('copy');
+    document.body.removeChild(area);
+    return copied;
+  } catch (e) {
+    return false;
+  }
+}
+
+function copyWithFeedback(text, toastKey, btn, toastParams) {
+  return copyText(text).then(copied => {
+    if (!copied) { toast(t('toast.copyFailed')); return; }
+    if (toastKey) toast(t(toastKey, toastParams));
+    flashCopied(btn);
+  });
+}
+
 async function renderWorker(token, password, fallbackDomain) {
   if (!token || !password) return;
   const code = await buildWorker(token, password, fallbackDomain);
@@ -60,7 +90,7 @@ function cpToken(e) {
   const btn = e.currentTarget;
   const v = document.getElementById('uid').value.trim();
   if (!v) return;
-  navigator.clipboard.writeText(v).then(() => { toast(t('toast.tokenCopied')); flashCopied(btn); });
+  copyWithFeedback(v, 'toast.tokenCopied', btn);
 }
 
 function mkPassword() {
@@ -74,7 +104,7 @@ function cpPassword(e) {
   const btn = e.currentTarget;
   const v = document.getElementById('tpw').value.trim();
   if (!v) return;
-  navigator.clipboard.writeText(v).then(() => { toast(t('toast.passwordCopied')); flashCopied(btn); });
+  copyWithFeedback(v, 'toast.passwordCopied', btn);
 }
 
 async function cpWorker(e) {
@@ -83,7 +113,7 @@ async function cpWorker(e) {
   const password = currentPassword();
   if (!token || !password) { toast(t('toast.needTokenPassword')); return; }
   const code = await buildWorker(token, password, currentFallbackDomain());
-  navigator.clipboard.writeText(code).then(() => { toast(t('toast.workerCopied')); flashCopied(btn); });
+  copyWithFeedback(code, 'toast.workerCopied', btn);
 }
 
 async function dlWorker() {
@@ -179,7 +209,7 @@ function copyFrom(id, toastKey) {
     const v = document.getElementById(id).value.trim();
     if (!v) return;
     const btn = e.currentTarget;
-    navigator.clipboard.writeText(v).then(() => { toast(t(toastKey)); flashCopied(btn); });
+    copyWithFeedback(v, toastKey, btn);
   };
 }
 
@@ -446,81 +476,92 @@ function gen() {
   btn.classList.add('loading');
 
   setTimeout(() => {
-    allC = [];
-    let tlsCount = 0, wsCount = 0;
+    const previous = { cfgs: allC, json: lastJsonStr, singbox: lastSingboxStr, clash: lastClashStr };
+    try {
+      allC = [];
+      let tlsCount = 0, wsCount = 0;
 
-    ips.forEach((ip, ipIdx) => {
-      const ipLabel = `IP${ipIdx + 1}`;
-      tlsPorts.forEach(port => {
-        if (protocols.vless) {
-          const label = `VLESS-${ipLabel}-TLS${port}-${fp}`;
-          allC.push({ cfg: buildConfig(token, dom, ip, port, 'tls', fp, settings.basePath, label, settings.echEnable, settings.echDns), tag: `VLESS-TLS-${port}`, tagColor: 'var(--blue)' });
-          tlsCount++;
-        }
-        if (protocols.trojan) {
-          const label = `TROJAN-${ipLabel}-TLS${port}-${fp}`;
-          allC.push({ cfg: buildTrojanConfig(password, dom, ip, port, 'tls', fp, settings.basePath, label, settings.echEnable, settings.echDns), tag: `TROJAN-TLS-${port}`, tagColor: 'var(--green)' });
-          tlsCount++;
-        }
-      });
-      wsPorts.forEach(port => {
-        if (protocols.vless) {
-          const label = `VLESS-${ipLabel}-WS${port}`;
-          allC.push({ cfg: buildConfig(token, dom, ip, port, 'none', '', settings.basePath, label, false, ''), tag: `VLESS-WS-${port}`, tagColor: 'var(--orange)' });
-          wsCount++;
-        }
-        if (protocols.trojan) {
-          const label = `TROJAN-${ipLabel}-WS${port}`;
-          allC.push({ cfg: buildTrojanConfig(password, dom, ip, port, 'none', '', settings.basePath, label, false, ''), tag: `TROJAN-WS-${port}`, tagColor: 'var(--yellow)' });
-          wsCount++;
-        }
-      });
-    });
-
-    if (settings.customDomainUsed && settings.customDomain) {
       ips.forEach((ip, ipIdx) => {
         const ipLabel = `IP${ipIdx + 1}`;
         tlsPorts.forEach(port => {
           if (protocols.vless) {
-            const label = `VLESS-${ipLabel}-TLS${port}-${fp}-D`;
-            allC.push({ cfg: buildConfig(token, settings.customDomain, ip, port, 'tls', fp, settings.basePath, label, settings.echEnable, settings.echDns), tag: `VLESS-TLS-${port}-D`, tagColor: 'var(--blue)' });
+            const label = `VLESS-${ipLabel}-TLS${port}-${fp}`;
+            allC.push({ cfg: buildConfig(token, dom, ip, port, 'tls', fp, settings.basePath, label, settings.echEnable, settings.echDns), tag: `VLESS-TLS-${port}`, tagColor: 'var(--blue)' });
             tlsCount++;
           }
           if (protocols.trojan) {
-            const label = `TROJAN-${ipLabel}-TLS${port}-${fp}-D`;
-            allC.push({ cfg: buildTrojanConfig(password, settings.customDomain, ip, port, 'tls', fp, settings.basePath, label, settings.echEnable, settings.echDns), tag: `TROJAN-TLS-${port}-D`, tagColor: 'var(--green)' });
+            const label = `TROJAN-${ipLabel}-TLS${port}-${fp}`;
+            allC.push({ cfg: buildTrojanConfig(password, dom, ip, port, 'tls', fp, settings.basePath, label, settings.echEnable, settings.echDns), tag: `TROJAN-TLS-${port}`, tagColor: 'var(--green)' });
             tlsCount++;
           }
         });
+        wsPorts.forEach(port => {
+          if (protocols.vless) {
+            const label = `VLESS-${ipLabel}-WS${port}`;
+            allC.push({ cfg: buildConfig(token, dom, ip, port, 'none', '', settings.basePath, label, false, ''), tag: `VLESS-WS-${port}`, tagColor: 'var(--orange)' });
+            wsCount++;
+          }
+          if (protocols.trojan) {
+            const label = `TROJAN-${ipLabel}-WS${port}`;
+            allC.push({ cfg: buildTrojanConfig(password, dom, ip, port, 'none', '', settings.basePath, label, false, ''), tag: `TROJAN-WS-${port}`, tagColor: 'var(--yellow)' });
+            wsCount++;
+          }
+        });
       });
+
+      if (settings.customDomainUsed && settings.customDomain) {
+        ips.forEach((ip, ipIdx) => {
+          const ipLabel = `IP${ipIdx + 1}`;
+          tlsPorts.forEach(port => {
+            if (protocols.vless) {
+              const label = `VLESS-${ipLabel}-TLS${port}-${fp}-D`;
+              allC.push({ cfg: buildConfig(token, settings.customDomain, ip, port, 'tls', fp, settings.basePath, label, settings.echEnable, settings.echDns), tag: `VLESS-TLS-${port}-D`, tagColor: 'var(--blue)' });
+              tlsCount++;
+            }
+            if (protocols.trojan) {
+              const label = `TROJAN-${ipLabel}-TLS${port}-${fp}-D`;
+              allC.push({ cfg: buildTrojanConfig(password, settings.customDomain, ip, port, 'tls', fp, settings.basePath, label, settings.echEnable, settings.echDns), tag: `TROJAN-TLS-${port}-D`, tagColor: 'var(--green)' });
+              tlsCount++;
+            }
+          });
+        });
+      }
+
+      const jsonStr = buildJsonConfig(token, password, dom, ips, tlsPorts, wsPorts, fp, settings, protocols);
+      const singboxStr = buildSingboxConfig(token, password, dom, ips, tlsPorts, wsPorts, fp, settings, protocols);
+      const clashStr = buildClashConfig(token, password, dom, ips, tlsPorts, wsPorts, fp, settings, protocols);
+
+      document.getElementById('lAll').innerHTML = allC.map((c, i) => row(c, i + 1)).join('');
+      document.getElementById('sv').textContent  = tlsCount;
+      document.getElementById('si').textContent  = wsCount;
+      document.getElementById('sa').textContent  = allC.length;
+      document.getElementById('cb2').textContent = allC.length;
+
+      lastJsonStr = jsonStr;
+      renderCodeBlock('jsonDisplay', jsonStr, highlightJsonLine);
+      lastSingboxStr = singboxStr;
+      renderCodeBlock('singboxDisplay', singboxStr, highlightJsonLine);
+      lastClashStr = clashStr;
+      renderCodeBlock('clashDisplay', clashStr, highlightJsonLine);
+
+      document.getElementById('results').style.display = 'block';
+      document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+
+      ['sn1', 'sn2', 'sn3', 'sn4'].forEach(id => { document.getElementById(id).className = 'step done'; });
+      btn.innerHTML = t('gen.built');
+      btn.disabled = false;
+      btn.classList.remove('loading');
+      toast(t('toast.configsBuilt', { count: allC.length, tls: tlsCount, ws: wsCount }));
+    } catch (err) {
+      allC = previous.cfgs;
+      lastJsonStr = previous.json;
+      lastSingboxStr = previous.singbox;
+      lastClashStr = previous.clash;
+      btn.disabled = false;
+      btn.classList.remove('loading');
+      updateGenButtonText();
+      toast(t('toast.generateFailed'));
     }
-
-    document.getElementById('lAll').innerHTML = allC.map((c, i) => row(c, i + 1)).join('');
-    document.getElementById('sv').textContent  = tlsCount;
-    document.getElementById('si').textContent  = wsCount;
-    document.getElementById('sa').textContent  = allC.length;
-    document.getElementById('cb2').textContent = allC.length;
-
-    const jsonStr = buildJsonConfig(token, password, dom, ips, tlsPorts, wsPorts, fp, settings, protocols);
-    lastJsonStr = jsonStr;
-    renderCodeBlock('jsonDisplay', jsonStr, highlightJsonLine);
-
-    const singboxStr = buildSingboxConfig(token, password, dom, ips, tlsPorts, wsPorts, fp, settings, protocols);
-    lastSingboxStr = singboxStr;
-    renderCodeBlock('singboxDisplay', singboxStr, highlightJsonLine);
-
-    const clashStr = buildClashConfig(token, password, dom, ips, tlsPorts, wsPorts, fp, settings, protocols);
-    lastClashStr = clashStr;
-    renderCodeBlock('clashDisplay', clashStr, highlightJsonLine);
-
-    document.getElementById('results').style.display = 'block';
-    document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
-
-    ['sn1', 'sn2', 'sn3', 'sn4'].forEach(id => { document.getElementById(id).className = 'step done'; });
-    btn.innerHTML = t('gen.built');
-    btn.disabled = false;
-    btn.classList.remove('loading');
-    toast(t('toast.configsBuilt', { count: allC.length, tls: tlsCount, ws: wsCount }));
   }, 400);
 }
 
@@ -540,7 +581,7 @@ function resolveFileNameSuffix() {
 function cpJson(e) {
   const btn = e.currentTarget;
   if (!lastJsonStr) return;
-  navigator.clipboard.writeText(lastJsonStr).then(() => { toast(t('toast.jsonCopied')); flashCopied(btn); });
+  copyWithFeedback(lastJsonStr, 'toast.jsonCopied', btn);
 }
 
 function dlJson() {
@@ -553,7 +594,7 @@ function dlJson() {
 function cpSingbox(e) {
   const btn = e.currentTarget;
   if (!lastSingboxStr) return;
-  navigator.clipboard.writeText(lastSingboxStr).then(() => { toast(t('toast.singboxCopied')); flashCopied(btn); });
+  copyWithFeedback(lastSingboxStr, 'toast.singboxCopied', btn);
 }
 
 function dlSingbox() {
@@ -566,7 +607,7 @@ function dlSingbox() {
 function cpClash(e) {
   const btn = e.currentTarget;
   if (!lastClashStr) return;
-  navigator.clipboard.writeText(lastClashStr).then(() => { toast(t('toast.clashCopied')); flashCopied(btn); });
+  copyWithFeedback(lastClashStr, 'toast.clashCopied', btn);
 }
 
 function dlClash() {
@@ -578,8 +619,8 @@ function dlClash() {
 
 function cpAll(e) {
   const btn = e.currentTarget;
-  navigator.clipboard.writeText(allC.map(c => c.cfg).join('\n'))
-    .then(() => { toast(t('toast.allCopied', { count: allC.length })); flashCopied(btn); });
+  if (!allC.length) return;
+  copyWithFeedback(allC.map(c => c.cfg).join('\n'), 'toast.allCopied', btn, { count: allC.length });
 }
 
 function dlAll() {
@@ -773,6 +814,10 @@ function toggleTheme() {
 function updateGenButtonText() {
   const btn = document.getElementById('gb');
   if (!btn) return;
+  if (btn.classList.contains('loading')) {
+    btn.innerHTML = '<span class="sp"></span> ' + t('gen.building');
+    return;
+  }
   const resultsVisible = document.getElementById('results').style.display === 'block';
   btn.innerHTML = resultsVisible ? t('gen.built') : t('btn.generate');
 }
@@ -884,9 +929,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const btn = e.target.closest('.bcp');
     if (!btn) return;
-    navigator.clipboard.writeText(decodeURIComponent(btn.dataset.cfg)).then(() => {
-      flashCopied(btn);
-    });
+    copyWithFeedback(decodeURIComponent(btn.dataset.cfg), null, btn);
   });
 
   document.getElementById('qrModalClose').addEventListener('click', hideQrModal);
