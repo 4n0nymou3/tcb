@@ -1,7 +1,7 @@
 const APP_ID = 'tcb';
 const SCHEMA_VERSION = 7;
 
-export function collectExportData() {
+function collectExportData() {
   return {
     appId: APP_ID,
     schemaVersion: SCHEMA_VERSION,
