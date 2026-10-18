@@ -65,7 +65,7 @@ export function downloadFile(content, filename, mimeType) {
   URL.revokeObjectURL(url);
 }
 
-export function escapeHtml(str) {
+function escapeHtml(str) {
   return String(str)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -106,29 +106,6 @@ export function highlightJsonLine(line) {
   );
 }
 
-function highlightYamlRest(text) {
-  if (!text) return '';
-  return highlightTokens(
-    text,
-    /(#.*$)|("(?:\\.|[^"\\])*")|(\btrue\b|\bfalse\b|\bnull\b)|(-?\b\d+(?:\.\d+)?\b)/g,
-    function (match, comment, str, bool, num) {
-      if (comment) return '<span class="jc">' + escapeHtml(comment) + '</span>';
-      if (str) return '<span class="js">' + escapeHtml(str) + '</span>';
-      if (bool) return '<span class="jb">' + escapeHtml(bool) + '</span>';
-      if (num) return '<span class="jn">' + escapeHtml(num) + '</span>';
-      return escapeHtml(match);
-    }
-  );
-}
-
-export function highlightYamlLine(line) {
-  const kv = line.match(/^(\s*(?:-\s+)?)([A-Za-z0-9_.-]+)(:)(.*)$/);
-  if (kv) {
-    return escapeHtml(kv[1]) + '<span class="jk">' + escapeHtml(kv[2] + kv[3]) + '</span>' + highlightYamlRest(kv[4]);
-  }
-  return highlightYamlRest(line);
-}
-
 export function highlightJsLine(line) {
   return highlightTokens(
     line,
@@ -146,6 +123,7 @@ export function renderCodeBlock(elId, text, lineHighlighter) {
   if (!el) return;
   const raw = (text || '').replace(/\n$/, '');
   const lines = raw.split('\n');
+  el.style.setProperty('--gutter-digits', String(lines.length).length);
   el.innerHTML = lines.map(function (line, i) {
     const content = lineHighlighter ? (lineHighlighter(line) || ' ') : (escapeHtml(line) || ' ');
     return '<div class="code-line"><span class="code-gutter">' + (i + 1) +
