@@ -354,5 +354,102 @@ check('clash view: copied config is still valid JSON text with the same mixed-po
 click('btn-dl-clash');
 check('clash view: download keeps the .yaml name', downloads.some((d) => d.anchor === 'TCB.yaml' || (d.anchor && d.anchor.endsWith('.yaml'))), JSON.stringify(downloads.filter((d) => d.anchor).map((d) => d.anchor)));
 
+setVal('wdom', 'myworker.someone.workers.dev');
+setVal('ips', '104.16.0.1');
+click('gb');
+await sleep(800);
+const goodJson = (() => { click('btn-cp-json'); return clip; })();
+await sleep(20);
+const unhandled = [];
+const onRejection = (e) => unhandled.push(String(e));
+process.on('unhandledRejection', onRejection);
+const originalClipboard = Object.getOwnPropertyDescriptor(w.navigator, 'clipboard');
+const setClipboard = (value) => Object.defineProperty(w.navigator, 'clipboard', { value, configurable: true });
+setClipboard(undefined);
+w.document.execCommand = () => false;
+click('btn-cp-json'); await sleep(50);
+check('errors: copy without a clipboard API shows the translated failure message', $('toast').textContent === translations.fa['toast.copyFailed'], $('toast').textContent);
+setClipboard({ writeText: () => Promise.reject(new Error('denied')) });
+click('btn-cp-clash'); await sleep(50);
+check('errors: a rejected clipboard write shows the failure message without an unhandled rejection', $('toast').textContent === translations.fa['toast.copyFailed'] && unhandled.length === 0, unhandled.join());
+click('btn-cp-all'); await sleep(50);
+check('errors: copy-all failure is reported too', $('toast').textContent === translations.fa['toast.copyFailed']);
+let legacyCopied = '';
+w.document.execCommand = (cmd) => { const area = w.document.querySelector('body > textarea'); legacyCopied = area ? area.value : ''; return cmd === 'copy'; };
+setClipboard(undefined);
+click('btn-cp-json'); await sleep(50);
+check('errors: the legacy copy fallback is used when the clipboard API is missing', $('toast').textContent === translations.fa['toast.jsonCopied'] && legacyCopied === goodJson, $('toast').textContent);
+check('errors: the legacy fallback leaves no temporary element behind', w.document.querySelectorAll('body > textarea').length === 0);
+Object.defineProperty(w.navigator, 'clipboard', originalClipboard);
+process.off('unhandledRejection', onRejection);
+
+const lAll = $('lAll');
+Object.defineProperty(lAll, 'innerHTML', { set() { throw new Error('boom'); }, get() { return ''; }, configurable: true });
+click('gb'); await sleep(800);
+delete lAll.innerHTML;
+check('errors: a failure during generation re-enables the button and shows the translated message', !$('gb').disabled && !$('gb').classList.contains('loading') && $('toast').textContent === translations.fa['toast.generateFailed'], $('toast').textContent);
+click('btn-cp-json'); await sleep(50);
+check('errors: after a failed generation the previous configs stay consistent and copyable', clip === goodJson);
+
+w.confirm = () => true;
+click('btn-reset-all'); await sleep(50);
+setVal('uid', '11111111-2222-4333-8444-555555555555'); setVal('tpw', 'pw'); setVal('wdom', 'a.workers.dev'); setVal('ips', '1.1.1.1');
+const chainCases = [['trojan://pw@1.2.3.4:99999', 'err.chainPortInvalid'], ['trojan://pw@1.2.3.4:0', 'err.chainPortInvalid'], ['trojan://pw@1.2.3.4:abc', 'err.chainPortInvalid'], ['http://u:p@h:-1', 'err.chainPortInvalid'], ['trojan://p%E0@1.2.3.4:443', 'err.chainLinkInvalid'], ['vless://11111111-2222-4333-8444-555555555555@1.2.3.4:443#%E0%A4%A', 'err.chainLinkInvalid']];
+for (const [link, key] of chainCases) {
+  setVal('chainConfig', link); $('lAll').innerHTML = ''; click('gb'); await sleep(50);
+  check(`chain: ${link.slice(0, 40)} is rejected with a translated message`, $('lAll').children.length === 0 && $('toast').textContent === translations.fa[key], $('toast').textContent);
+}
+for (const link of ['trojan://pw@1.2.3.4:1', 'trojan://pw@1.2.3.4:65535', 'socks://dXNlcjpwYXNz@1.2.3.4:1080']) {
+  setVal('chainConfig', link); click('gb'); await sleep(800);
+  check(`chain: boundary-valid link ${link.slice(0, 40)} still generates`, $('lAll').children.length > 0);
+}
+setVal('chainConfig', '');
+click('gb'); await sleep(800);
+$('btn-lang-en').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+check('ui: result row buttons follow a language switch to English', w.document.querySelector('.bcp').textContent === translations.en['btn.copyPlain'] && w.document.querySelector('.bqr').title === translations.en['title.showQr'] && w.document.querySelector('.bqr').getAttribute('aria-label') === translations.en['title.showQr']);
+$('btn-lang-fa').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+check('ui: result row buttons follow a language switch back to Persian', w.document.querySelector('.bcp').textContent === translations.fa['btn.copyPlain'] && w.document.querySelector('.bqr').title === translations.fa['title.showQr']);
+const cssFinal = fs.readFileSync(path.join(root, 'css/style.css'), 'utf8');
+check('ui: keyboard focus does not change the corner radius of controls', !/:focus-visible\{[^}]*border-radius/.test(cssFinal));
+check('ui: inputs and selects share one minimum height', /input:not\(\[type=checkbox\]\):not\(\[type=file\]\),select\{min-height:38px\}/.test(cssFinal));
+
+setVal('wdom', 'myworker.someone.workers.dev'); setVal('ips', '104.16.0.1');
+click('gb'); await sleep(800);
+const qrButton = w.document.createElement('button');
+qrButton.className = 'bqr'; qrButton.dataset.cfg = encodeURIComponent('x'.repeat(5000));
+$('lAll').appendChild(qrButton);
+qrButton.dispatchEvent(new w.MouseEvent('click', { bubbles: true })); await sleep(50);
+check('errors: a config too long for a QR code shows the translated message and keeps the modal closed', $('toast').textContent === translations.fa['toast.qrTooLong'] && !$('qrModal').classList.contains('show'));
+qrButton.dataset.cfg = encodeURIComponent('vless://short'); qrButton.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+check('errors: a normal config still opens the QR modal', $('qrModal').classList.contains('show') && $('qrModalBox').innerHTML.includes('<svg'));
+click('qrModalClose'); qrButton.remove();
+
+click('gb');
+$('btn-lang-en').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+check('ui: switching language while generating keeps the loading label', $('gb').classList.contains('loading') && $('gb').textContent.includes(translations.en['gen.building']), $('gb').textContent);
+await sleep(800);
+check('ui: after generating the button shows the finished label in the current language', !$('gb').disabled && $('gb').textContent.trim() === translations.en['gen.built'].trim(), $('gb').textContent);
+$('btn-lang-fa').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+
+const roundTripState = () => { const c = JSON.parse(w.IO.exportSettingsToString()); delete c.exportedAt; return JSON.stringify(c); };
+const roundTripScenarios = [
+  () => { setCk('fragEnable', true); setCk('frag2Enable', true); setVal('fragPackets', '1-3'); setVal('localDns', '9.9.9.9'); },
+  () => { $('lanAccess').value = '1'; $('lanAccess').dispatchEvent(new w.Event('change', { bubbles: true })); setVal('lanUsername', 'ünï'); setVal('lanPassword', 'p:w "x"'); setVal('chainConfig', 'socks://dXNlcjpwYXNz@1.2.3.4:1080'); },
+  () => { setCk('echEnable', true); setVal('echDns', 'https://dns.example/q'); setCk('tgEnable', true); setCk('tgPadding', true); setCk('customDomainUsed', true); setVal('customDomainInput', 'my.example.org'); setCk('routeCn', true); setCk('blockPorn', true); setCk('sanctionOpenai', true); setVal('customBlockRules', 'a.com\n  b.com  '); setVal('jsonName', '  Name ß '); setVal('leastLoadSampling', '7'); }
+];
+for (let i = 0; i < roundTripScenarios.length; i++) {
+  w.confirm = () => true;
+  click('btn-reset-all'); await sleep(30);
+  setVal('uid', '11111111-2222-4333-8444-555555555555'); setVal('tpw', 'pw'); setVal('wdom', 'a.workers.dev'); setVal('ips', '1.1.1.1\n2.2.2.2');
+  roundTripScenarios[i]();
+  const before = roundTripState();
+  const exported = w.IO.exportSettingsToString();
+  click('btn-reset-all'); await sleep(30);
+  check(`round trip ${i + 1}: reset really clears the state`, roundTripState() !== before);
+  await importFile(exported);
+  { const after = roundTripState(); const diffs = []; const A = JSON.parse(before).data, B = JSON.parse(after).data; const cmp = (x, y, pth) => { if (x && typeof x === 'object') { for (const k of Object.keys(x)) cmp(x[k], y ? y[k] : undefined, pth + '.' + k); } else if (JSON.stringify(x) !== JSON.stringify(y)) diffs.push(pth + ': ' + JSON.stringify(x) + ' -> ' + JSON.stringify(y)); }; cmp(A, B, ''); check(`round trip ${i + 1}: export, reset and import restores every setting`, before === after, diffs.join('; ')); }
+  check(`round trip ${i + 1}: LAN credential boxes follow the restored Allow LAN value`, ($('lanAuthWrap').style.display === 'none') === ($('lanAccess').value !== '1'));
+}
+
 console.log(`\n${pass}/${pass + fail} ui checks passed.`);
 process.exit(fail ? 1 : 0);
