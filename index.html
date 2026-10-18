@@ -1,278 +1,660 @@
-import { createZip } from './zip-writer.js';
-import { buildWorker } from './worker-builder.js';
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Tunnel Config Builder</title>
+<link rel="stylesheet" href="css/fonts.css"/>
+<link rel="icon" type="image/svg+xml" href="icon.svg"/>
+<link rel="manifest" href="site.webmanifest"/>
+<link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="topbar-controls">
+      <div class="lang-switch" role="group">
+        <button class="lang-btn active" id="btn-lang-fa" type="button">FA</button>
+        <button class="lang-btn" id="btn-lang-en" type="button">EN</button>
+      </div>
+      <button class="ctrl-btn theme-btn" id="btn-theme-toggle" type="button" data-i18n-title="ctrl.themeToggle" title="تغییر تم" aria-label="تغییر تم">
+        <svg class="icon-sun" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="3.2"/><path d="M8 1.2v1.6M8 13.2v1.6M1.2 8h1.6M13.2 8h1.6M3.3 3.3l1.1 1.1M11.6 11.6l1.1 1.1M3.3 12.7l1.1-1.1M11.6 4.4l1.1-1.1"/></svg>
+        <svg class="icon-moon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 9.3A5.8 5.8 0 1 1 6.7 2.5a4.6 4.6 0 0 0 6.8 6.8z"/></svg>
+      </button>
+    </div>
+    <div class="hdr">
+      <div class="hdr-top">
+        <div class="hdr-dot"></div>
+        <h1>Tunnel Config Builder (TCB)</h1>
+      </div>
+      <p class="hdr-sub" data-i18n="hdr.sub">ساخت کانفیگ‌های VLESS و Trojan برای Cloudflare Worker و Pages، به‌همراه قابلیت Telegram Web Proxy</p>
+      <div class="badges">
+        <span class="badge"><span class="badge-label">TCB</span><span class="badge-value bv-blue">v7.1</span></span>
+        <span class="badge"><span class="badge-label">license</span><span class="badge-value bv-purple">MIT</span></span>
+      </div>
+    </div>
 
-const COMPAT_DATE = '2026-09-23';
-const SOURCE_DIR = 'manual-worker/telegram/';
+    <div class="steps">
+      <div class="step active" id="sn1"><div class="step-n">1</div><span data-i18n="steps.1">ساخت CF W/P</span></div>
+      <div class="step" id="sn2"><div class="step-n">2</div><span data-i18n="steps.2">تنظیم Token + دامنه</span></div>
+      <div class="step" id="sn3"><div class="step-n">3</div><span data-i18n="steps.3">آدرس IP های سالم</span></div>
+      <div class="step" id="sn4"><div class="step-n">4</div><span data-i18n="steps.4">کانفیگ‌ها</span></div>
+    </div>
+  </div>
+</div>
 
-const SHARED_FILES = [
-  'session-do.js',
-  'tcp-adapter.js',
-  'telegram-router.js',
-  'core/bridge.js',
-  'core/bridge-page.js',
-  'core/capability.js',
-  'core/dc-config.js',
-  'core/do-routing.js',
-  'core/limits.js',
-  'core/obfuscated2.js',
-  'core/protocol-v3.js',
-  'core/session.js',
-  'core/telegram-config.js',
-  'core/token.js'
-];
+<div class="wrap">
 
-const PAGES_ROUTER = `
-const __tcb = __TCB_DEFAULT__;
-function __telegramCandidate(request) {
-  const url = new URL(request.url);
-  if (request.method === 'GET' && url.searchParams.has('bridge')) return true;
-  if (url.pathname === '/api/v1/session') return request.method === 'POST' || request.method === 'DELETE';
-  if (url.pathname === '/api/v1/diag') return request.method === 'POST';
-  if (url.pathname === '/api/v1/ws') return (request.headers.get('upgrade') || '').toLowerCase() === 'websocket';
-  return false;
-}
-export default {
-  async fetch(request, env, ctx) {
-    if (env.TELEGRAM_WORKER && __telegramCandidate(request)) {
-      const forwarded = await env.TELEGRAM_WORKER.fetch(request.method === 'POST' ? request.clone() : request);
-      if (forwarded.headers.get('x-tcb-passthrough') !== '1') return forwarded;
-    }
-    return __tcb.fetch(request, env, ctx);
-  }
-};
-`;
+<div class="sec">
+  <div class="sec-hdr sec-hdr-toggle" data-target="secBody1">
+    <div class="sec-title"><svg class="sec-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5a3 3 0 0 1-.5-5.95 3.5 3.5 0 0 1 6.7-1.44A3 3 0 0 1 12.5 12.5h-8z"/></svg><span data-i18n="sec1.title">مرحله ۱ — ساخت Cloudflare Worker یا Pages (یک‌بار)</span></div>
+    <span class="chevron"></span>
+  </div>
+  <div class="sec-body-wrap" id="secBody1">
+   <div class="sec-body">
+    <div class="guide">
+      <div class="gitem">
+        <div class="gn"></div>
+        <div class="gb2">
+          <div class="gtitle" data-i18n="g1.title">ثبت‌نام در Cloudflare (رایگان)</div>
+          <div class="gdesc" data-i18n="g1.desc">به <a class="lk" href="https://dash.cloudflare.com/sign-up" target="_blank">dash.cloudflare.com</a> برو و با ایمیل اکانت بساز.</div>
+        </div>
+      </div>
+      <div class="gitem">
+        <div class="gn"></div>
+        <div class="gb2">
+          <div class="gtitle" data-i18n="g2.title">ساخت Worker یا Pages جدید</div>
+          <div class="gdesc" data-i18n="g2.desc">برای <strong class="txt-strong">Worker</strong>: از داشبورد <code>Workers &amp; Pages</code> ← <code>Create Application</code> ← <code>Create Worker</code> — یه اسم بده و <code>Deploy</code> کن. برای <strong class="txt-strong">Pages</strong>: از همان صفحه پایین بیا روی «Looking to deploy Pages? Get started» بزن، سپس «Drag and drop your files» را انتخاب کن — فایل ZIP مرحله بعد را همینجا آپلود خواهی کرد.</div>
+        </div>
+      </div>
+      <div class="gitem">
+        <div class="gn"></div>
+        <div class="gb2">
+          <div class="gtitle" data-i18n="g3.title">اول به مرحله ۲ برو، Token بساز، سپس کد را کپی یا دانلود کن</div>
+          <div class="deploy-tabs" role="tablist">
+            <button class="deploy-tab active" id="tab-worker" type="button" role="tab" aria-selected="true" data-i18n="tab.worker">⚙️ Worker</button>
+            <button class="deploy-tab" id="tab-pages" type="button" role="tab" aria-selected="false" data-i18n="tab.pages">📄 Pages</button>
+          </div>
+          <div class="gdesc" id="g3-desc-worker" data-i18n="g3.descWorker">مقدار Token به‌صورت خودکار داخل کد جاگذاری می‌شود. می‌توانی کد را کپی کنی یا فایل <code>worker.js</code> را مستقیم دانلود کنی. در Worker: <code>Edit Code</code> ← همه را پاک کن ← Paste کن ← <code>Deploy</code>. برای آپلود فایل نیز می‌توانی از گزینه Upload در داشبورد استفاده کنی.</div>
+          <div class="gdesc" id="g3-desc-pages" data-i18n="g3.descPages" style="display:none">مقدار Token به‌صورت خودکار داخل کد جاگذاری می‌شود. دکمه‌ی «دانلود ZIP» را بزن تا فایلی حاوی <code>_worker.js</code> دانلود شود، سپس همین فایل ZIP را در صفحه‌ی «Drag and drop your files» کلادفلر رها کن و <code>Deploy site</code> را بزن. توجه: فایل باید دقیقاً با نام <code>_worker.js</code> در ریشه‌ی ZIP باشد تا Pages آن را به‌عنوان Worker اجرا کند، نه یک فایل استاتیک ساده.</div>
+          <div class="fg mt-14">
+            <label class="ck-lbl-wide"><input type="checkbox" id="tgEnable"> <span data-i18n="tg.enable">فعال‌سازی Telegram WEB Proxy</span></label>
+            <div id="tgBody" style="display:none">
+              <p class="hint" data-i18n="tg.intro">با فعال‌سازی، به‌جای کد تک‌فایلی یک بسته‌ی چندفایلی (<bdi>Worker + Durable Object</bdi>) ساخته می‌شود که علاوه بر VLESS/Trojan، پروکسی WEB تلگرام را هم سرو می‌کند. استقرار از مسیر GitHub و Cloudflare انجام می‌شود، نه copy/paste.</p>
+              <label class="lbl-ltr">Secret</label>
+              <div class="urow">
+                <input type="text" id="tgSecret" autocomplete="off" spellcheck="false" autocapitalize="off"/>
+                <div class="ubtns">
+                  <button class="bsm" id="btn-mk-tg" data-i18n="btn.new">↺ جدید</button>
+                  <button class="bsm" id="btn-cp-tg" data-i18n="btn.copy">⎘ کپی</button>
+                </div>
+              </div>
+              <label class="ck-lbl-wide mt-8"><input type="checkbox" id="tgPadding"> <span data-i18n="tg.padding">فعال‌سازی Random padding (پیشوند dd)</span></label>
+              <p class="hint" data-i18n="tg.secretHint">این secret را در فایل یا GitHub قرار نده؛ فقط به‌عنوان Secret با نام TELEGRAM_SECRET در Cloudflare ذخیره می‌شود. می‌توانی Secret دلخواه خودت را هم در این کادر Paste یا تایپ کنی.</p>
+              <label class="lbl-ltr">Hostname</label>
+              <div class="urow">
+                <input type="text" id="tgHost" readonly autocomplete="off"/>
+                <div class="ubtns">
+                  <button class="bsm" id="btn-cp-tg-host" data-i18n="btn.copy">⎘ کپی</button>
+                </div>
+              </div>
+              <p class="hint" data-i18n="tg.hostHint">همان آدرسی است که در مرحله ۲ وارد کردی (دامنه شخصی اگر فعال باشد). دقیقاً همین را در تلگرام وارد کن.</p>
+              <div class="alert ao mb-8" id="tgWarn" style="display:none"><span class="aico">⚠</span><div id="tgWarnText"></div></div>
+              <label class="lbl-ltr">Link</label>
+              <div class="urow">
+                <input type="text" id="tgLink" readonly autocomplete="off"/>
+                <div class="ubtns">
+                  <button class="bsm" id="btn-cp-tg-link" data-i18n="btn.copy">⎘ کپی</button>
+                </div>
+              </div>
+              <div class="mt-8">
+                <button class="btn-cpscript" id="btn-dl-tg" data-i18n="tg.download">⬇ دانلود بسته‌ی Telegram (ZIP)</button>
+              </div>
+              <p class="hint" data-i18n="tg.note">وقتی این گزینه فعال است، دکمه‌های کپی/دانلود کد تک‌فایلی مخفی می‌شوند؛ کد VLESS/Trojan داخل بسته (tcb-worker.js) هست.</p>
+            </div>
+          </div>
+          <div class="code-viewer">
+            <div class="code-viewer-header">
+              <div class="code-viewer-filename"><span class="lang-dot dot-js"></span><span class="fname" id="workerFname">worker.js</span></div>
+              <div class="code-viewer-actions">
+                <button class="btn-cpscript" id="btn-cp-worker" data-i18n="btn.copyCode">⎘ کپی کد</button>
+                <button class="btn-cpscript" id="btn-dl-worker" data-i18n="btn.dlJs">↓ دانلود .js</button>
+                <button class="btn-cpscript" id="btn-dl-worker-zip" data-i18n="btn.dlZip" style="display:none">↓ دانلود ZIP</button>
+              </div>
+            </div>
+            <div class="code-viewer-body">
+              <div class="code-box" id="workerDisplay"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="gitem">
+        <div class="gn"></div>
+        <div class="gb2">
+          <div class="gtitle" data-i18n="g4.title">آدرس Worker یا Pages را بردار</div>
+          <div class="gdesc" data-i18n="g4.desc">بعد از Deploy، CF آدرسی مثل <code>myworker.username.workers.dev</code> (برای Worker) یا <code>myproject.pages.dev</code> (برای Pages) نشون میده. هرکدام را ساختی، همان را در مرحله ۲ وارد کن.</div>
+        </div>
+      </div>
+      <div class="gitem">
+        <div class="gn"></div>
+        <div class="gb2">
+          <div class="gtitle" data-i18n="g5.title">اتصال دامنه شخصی به Worker (اختیاری)</div>
+          <div class="gdesc" data-i18n="g5.desc">اگر یک دامنه شخصی دارید و می‌خواهید به‌جای آدرس <code>workers.dev</code> از آن استفاده کنید، این قابلیت رایگان و رسمی خود Cloudflare است و هیچ نیازی به کد یا تنظیم اضافی در TCB ندارد؛ همان کد Worker بدون هیچ تغییری کار می‌کند. مراحل: ۱) دامنه‌تان را در Cloudflare اضافه کنید (<code>Account Home</code> ← <code>Add a domain</code>) و منتظر بمانید وضعیت آن به <code>Active</code> برسد (معمولاً با تغییر Nameserver دامنه به Nameserver‌هایی که Cloudflare نشان می‌دهد). ۲) به <code>Workers &amp; Pages</code> بروید و Worker خود را انتخاب کنید. ۳) از مسیر <code>Settings</code> ← <code>Domains &amp; Routes</code> ← <code>Add</code> ← <code>Custom Domain</code>، یک زیردامنه دلخواه مثل <code>vpn.yourdomain.ir</code> وارد و اضافه کنید. Cloudflare به‌طور خودکار DNS و گواهی TLS لازم را می‌سازد؛ نیازی به رکورد DNS دستی یا صدور گواهی جداگانه نیست. بعد از چند دقیقه، همان زیردامنه را در مرحله ۲ به‌جای آدرس <code>workers.dev</code> وارد کنید و حتماً چک‌باکس «از دامنه شخصی استفاده می‌کنم» را در همان بخش فعال کنید.</div>
+        </div>
+      </div>
+    </div>
+   </div>
+  </div>
+</div>
 
-function randomHex(bytes) {
-  const buf = new Uint8Array(bytes);
-  crypto.getRandomValues(buf);
-  return [...buf].map(b => b.toString(16).padStart(2, '0')).join('');
-}
+<div class="io-row">
+  <button class="btn-io btn-export" id="btn-export-settings" data-i18n="btn.exportSettings">📤 اکسپورت تنظیمات</button>
+  <button class="btn-io btn-import" id="btn-import-settings" data-i18n="btn.importSettings">📥 ایمپورت تنظیمات</button>
+  <input type="file" id="importFileInput" accept="application/json,.json" style="display:none"/>
+</div>
 
-export function generateTelegramBase() {
-  return randomHex(16);
-}
+<div class="sec">
+  <div class="sec-hdr sec-hdr-toggle" data-target="secBody2">
+    <div class="sec-title"><svg class="sec-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="8" r="3"/><path d="M7.8 8h6.2M11.6 8v2.3M13.6 8v2.3"/></svg><span data-i18n="sec2.title">مرحله ۲ — شناسه‌ها و آدرس Worker یا Pages</span></div>
+    <span class="chevron"></span>
+  </div>
+  <div class="sec-body-wrap" id="secBody2">
+   <div class="sec-body">
+    <div class="fg">
+      <label class="lbl-ltr">Token</label>
+      <div class="urow">
+        <input type="text" id="uid" placeholder="xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx" autocomplete="off"/>
+        <div class="ubtns">
+          <button class="bsm" id="btn-mk-token" data-i18n="btn.new">↺ جدید</button>
+          <button class="bsm" id="btn-cp-token" data-i18n="btn.copy">⎘ کپی</button>
+        </div>
+      </div>
+      <p class="hint" data-i18n="hint.tokenRegenerate">با هر بار تولید Token جدید، کد Worker/Pages بالا نیز به‌صورت خودکار آپدیت می‌شود.</p>
+    </div>
+    <div class="fg mt-14">
+      <label class="lbl-ltr">Password (Trojan)</label>
+      <div class="urow">
+        <input type="text" id="tpw" placeholder="xxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off"/>
+        <div class="ubtns">
+          <button class="bsm" id="btn-mk-pw" data-i18n="btn.new">↺ جدید</button>
+          <button class="bsm" id="btn-cp-pw" data-i18n="btn.copy">⎘ کپی</button>
+        </div>
+      </div>
+      <p class="hint" data-i18n="hint.passwordInfo">این مقدار برای ساخت کانفیگ‌های پروتکل Trojan استفاده می‌شود — همانند Token، با تغییر آن در کد Worker/Pages، کانفیگ‌های Trojan قدیمی از کار می‌افتند. با هر بار تولید Password جدید، کد Worker/Pages بالا نیز به‌صورت خودکار آپدیت می‌شود.</p>
+    </div>
+    <div class="fg">
+      <label for="wdom" data-i18n="lbl.workerDomain">آدرس دامنه Worker یا Pages</label>
+      <div class="alert ao mb-8">
+        <span class="aico">⚠</span>
+        <div data-i18n="alert.domainOnly">فقط نام دامنه را وارد کنید — مثال: <code>myworker.username.workers.dev</code> یا <code>myproject.pages.dev</code> — در صورت وارد کردن <code>https://</code> یا <code>/</code> اضافه، به‌صورت خودکار اصلاح می‌شود.</div>
+      </div>
+      <input type="text" id="wdom" placeholder="myworker.username.workers.dev" autocomplete="off"/>
+      <p class="hint" data-i18n="hint.domainGiven">آدرسی که Cloudflare بعد از Deploy به Worker یا Pages داد</p>
+      <label class="ck-lbl-wide mt-8" id="customDomainRow"><input type="checkbox" id="customDomainUsed"> <span data-i18n="lbl.customDomainUsed">همچنین یک دامنه شخصی هم به Worker متصل کرده‌ام و می‌خواهم کانفیگ‌های آن هم اضافه شود</span></label>
+      <div class="fg mt-8 disabled" id="customDomainInputWrap">
+        <input type="text" id="customDomainInput" placeholder="vpn.yourdomain.ir" autocomplete="off" disabled/>
+        <p class="hint" data-i18n="hint.customDomainNote">با پر کردن این کادر، کانفیگ‌های اضافه‌ای با این دامنه (فقط با TLS، چون دامنه شخصی از پورت‌های بدون TLS پشتیبانی نمی‌کند) به‌صورت ترکیبی به کانفیگ‌های JSON/YAML اضافه می‌شوند و نام آن‌ها با 🌐 و کانفیگ‌های تکی لینک با پسوند D- مشخص می‌شوند؛ کانفیگ‌های عادی با آدرس بالا هم دقیقاً مثل قبل ساخته می‌شوند.</p>
+      </div>
+    </div>
+    <div class="fg mt-14">
+      <label for="fallbackDomain" data-i18n="lbl.fallbackDomain">دامنه پوششی (اختیاری)</label>
+      <input type="text" id="fallbackDomain" placeholder="www.example.com" autocomplete="off"/>
+      <p class="hint" data-i18n="hint.fallbackDomain">⚠️ در صورت پر بودن، بازدیدکننده‌های غیرمجاز به‌جای صفحه خالی، محتوای این سایت را می‌بینند. تغییر یا حذف این مقدار نیاز به دریافت و اعمال مجدد کد Worker/Pages دارد.</p>
+    </div>
+   </div>
+  </div>
+</div>
 
-export function composeTelegramSecret(baseHex, randomPadding) {
-  return (randomPadding ? 'dd' : '') + String(baseHex || '').toLowerCase();
-}
+<div class="sec">
+  <div class="sec-hdr sec-hdr-toggle" data-target="secBody3">
+    <div class="sec-title"><svg class="sec-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4.5h6M11 4.5h3M2 8h3M8 8h6M2 11.5h9M13.6 11.5h0.4"/><circle cx="8.5" cy="4.5" r="1.3" fill="var(--card)"/><circle cx="5.5" cy="8" r="1.3" fill="var(--card)"/><circle cx="11.5" cy="11.5" r="1.3" fill="var(--card)"/></svg><span data-i18n="sec3.title">مرحله ۳ — IP های سالم و تنظیمات پیشرفته</span></div>
+    <span class="chevron"></span>
+  </div>
+  <div class="sec-body-wrap" id="secBody3">
+   <div class="sec-body">
 
-export function isValidTelegramBase(value) {
-  return typeof value === 'string' && /^[0-9a-f]{32}$/.test(value);
-}
+    <div class="fg settings-box">
+      <label class="box-lbl" data-i18n="lbl.ipSettingsBox">آدرس IP های سالم</label>
+      <label for="ips" data-i18n="lbl.ipAddresses">آدرس‌های IP (هر خط یک IP)</label>
+      <div class="alert ab mb-10">
+        <span class="aico">ℹ</span>
+        <div data-i18n="alert.scannerInfo">برای یافتن IP های سالم Cloudflare می‌توانید از ابزار Clean IP Scanner استفاده کنید. این ابزار مبتنی بر Termux بوده و روی اندروید اجرا می‌شود — نتیجه اسکن را مستقیم در کادر زیر وارد کنید.</div>
+      </div>
+      <a href="https://github.com/4n0nymou3/Clean-IP-Scanner" target="_blank" class="btn-link mb-10">
+        <button class="bgen btn-scanner">
+          <span class="ico">🔍</span> <span data-i18n="btn.scannerTool">ابزار Clean IP Scanner — یافتن IP سالم با Termux</span>
+        </button>
+      </a>
+      <textarea id="ips" placeholder="www.speedtest.net&#10;chatgpt.com&#10;104.16.0.1&#10;104.17.0.1&#10;104.18.0.1&#10;104.19.0.1&#10;104.20.0.1" autocomplete="off"></textarea>
+      <p class="hint" data-i18n="hint.ipCount">هر تعداد IP قابل قبول است — از هر IP چند کانفیگ با پورت‌های مختلف ساخته می‌شود. علاوه بر IP، می‌توانید از برخی دامنه‌ها نیز استفاده کنید (مثلاً chatgpt.com)</p>
+    </div>
 
-export function normalizeTelegramHostname(value) {
-  return String(value || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '').replace(/:\d+$/, '');
-}
+    <div class="fg mt-14 settings-box">
+      <label class="box-lbl" data-i18n="lbl.outputProtocols">پروتکل‌های خروجی</label>
+      <div class="port-row">
+        <label class="ck-lbl"><input type="checkbox" id="protoVless" checked> VLESS</label>
+        <label class="ck-lbl"><input type="checkbox" id="protoTrojan"> Trojan</label>
+      </div>
+      <p class="hint mt-8" data-i18n="hint.protocolChoice">می‌توانید فقط VLESS، فقط Trojan یا هر دو را همزمان فعال کنید — تمام کانفیگ‌های Link و فایل‌های JSON/YAML بر اساس همین انتخاب ساخته می‌شوند.</p>
+    </div>
 
-export function isValidTelegramHostname(value) {
-  return /^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/.test(value);
-}
+    <div class="fg mt-14 settings-box">
+      <label class="box-lbl" data-i18n="lbl.portsFingerprint">پورت‌ها و Fingerprint</label>
+      <div class="fg">
+      <label class="mb-9" data-i18n="lbl.tlsPorts">پورت‌های TLS (امن‌تر — برای یوتیوب، اینستاگرام، اکس)</label>
+      <div class="port-row">
+        <label class="ck-lbl"><input type="checkbox" class="ptls" value="443" checked> 443</label>
+        <label class="ck-lbl"><input type="checkbox" class="ptls" value="8443"> 8443</label>
+        <label class="ck-lbl"><input type="checkbox" class="ptls" value="2053"> 2053</label>
+        <label class="ck-lbl"><input type="checkbox" class="ptls" value="2083"> 2083</label>
+        <label class="ck-lbl"><input type="checkbox" class="ptls" value="2087"> 2087</label>
+        <label class="ck-lbl"><input type="checkbox" class="ptls" value="2096"> 2096</label>
+      </div>
+      </div>
 
-export function telegramWorkerName(platformDomain, fallbackName) {
-  const domain = normalizeTelegramHostname(platformDomain);
-  const first = domain.split('.')[0] || '';
-  if (/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.test(first) && /\.(workers|pages)\.dev$/.test(domain)) return first;
-  return fallbackName;
-}
+      <div class="fg mt-10">
+      <label class="mb-9" data-i18n="lbl.wsPorts">پورت‌های WebSocket بدون TLS (برای شبکه‌هایی که TLS بلاک است)</label>
+      <div class="port-row" id="wsPortsRow">
+        <label class="ck-lbl"><input type="checkbox" class="pws" value="80" checked> 80</label>
+        <label class="ck-lbl"><input type="checkbox" class="pws" value="8080"> 8080</label>
+        <label class="ck-lbl"><input type="checkbox" class="pws" value="8880"> 8880</label>
+        <label class="ck-lbl"><input type="checkbox" class="pws" value="2052"> 2052</label>
+        <label class="ck-lbl"><input type="checkbox" class="pws" value="2082"> 2082</label>
+        <label class="ck-lbl"><input type="checkbox" class="pws" value="2086"> 2086</label>
+        <label class="ck-lbl"><input type="checkbox" class="pws" value="2095"> 2095</label>
+      </div>
+      <p class="hint" id="wsPortsPagesNote" style="display:none" data-i18n="hint.wsPortsPagesDisabled">کانفیگ‌های بدون TLS اصلاً روی Cloudflare Pages پشتیبانی نمی‌شوند (این یک محدودیت دائمی خود Cloudflare است، نه TCB) — برای استفاده از این پورت‌ها باید تب Worker را انتخاب کنید.</p>
+      </div>
 
-export function buildTelegramLink(hostname, secret) {
-  return `https://t.me/webproxy?server=${encodeURIComponent(hostname)}&secret=${encodeURIComponent(secret)}`;
-}
+      <div class="alert ao mt-14 mb-0">
+      <span class="aico">ℹ</span>
+      <div data-i18n="alert.portCombo">هر ترکیب پورت یک کانفیگ مجزاست. با انتخاب بیشتر، کانفیگ‌های متنوع‌تری برای دور زدن فیلترینگ هوشمند ساخته می‌شه. پیشنهاد: ابتدا فقط پورت 443 را تست کنید و اگر کار نکرد پورت‌های دیگر را هم فعال کنید.</div>
+      </div>
 
-function wranglerToml(name, hostname) {
-  return [
-    `name = "${name}"`,
-    'main = "index.js"',
-    `compatibility_date = "${COMPAT_DATE}"`,
-    '',
-    '[vars]',
-    `TELEGRAM_HOSTNAME = "${hostname}"`,
-    '',
-    '[[durable_objects.bindings]]',
-    'name = "SESSION_DO"',
-    'class_name = "SessionDO"',
-    '',
-    '[[migrations]]',
-    'tag = "v1"',
-    'new_sqlite_classes = ["SessionDO"]',
-    ''
-  ].join('\n');
-}
+      <div class="fg mt-10">
+      <label class="mb-9" for="fpSelect" data-i18n="lbl.fingerprint">انتخاب TLS Fingerprint — جهت دور زدن DPI</label>
+      <select id="fpSelect">
+        <option value="chrome" selected>chrome</option>
+        <option value="firefox">firefox</option>
+        <option value="safari">safari</option>
+        <option value="ios">ios</option>
+        <option value="android">android</option>
+        <option value="edge">edge</option>
+        <option value="360">360</option>
+        <option value="qq">qq</option>
+        <option value="random">random</option>
+        <option value="randomized">randomized</option>
+      </select>
+      </div>
 
-async function fetchSource(path, fetchText) {
-  const text = await fetchText(SOURCE_DIR + path);
-  if (typeof text !== 'string' || !text.length) throw new Error('missing telegram source: ' + path);
-  return text;
-}
+      <div class="fg mt-10 mb-0">
+      <label class="mb-9" for="pathSelect" data-i18n="lbl.wsPath">مسیر WebSocket Path</label>
+      <select id="pathSelect">
+        <option value="/proxy">/proxy</option>
+        <option value="/v2ray">/v2ray</option>
+        <option value="/vless">/vless</option>
+        <option value="/ws">/ws</option>
+        <option value="/" selected>/</option>
+      </select>
+      </div>
+    </div>
 
-const defaultFetchText = async (url) => {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('fetch failed: ' + url);
-  return res.text();
-};
+    <div class="fg mt-14 settings-box">
+      <label class="box-lbl" data-i18n="lbl.fragmentSettings">تنظیمات Fragment</label>
+      <div class="toggle-row mb-10">
+        <label class="ck-lbl"><input type="checkbox" id="fragEnable"> Fragment</label>
+      </div>
+      <div class="frag-grid disabled" id="fragFields">
+        <div>
+          <label class="adv-lbl" for="fragPackets">Fragment Packets</label>
+          <input type="text" id="fragPackets" value="tlshello" placeholder="مثال: tlshello یا 1-2" data-i18n-placeholder="ph.fragPackets"/>
+        </div>
+        <div>
+          <label class="adv-lbl" for="fragInterval">Fragment Interval</label>
+          <input type="text" id="fragInterval" value="10-20" placeholder="مثال: 10-20 یا 0,1,2" data-i18n-placeholder="ph.fragIntervalMulti"/>
+        </div>
+        <div>
+          <label class="adv-lbl" for="fragLength">Fragment Length</label>
+          <input type="text" id="fragLength" value="10-20" placeholder="مثال: 10-20 یا 5,94,1" data-i18n-placeholder="ph.fragLengthMulti"/>
+        </div>
+        <div>
+          <label class="adv-lbl" for="fragMaxSplit">Fragment Max Split</label>
+          <input type="text" id="fragMaxSplit" value="10" placeholder="10"/>
+        </div>
+      </div>
 
-function buildReadme(lang, opts) {
-  const { target, hostname, workerName, companionName } = opts;
-  if (lang === 'en') {
-    const common = [
-      'TCB - Telegram WEB Proxy package',
-      '================================',
-      '',
-      'Hostname used for Telegram: ' + hostname,
-      'This exact hostname must be typed into Telegram (no https://, no port).',
-      '',
-      'Cloudflare settings for this package',
-      '- TELEGRAM_SECRET (Secret, required): the secret shown in TCB. Never commit it to GitHub.',
-      '- TELEGRAM_HOSTNAME (plain variable, already set in wrangler.toml): must equal the hostname printed above.',
-      '- TELEGRAM_DIAG (plain variable, optional): set it to 1 only while troubleshooting; remove it afterwards. It logs a few sanitized connection-stage events and no traffic content.',
-      'Random padding is chosen in the TCB panel: it adds the dd prefix to the secret, so after changing it you must update TELEGRAM_SECRET in Cloudflare and the secret in Telegram.',
-      ''
-    ];
-    if (target === 'pages') {
-      return common.concat([
-        'STEP 1 - deploy the companion Worker (it owns the Durable Object)',
-        '1. Create a new private GitHub repository and upload every file inside telegram-worker.zip to its root.',
-        '2. Cloudflare Dashboard > Workers & Pages > Create > Import a repository, choose that repository.',
-        '3. The project name must be exactly: ' + companionName,
-        '4. After the first deploy: Worker > Settings > Variables and Secrets > Add > type Secret, name TELEGRAM_SECRET, value = the secret shown in TCB.',
-        '',
-        'STEP 2 - upload the Pages project',
-        '1. Upload pages-worker.zip (it contains _worker.js) to your Pages project, as before.',
-        '2. Pages project > Settings > Bindings > Add > Service binding: variable name TELEGRAM_WORKER, service ' + companionName + '.',
-        '3. Redeploy the Pages project once so the binding becomes active.',
-        '',
-        'STEP 3 - Telegram',
-        'Add the proxy from the TCB page link, or type server = ' + hostname + ' and the secret in Telegram.',
-        '',
-        'Notes',
-        '- Never commit the secret to GitHub. It is only stored as a Cloudflare secret.',
-        '- If TELEGRAM_SECRET is missing the Telegram feature stays off and your VLESS/Trojan setup keeps working.',
-        '- Free plan limits apply to Durable Objects and Workers requests.',
-        ''
-      ]).join('\n');
-    }
-    return common.concat([
-      'STEP 1 - GitHub',
-      '1. Create a new private GitHub repository.',
-      '2. Upload every file of this ZIP to the repository root (Add file > Upload files).',
-      '',
-      'STEP 2 - Cloudflare',
-      '1. Workers & Pages > open your Worker named ' + workerName + ' > Settings > Builds > Connect (or Create > Import a repository).',
-      '2. Choose the repository. The Worker name must match the name in wrangler.toml: ' + workerName,
-      '3. Let it deploy.',
-      '4. Worker > Settings > Variables and Secrets > Add > type Secret, name TELEGRAM_SECRET, value = the secret shown in TCB.',
-      '',
-      'STEP 3 - Telegram',
-      'Add the proxy from the TCB page link, or type server = ' + hostname + ' and the secret in Telegram.',
-      '',
-      'Notes',
-      '- Never commit the secret to GitHub. It is only stored as a Cloudflare secret.',
-      '- If TELEGRAM_SECRET is missing the Telegram feature stays off and your VLESS/Trojan setup keeps working.',
-      '- The paths /api/v1/session and /api/v1/ws and the query ?bridge= on / are reserved for Telegram.',
-      '- Free plan limits apply to Durable Objects and Workers requests.',
-      ''
-    ]).join('\n');
-  }
-  const common = [
-    'TCB - بسته‌ی Telegram WEB Proxy',
-    '================================',
-    '',
-    'Hostname برای تلگرام: ' + hostname,
-    'دقیقاً همین hostname را در تلگرام وارد کن (بدون https:// و بدون پورت).',
-    '',
-    'تنظیمات Cloudflare برای این بسته',
-    '- TELEGRAM_SECRET (از نوع Secret، الزامی): همان secret نمایش‌داده‌شده در TCB. هرگز آن را در GitHub commit نکن.',
-    '- TELEGRAM_HOSTNAME (متغیر معمولی، از قبل در wrangler.toml تنظیم شده): باید با hostname بالا یکی باشد.',
-    '- TELEGRAM_DIAG (متغیر معمولی، اختیاری): فقط هنگام عیب‌یابی مقدار 1 بگذار و بعد از آن حذفش کن. فقط چند رویداد پاک‌سازی‌شده‌ی مرحله‌ی اتصال را لاگ می‌کند و محتوای ترافیک را نه.',
-    'Random padding در پنل TCB انتخاب می‌شود و پیشوند dd را به secret اضافه می‌کند؛ پس از تغییر آن باید TELEGRAM_SECRET در Cloudflare و secret در تلگرام هم عوض شود.',
-    ''
-  ];
-  if (target === 'pages') {
-    return common.concat([
-      'مرحله ۱ - استقرار Worker همراه (Durable Object داخل آن است)',
-      '۱. یک مخزن خصوصی جدید در GitHub بساز و همه‌ی فایل‌های داخل telegram-worker.zip را در ریشه‌ی آن آپلود کن.',
-      '۲. Cloudflare > Workers & Pages > Create > Import a repository و همان مخزن را انتخاب کن.',
-      '۳. اسم پروژه باید دقیقاً این باشد: ' + companionName,
-      '۴. بعد از اولین استقرار: Worker > Settings > Variables and Secrets > Add، نوع Secret، اسم TELEGRAM_SECRET و مقدار = secret نمایش‌داده‌شده در TCB.',
-      '',
-      'مرحله ۲ - پروژه‌ی Pages',
-      '۱. فایل pages-worker.zip (حاوی _worker.js) را مثل قبل در پروژه‌ی Pages آپلود کن.',
-      '۲. Pages > Settings > Bindings > Add > Service binding با نام متغیر TELEGRAM_WORKER و سرویس ' + companionName + '.',
-      '۳. یک بار Pages را دوباره استقرار بده تا binding فعال شود.',
-      '',
-      'مرحله ۳ - تلگرام',
-      'پروکسی را با لینک صفحه‌ی TCB اضافه کن، یا server = ' + hostname + ' و secret را دستی وارد کن.',
-      '',
-      'نکته‌ها',
-      '- secret را هرگز در GitHub commit نکن. فقط به‌عنوان Secret در Cloudflare نگهداری می‌شود.',
-      '- اگر TELEGRAM_SECRET تنظیم نشده باشد قابلیت تلگرام خاموش می‌ماند و VLESS/Trojan شما بدون تغییر کار می‌کند.',
-      '- محدودیت‌های پلن رایگان برای Durable Object و درخواست‌های Workers اعمال می‌شود.',
-      ''
-    ]).join('\n');
-  }
-  return common.concat([
-    'مرحله ۱ - GitHub',
-    '۱. یک مخزن خصوصی جدید در GitHub بساز.',
-    '۲. همه‌ی فایل‌های این ZIP را در ریشه‌ی مخزن آپلود کن (Add file > Upload files).',
-    '',
-    'مرحله ۲ - Cloudflare',
-    '۱. Workers & Pages > Worker با نام ' + workerName + ' را باز کن > Settings > Builds > Connect (یا Create > Import a repository).',
-    '۲. مخزن را انتخاب کن. اسم Worker باید با نام داخل wrangler.toml یکی باشد: ' + workerName,
-    '۳. صبر کن استقرار کامل شود.',
-    '۴. Worker > Settings > Variables and Secrets > Add، نوع Secret، اسم TELEGRAM_SECRET و مقدار = secret نمایش‌داده‌شده در TCB.',
-    '',
-    'مرحله ۳ - تلگرام',
-    'پروکسی را با لینک صفحه‌ی TCB اضافه کن، یا server = ' + hostname + ' و secret را دستی وارد کن.',
-    '',
-    'نکته‌ها',
-    '- secret را هرگز در GitHub commit نکن. فقط به‌عنوان Secret در Cloudflare نگهداری می‌شود.',
-    '- اگر TELEGRAM_SECRET تنظیم نشده باشد قابلیت تلگرام خاموش می‌ماند و VLESS/Trojan شما بدون تغییر کار می‌کند.',
-    '- مسیرهای /api/v1/session و /api/v1/ws و پارامتر ?bridge= روی / برای تلگرام رزرو هستند.',
-    '- محدودیت‌های پلن رایگان برای Durable Object و درخواست‌های Workers اعمال می‌شود.',
-    ''
-  ]).join('\n');
-}
+      <p class="hint mt-10" data-i18n="hint.fragmentApply">در صورت فعال بودن، تنظیمات fragment فقط در کانفیگ‌های JSON اعمال می‌شود و روی کانفیگ‌های URL تأثیری ندارد.</p>
 
-export async function buildTelegramPackages(opts, fetchText = defaultFetchText) {
-  const { target, token, password, fallbackDomain, hostname, workerName, lang } = opts;
-  const companionName = workerName + '-telegram';
-  const readme = buildReadme(lang || 'fa', { target, hostname, workerName, companionName });
-  const shared = [];
-  for (const path of SHARED_FILES) shared.push({ name: path, content: await fetchSource(path, fetchText) });
-  const tcbCode = await buildWorker(token, password, fallbackDomain);
+      <div class="sub-divider disabled" id="fragAdvFields">
+        <label class="box-lbl sub-box-lbl" data-i18n="lbl.finalmaskAdvanced">تنظیمات پیشرفته Finalmask (اختیاری — فقط JSON هسته Xray)</label>
 
-  if (target === 'pages') {
-    const companionIndex = await fetchSource('index-companion.js', fetchText);
-    const pagesWorker = tcbCode.replace('export default{', 'const __tcbDefault={').replace(/\n?$/, '\n') + PAGES_ROUTER.replace('__TCB_DEFAULT__', '__tcbDefault');
-    return [
-      { filename: 'pages-worker.zip', files: [{ name: '_worker.js', content: pagesWorker }] },
-      {
-        filename: 'telegram-worker.zip',
-        files: [
-          { name: 'index.js', content: companionIndex },
-          ...shared,
-          { name: 'wrangler.toml', content: wranglerToml(companionName, hostname) },
-          { name: 'README-TELEGRAM.txt', content: readme }
-        ]
-      }
-    ];
-  }
+        <label class="ck-lbl-wide mb-10"><input type="checkbox" id="frag2Enable"> <span data-i18n="lbl.frag2Enable">فعال‌سازی مرحله دوم قطعه‌بندی (دو لایه)</span></label>
+        <div class="frag-grid disabled" id="frag2Fields">
+          <div>
+            <label class="adv-lbl" for="frag2Packets">Stage 2 Packets</label>
+            <input type="text" id="frag2Packets" value="1-1" placeholder="مثال: tlshello یا 1-2" data-i18n-placeholder="ph.fragPackets"/>
+          </div>
+          <div>
+            <label class="adv-lbl" for="frag2Interval">Stage 2 Interval</label>
+            <input type="text" id="frag2Interval" value="10-20" placeholder="مثال: 10-20 یا 0,1,2" data-i18n-placeholder="ph.fragIntervalMulti"/>
+          </div>
+          <div>
+            <label class="adv-lbl" for="frag2Length">Stage 2 Length</label>
+            <input type="text" id="frag2Length" value="100-200" placeholder="مثال: 10-20 یا 5,94,1" data-i18n-placeholder="ph.fragLengthMulti"/>
+          </div>
+          <div>
+            <label class="adv-lbl" for="frag2MaxSplit">Stage 2 Max Split</label>
+            <input type="text" id="frag2MaxSplit" value="10" placeholder="10"/>
+          </div>
+        </div>
+        <p class="hint mt-10" data-i18n="hint.frag2Info">مرحله دوم، خروجی مرحله اول Fragment را دوباره خرد می‌کند (finalmask.tcp دو عضوی). می‌توانید در فیلدهای Length/Interval هر مرحله چند مقدار متوالی با کاما جدا از هم وارد کنید (مثلاً 5,94,1) تا هر برش طول متفاوتی داشته باشد؛ آخرین مقدار برای برش‌های بعدی هم تکرار می‌شود. برای غیرفعال کردن مرحله دوم، تیک بالا را بردارید.</p>
 
-  const indexJs = await fetchSource('index.js', fetchText);
-  return [
-    {
-      filename: 'telegram-worker.zip',
-      files: [
-        { name: 'index.js', content: indexJs },
-        { name: 'tcb-worker.js', content: tcbCode },
-        ...shared,
-        { name: 'wrangler.toml', content: wranglerToml(workerName, hostname) },
-        { name: 'README-TELEGRAM.txt', content: readme }
-      ]
-    }
-  ];
-}
+        <label class="ck-lbl-wide mt-14 mb-10"><input type="checkbox" id="fpUnsafeXray"> <span data-i18n="lbl.fpUnsafeXray">استفاده از فینگرپرینت خام به‌جای فینگرپرینت بالا</span></label>
 
-export function zipPackage(pkg) {
-  return createZip(pkg.files);
-}
+        <div class="fg mt-10 mb-0">
+          <label class="adv-lbl txt-dir" data-i18n="lbl.cipherSuitesXray">فهرست Cipher Suites سفارشی (اختیاری، فقط JSON هسته Xray)</label>
+          <textarea id="cipherSuitesXray" class="cs-textarea" placeholder="مثال: TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256" data-i18n-placeholder="ph.cipherSuites"></textarea>
+        </div>
+        <p class="hint mt-8" data-i18n="hint.fpUnsafeInfo">این دو گزینه طول واقعی بسته ClientHello را ثابت و قابل پیش‌بینی می‌کنند تا نقاط شکستن Fragment همیشه درست بیفتند. برای غیرفعال کردن هرکدام، تیک را بردارید یا کادر را خالی بگذارید.</p>
+      </div>
+    </div>
+
+    <div class="fg mt-14 settings-box">
+      <label class="box-lbl" data-i18n="lbl.advancedJson">تنظیمات پیشرفته JSON</label>
+      <div class="adv-grid">
+        <div>
+          <label class="adv-lbl" for="fakeDns">Fake DNS</label>
+          <select id="fakeDns">
+            <option value="1">Enabled</option>
+            <option value="0">Disabled</option>
+          </select>
+        </div>
+        <div>
+          <label class="adv-lbl" for="ipv6">IPv6</label>
+          <select id="ipv6">
+            <option value="0">Disabled</option>
+            <option value="1">Enabled</option>
+          </select>
+        </div>
+        <div>
+          <label class="adv-lbl" for="lanAccess">Allow LAN</label>
+          <select id="lanAccess">
+            <option value="0">Disabled</option>
+            <option value="1">Enabled</option>
+          </select>
+        </div>
+        <div>
+          <label class="adv-lbl" for="tcpFastOpen">TCP Fast Open</label>
+          <select id="tcpFastOpen">
+            <option value="0">Disabled</option>
+            <option value="1">Enabled</option>
+          </select>
+        </div>
+      </div>
+      <div id="lanAuthWrap" class="mt-12" style="display:none">
+        <div class="adv-dns-grid">
+          <div>
+            <label class="adv-lbl txt-dir" for="lanUsername" data-i18n="lbl.lanUsername">نام کاربری</label>
+            <input type="text" id="lanUsername" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"/>
+          </div>
+          <div>
+            <label class="adv-lbl txt-dir" for="lanPassword" data-i18n="lbl.lanPassword">رمز عبور</label>
+            <input type="password" id="lanPassword" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false"/>
+          </div>
+        </div>
+        <p class="hint mt-8" data-i18n="hint.lanAuth">اختیاری — اگر هر دو کادر را خالی بگذارید، Allow LAN بدون احراز هویت فعال می‌ماند. اگر هر دو را پر کنید، ورودی اصلی پروکسی در هر سه خروجی (Xray، Sing-box و Clash) فقط با همین نام کاربری و رمز عبور قابل استفاده می‌شود. پر کردن فقط یکی از دو کادر مجاز نیست و نام کاربری نمی‌تواند شامل «:» باشد. ورودی‌های کمکی DNS تحت‌تأثیر این احراز هویت نیستند.</p>
+      </div>
+      <div id="echWrap" class="mt-12">
+        <div class="toggle-row">
+          <label class="ck-lbl"><input type="checkbox" id="echEnable"> ECH</label>
+        </div>
+        <div id="echFields" class="ech-field disabled">
+          <label class="adv-lbl mt-8 txt-dir" for="echDns" data-i18n="lbl.echDnsServer">سرور DNS برای دریافت کلید ECH</label>
+          <input type="text" id="echDns" value="https://cloudflare-dns.com/dns-query" placeholder="https://cloudflare-dns.com/dns-query"/>
+          <p class="hint mt-6" data-i18n="hint.echInfo">فعال کردن چک‌باکس کافی است — کلید رمزنگاری دامنه Worker یا Pages شما به صورت خودکار از این سرور DNS دریافت می‌شود. ECH روی هر چهار فرمت خروجی (لینک VLESS/Trojan، JSON برای Xray، JSON برای Sing-box و JSON برای Clash) اعمال می‌شود. آدرس پیش‌فرض (DoH Cloudflare) بهترین گزینه برای ایران است زیرا یک آدرس <code>https://</code> رمزگذاری‌شده است و برخلاف <code>udp://8.8.8.8</code> در برابر دستکاری DNS توسط ISPها مقاوم است. اگر DoH Proxy شخصی دارید، آدرس آن را اینجا وارد کنید.</p>
+        </div>
+      </div>
+      <div class="adv-dns-grid mt-12">
+        <div>
+          <label class="adv-lbl" for="localDns">Local DNS</label>
+          <input type="text" id="localDns" value="8.8.8.8" placeholder="8.8.8.8"/>
+        </div>
+        <div>
+          <label class="adv-lbl" for="remoteDns">Remote DNS / DoH</label>
+          <a href="https://github.com/4n0nymou3/cloudflare-doh-proxy" target="_blank" class="btn-link mb-8">
+            <button class="bgen btn-doh">
+              <span class="ico">🌐</span> <span data-i18n="btn.dohTool">ابزار DoH Proxy — ساخت DNS اختصاصی با Cloudflare</span>
+            </button>
+          </a>
+          <input type="text" id="remoteDns" value="https://cloudflare-dns.com/dns-query" placeholder="https://cloudflare-dns.com/dns-query"/>
+        </div>
+      </div>
+      <p class="hint mt-10" data-i18n="hint.dnsInfo">آدرس Local DNS برای resolve دامنه‌های داخلی کشورهای انتخاب‌شده استفاده می‌شود. آدرس Remote DNS به‌صورت پیشفرض روی Cloudflare DoH تنظیم است و می‌توانید آن را با هر آدرس DoH دلخواه جایگزین کنید. با ابزار DoH Proxy می‌توانید یک سرور DoH اختصاصی روی Cloudflare بسازید و آدرس آن را اینجا وارد کنید. گزینه‌ی Allow LAN اتصال سایر دستگاه‌های شبکه محلی را فعال می‌کند. قابلیت ECH فقط در حالت Normal (بدون Fragment) روی هر چهار فرمت خروجی اعمال می‌شود؛ Fragment و ECH را نمی‌توان همزمان فعال کرد.</p>
+    </div>
+
+    <div class="fg mt-14 settings-box">
+      <label class="box-lbl" data-i18n="lbl.routingRules">قوانین مسیریابی</label>
+      <label class="adv-lbl mb-8 txt-dir" data-i18n="lbl.bypassRules">دور زدن پروکسی (Bypass rules) — کشورهایی که به‌صورت مستقیم مسیریابی شوند</label>
+      <div class="port-row mb-10">
+        <label class="ck-lbl"><input type="checkbox" id="routeIr" checked> <span data-i18n="country.ir">ایران</span></label>
+        <label class="ck-lbl"><input type="checkbox" id="routeCn"> <span data-i18n="country.cn">چین</span></label>
+        <label class="ck-lbl"><input type="checkbox" id="routeRu"> <span data-i18n="country.ru">روسیه</span></label>
+      </div>
+      <p class="hint mt-8" data-i18n="hint.bypassInfo">کشورهایی که تیک می‌زنید، ترافیک و DNS مربوط به دامنه‌ها و آی‌پی‌های همان کشور به‌صورت مستقیم (بدون عبور از پروکسی) مسیریابی می‌شود؛ این قوانین در هر سه فرمت خروجی JSON، Sing-box و Clash اعمال می‌شوند. حداقل یک کشور باید انتخاب شده باشد.</p>
+      <label class="adv-lbl mb-8 mt-12 txt-dir" data-i18n="lbl.blockRules">مسدودسازی (Block rules) — دسته‌هایی که مسدود شوند</label>
+      <div class="port-row mb-10">
+        <label class="ck-lbl"><input type="checkbox" id="blockPromo"> Ads</label>
+        <label class="ck-lbl"><input type="checkbox" id="blockPorn"> Porn</label>
+        <label class="ck-lbl"><input type="checkbox" id="blockQuic" checked> QUIC</label>
+        <label class="ck-lbl"><input type="checkbox" id="blockMalware"> Malware</label>
+        <label class="ck-lbl"><input type="checkbox" id="blockPhishing"> Phishing</label>
+        <label class="ck-lbl"><input type="checkbox" id="blockCryptominers"> Cryptominers</label>
+      </div>
+      <p class="hint mt-8" data-i18n="hint.blockInfo">دسته‌هایی که تیک می‌زنید در هر سه فرمت خروجی مسدود می‌شوند. QUIC یعنی مسدود شدن ترافیک UDP (شامل HTTP/3) تا مرورگر به‌صورت خودکار روی HTTPS معمولی که از تانل شما عبور می‌کند سوییچ کند.</p>
+
+      <label class="adv-lbl mb-8 mt-12 txt-dir" data-i18n="lbl.sanctionBypass">ضدتحریم (Bypass Sanctions) — دور زدن مستقیم سرویس‌های تحریمی</label>
+      <div class="fg mb-8">
+        <label class="adv-lbl txt-dir" for="sanctionDns" data-i18n="lbl.sanctionDns">آدرس DNS ضدتحریم</label>
+        <input type="text" id="sanctionDns" value="178.22.122.100" placeholder="178.22.122.100"/>
+      </div>
+      <div class="port-row mb-10">
+        <label class="ck-lbl"><input type="checkbox" id="sanctionOpenai"> OpenAI</label>
+        <label class="ck-lbl"><input type="checkbox" id="sanctionGoogleai"> Google AIs</label>
+        <label class="ck-lbl"><input type="checkbox" id="sanctionAnthropic"> Anthropic</label>
+        <label class="ck-lbl"><input type="checkbox" id="sanctionXai"> xAI</label>
+        <label class="ck-lbl"><input type="checkbox" id="sanctionMicrosoft"> Microsoft</label>
+        <label class="ck-lbl"><input type="checkbox" id="sanctionOracle"> Oracle</label>
+        <label class="ck-lbl"><input type="checkbox" id="sanctionDocker"> Docker</label>
+        <label class="ck-lbl"><input type="checkbox" id="sanctionAdobe"> Adobe</label>
+        <label class="ck-lbl"><input type="checkbox" id="sanctionEpicgames"> Epic Games</label>
+        <label class="ck-lbl"><input type="checkbox" id="sanctionIntel"> Intel</label>
+        <label class="ck-lbl"><input type="checkbox" id="sanctionAmd"> AMD</label>
+        <label class="ck-lbl"><input type="checkbox" id="sanctionNvidia"> Nvidia</label>
+        <label class="ck-lbl"><input type="checkbox" id="sanctionAsus"> Asus</label>
+        <label class="ck-lbl"><input type="checkbox" id="sanctionHp"> HP</label>
+        <label class="ck-lbl"><input type="checkbox" id="sanctionLenovo"> Lenovo</label>
+      </div>
+      <p class="hint mt-8" data-i18n="hint.sanctionInfo">سرویس‌هایی که تیک می‌زنید همیشه مستقیم (با DNS بالا) مسیریابی می‌شوند، حتی اگر IP خروجی شما ایرانی تشخیص داده شود.</p>
+
+      <label class="adv-lbl mb-8 mt-12 txt-dir" data-i18n="lbl.customSanctionRules">دامنه‌های سفارشی ضدتحریم — هر خط یک دامنه (فقط دامنه، بدون IP)</label>
+      <textarea id="customSanctionRules" placeholder="example.com" autocomplete="off"></textarea>
+      <p class="hint mt-8" data-i18n="hint.customSanctionRulesInfo">این دامنه‌ها هم مستقیم مسیریابی می‌شوند و هم از DNS ضدتحریم بالا استفاده می‌کنند. چون DNS فقط دامنه Resolve می‌کند، این کادر فقط دامنه قبول می‌کند؛ برای IP/CIDR از کادر قوانین سفارشی Bypass پایین‌تر استفاده کنید.</p>
+
+      <label class="adv-lbl mb-8 mt-12 txt-dir" data-i18n="lbl.customBypassRules">قوانین سفارشی Bypass — هر خط یک دامنه/IP/CIDR</label>
+      <textarea id="customBypassRules" placeholder="example.com&#10;192.168.1.1&#10;192.168.1.0/24" autocomplete="off"></textarea>
+      <p class="hint mt-8" data-i18n="hint.customRulesInfo">دامنه‌ی وارد شده و همه زیردامنه‌هایش هم شامل می‌شود.</p>
+
+      <label class="adv-lbl mb-8 mt-12 txt-dir" data-i18n="lbl.customBlockRules">قوانین سفارشی Block — هر خط یک دامنه/IP/CIDR</label>
+      <textarea id="customBlockRules" placeholder="example.com&#10;192.168.1.1&#10;192.168.1.0/24" autocomplete="off"></textarea>
+      <p class="hint mt-8" data-i18n="hint.customRulesInfo">دامنه‌ی وارد شده و همه زیردامنه‌هایش هم شامل می‌شود.</p>
+    </div>
+
+    <div class="fg mt-14 settings-box">
+      <label class="box-lbl" data-i18n="lbl.observatorySettings">تنظیمات Observatory</label>
+      <div class="observatory-grid">
+        <div>
+          <label class="adv-lbl" for="leastPingInterval" data-i18n="lbl.leastPingInterval">leastPing Interval</label>
+          <input type="text" id="leastPingInterval" value="3m" placeholder="3m"/>
+        </div>
+        <div>
+          <label class="adv-lbl" for="leastLoadInterval" data-i18n="lbl.leastLoadInterval">leastLoad Interval</label>
+          <input type="text" id="leastLoadInterval" value="5m" placeholder="5m"/>
+        </div>
+        <div>
+          <label class="adv-lbl" for="leastLoadMode" data-i18n="lbl.leastLoadMode">leastLoad Mode</label>
+          <select id="leastLoadMode">
+            <option value="HEAD" selected>HEAD</option>
+            <option value="GET">GET</option>
+          </select>
+        </div>
+        <div>
+          <label class="adv-lbl" for="leastLoadSampling" data-i18n="lbl.leastLoadSampling">leastLoad Sampling</label>
+          <input type="text" id="leastLoadSampling" value="2" placeholder="2"/>
+        </div>
+        <div>
+          <label class="adv-lbl" for="leastLoadTimeout" data-i18n="lbl.leastLoadTimeout">leastLoad Timeout</label>
+          <input type="text" id="leastLoadTimeout" value="30s" placeholder="30s"/>
+        </div>
+      </div>
+      <p class="hint mt-10" data-i18n="hint.observatoryInfo">این تنظیمات نحوه‌ی تست و انتخاب بهترین سرور توسط هسته‌ی Xray را کنترل می‌کنند. مقادیر زمانی را با پسوند m (دقیقه) یا s (ثانیه) وارد کنید؛ مثلاً 3m یا 30s. leastLoad Sampling باید یک عدد صحیح مثبت باشد.</p>
+    </div>
+
+    <div class="fg mt-14 settings-box">
+      <label class="box-lbl" data-i18n="lbl.chainProxy">قابلیت Chain Proxy — ثابت کردن IP خروجی (اختیاری)</label>
+      <textarea id="chainConfig" placeholder="مثال: vless://... یا trojan://... یا ss://... یا socks://... یا http://..." data-i18n-placeholder="ph.chainConfig" autocomplete="off"></textarea>
+      <p class="hint mt-8" data-i18n="hint.chainInfo">یک کانفیگ با فرمت URL از یک سرور دیگر (مثلاً یک VPS با IP ثابت) اینجا وارد کنید تا کانفیگ‌های TCB به آن Chain شوند: ابتدا از طریق Worker یا Pages شما (برای عبور از فیلترینگ) و سپس از طریق این سرور به اینترنت متصل می‌شوید — یعنی IP خروجی شما همیشه ثابت و برابر با IP همان سرور خواهد بود. فرمت‌های پشتیبانی‌شده: VLESS (tcp/ws/grpc با none/tls/reality)، Trojan (tcp/ws/grpc با tls)، Shadowsocks، SOCKS5 و HTTP. این قابلیت فقط روی کانفیگ‌های JSON برای Xray، Sing-box و Clash اعمال می‌شود (نه روی کانفیگ‌های تکی فرمت لینک)، چون Chain به دو گره هماهنگ نیاز دارد که فقط در یک فایل کانفیگ کامل قابل تعریف است. وقتی این قابلیت فعال باشد، ایموجی ⛓️ کنار نام کانفیگ‌های JSON اضافه می‌شود. برای غیرفعال کردن، این کادر را خالی بگذارید. نکته مهم: کانفیگی که اینجا وارد می‌کنید نباید مربوط به یک Cloudflare Worker یا Pages دیگر باشد، چون هیچ‌کدام آی‌پی اختصاصی و ثابت ندارند؛ حتماً از کانفیگ یک سرور واقعی (مثل VPS) با آی‌پی اختصاصی خودش استفاده کنید تا هدف ثابت ماندن IP خروجی برآورده شود.</p>
+    </div>
+
+    <div class="fg mt-14 settings-box">
+      <label class="box-lbl" data-i18n="lbl.configNameBox">نام کانفیگ</label>
+      <label for="jsonName" data-i18n="lbl.jsonName">نام کانفیگ (اختیاری)</label>
+      <input type="text" id="jsonName" placeholder="در صورت خالی بودن، نام به‌صورت خودکار تعیین می‌شود" data-i18n-placeholder="ph.jsonName" autocomplete="off"/>
+      <p class="hint" data-i18n="hint.jsonNameInfo">این نام روی هر سه کانفیگ Xray، Sing-box و Clash و همچنین نام فایل‌های دانلودی اعمال می‌شود. اگر خالی بماند، پنل نام پیش‌فرض را بر اساس Normal، Fragment یا ECH انتخاب خواهد کرد.</p>
+    </div>
+   </div>
+  </div>
+</div>
+
+<button class="bgen mt-14" id="gb" data-i18n="btn.generate">⚙ ساخت کانفیگ</button>
+<button class="bgen-danger" id="btn-reset-all" type="button" data-i18n="btn.resetAll">🔄 پاکسازی کامل و شروع مجدد</button>
+
+<div id="results">
+  <hr class="dv"/>
+  <div class="sec">
+    <div class="sec-hdr">
+      <div class="sec-title"><i class="dot-orange"></i><span data-i18n="res.xrayTitle">کانفیگ JSON — Xray 🚀</span></div>
+      <div class="flex-gap-6">
+        <button class="cb" id="btn-cp-json" data-i18n="btn.copyJson">⎘ کپی JSON</button>
+        <button class="cb" id="btn-dl-json" data-i18n="btn.dlJsonFile">↓ دانلود TCB.json</button>
+      </div>
+    </div>
+    <div class="sec-body">
+      <div class="code-viewer">
+        <div class="code-viewer-header">
+          <div class="code-viewer-filename"><span class="lang-dot dot-json-orange"></span><span class="fname">TCB.json</span></div>
+          <div class="code-viewer-actions">
+            <button class="btn-cpscript" id="btn-cp-json-2" data-i18n="btn.copy">⎘ کپی</button>
+            <button class="btn-cpscript" id="btn-dl-json-2" data-i18n="btn.download">↓ دانلود</button>
+          </div>
+        </div>
+        <div class="code-viewer-body lg">
+          <div class="code-box" id="jsonDisplay"></div>
+        </div>
+      </div>
+      <p class="hint mt-10" data-i18n="hint.xrayUsage">این کانفیگ را در v2rayNG یا هر کلاینت سازگار با Xray وارد کن — از حالت least ping برای انتخاب سریع‌ترین سرور استفاده می‌کند.</p>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="sec-hdr">
+      <div class="sec-title"><i class="dot-green"></i><span data-i18n="res.singboxTitle">کانفیگ JSON — Sing-box 📦</span></div>
+      <div class="flex-gap-6">
+        <button class="cb" id="btn-cp-singbox" data-i18n="btn.copyJson">⎘ کپی JSON</button>
+        <button class="cb" id="btn-dl-singbox" data-i18n="btn.dlJsonFile">↓ دانلود TCB.json</button>
+      </div>
+    </div>
+    <div class="sec-body">
+      <div class="code-viewer">
+        <div class="code-viewer-header">
+          <div class="code-viewer-filename"><span class="lang-dot dot-json-green"></span><span class="fname">TCB_Singbox.json</span></div>
+          <div class="code-viewer-actions">
+            <button class="btn-cpscript" id="btn-cp-singbox-2" data-i18n="btn.copy">⎘ کپی</button>
+            <button class="btn-cpscript" id="btn-dl-singbox-2" data-i18n="btn.download">↓ دانلود</button>
+          </div>
+        </div>
+        <div class="code-viewer-body lg">
+          <div class="code-box" id="singboxDisplay"></div>
+        </div>
+      </div>
+      <p class="hint mt-10" data-i18n="hint.singboxUsage">این کانفیگ مستقیماً برای Sing-box و کلاینت‌های مبتنی بر هسته‌ی Sing-box ساخته شده و در صورت فعال بودن ECH، این قابلیت روی آن نیز اعمال می‌شود (Fragment و سایر تنظیمات شما نیز اعمال شده‌اند).</p>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="sec-hdr">
+      <div class="sec-title"><i class="dot-purple"></i><span data-i18n="res.clashTitle">کانفیگ JSON — Clash 🐱</span></div>
+      <div class="flex-gap-6">
+        <button class="cb" id="btn-cp-clash" data-i18n="btn.copyJson">⎘ کپی JSON</button>
+        <button class="cb" id="btn-dl-clash" data-i18n="btn.dlYamlFile">↓ دانلود TCB.yaml</button>
+      </div>
+    </div>
+    <div class="sec-body">
+      <div class="code-viewer">
+        <div class="code-viewer-header">
+          <div class="code-viewer-filename"><span class="lang-dot dot-yaml"></span><span class="fname">TCB.yaml</span></div>
+          <div class="code-viewer-actions">
+            <button class="btn-cpscript" id="btn-cp-clash-2" data-i18n="btn.copy">⎘ کپی</button>
+            <button class="btn-cpscript" id="btn-dl-clash-2" data-i18n="btn.download">↓ دانلود</button>
+          </div>
+        </div>
+        <div class="code-viewer-body lg">
+          <div class="code-box" id="clashDisplay"></div>
+        </div>
+      </div>
+      <p class="hint mt-10" data-i18n="hint.clashUsage">فرمت و دانلود این کانفیگ با پسوند <code>.yaml</code> انجام می‌شود تا کلاینت‌های Clash/Mihomo آن را به‌عنوان پروفایل بشناسند. در صورت فعال بودن ECH، این قابلیت روی این کانفیگ نیز اعمال می‌شود. توجه: فرمت Clash/Mihomo اصولاً قابلیت Fragment ندارد، بنابراین تنظیمات Fragment روی این کانفیگ اعمال نمی‌شود.</p>
+    </div>
+  </div>
+  <div class="stats">
+    <div class="stat"><span class="sn sn-blue" id="sv">0</span><div class="sl" data-i18n="stat.tls">کانفیگ TLS</div></div>
+    <div class="stat"><span class="sn sn-orange" id="si">0</span><div class="sl" data-i18n="stat.ws">کانفیگ WS</div></div>
+    <div class="stat"><span class="sn sn-green" id="sa">0</span><div class="sl" data-i18n="stat.total">مجموع</div></div>
+  </div>
+  <div class="sec">
+    <div class="sec-hdr">
+      <div class="sec-title"><svg class="sec-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="2.5" cy="4" r="0.9" fill="currentColor" stroke="none"/><circle cx="2.5" cy="8" r="0.9" fill="currentColor" stroke="none"/><circle cx="2.5" cy="12" r="0.9" fill="currentColor" stroke="none"/><path d="M5.5 4h8M5.5 8h8M5.5 12h8"/></svg><span data-i18n="res.generatedTitle">کانفیگ‌های تولید شده</span></div>
+      <span class="cnt" id="cb2">0</span>
+    </div>
+    <div class="sec-body">
+      <div class="rh">
+        <div class="rt" data-i18n="res.linkConfigs">کانفیگ‌های Link</div>
+        <div class="rh-buttons">
+          <button class="cb" id="btn-cp-all" data-i18n="btn.copyAll">⎘ کپی همه</button>
+          <button class="cb" id="btn-dl-all" data-i18n="btn.dlTxtFile">↓ دانلود TCB.txt</button>
+        </div>
+      </div>
+      <div class="cfgl" id="lAll"></div>
+    </div>
+  </div>
+  <div class="alert ag">
+    <span class="aico">✓</span>
+    <div data-i18n="alert.configsReady">کانفیگ‌ها آماده‌اند. کانفیگ JSON متناسب با کلاینت خودت را انتخاب کن: کانفیگ <strong class="txt-strong">Xray</strong> برای v2rayNG و تمام کلاینت‌های مبتنی بر هسته‌ی Xray، کانفیگ <strong class="txt-strong">Sing-box</strong> برای NekoBox/Hiddify و تمام کلاینت‌های مبتنی بر هسته‌ی Sing-box، و کانفیگ <strong class="txt-strong">Clash</strong> برای Mihomo/Clash Verge و... .</div>
+  </div>
+</div>
+
+</div>
+
+<div class="footer">
+  <p>Engineered by: <a href="https://t.me/An0nymou3Bot" target="_blank" class="footer-link">Anonymous</a></p>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="qr-modal" id="qrModal">
+  <div class="qr-modal-inner">
+    <button class="qr-modal-close" id="qrModalClose">✕</button>
+    <div class="qr-modal-box" id="qrModalBox"></div>
+    <p class="qr-modal-hint" data-i18n="qr.hint">این QR Code مخصوص همین کانفیگ است</p>
+  </div>
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
