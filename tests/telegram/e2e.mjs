@@ -8,7 +8,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const core = (name) => import(path.join(root, 'manual-worker/telegram/core', name));
 const { deriveCapability } = await core('capability.js');
 const { mintTokenWithNonce, TOKEN_KIND } = await core('token.js');
-const { FrameDecoder, FRAME, encodeHello, encodeOpen, encodeData, encodeClose } = await core('protocol-v3.js');
+const { FrameDecoder, FRAME, encodeHello, encodeOpen, encodeData } = await core('protocol-v3.js');
 const { buildClientHeader, FRAME_TAG } = await core('obfuscated2.js');
 const { clientCrypto } = await import('./tg-crypto.mjs');
 const { buildPageScript } = await core('bridge-page.js');
@@ -27,11 +27,6 @@ const check = (name, cond, detail) => {
 };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const cat = (a, b) => { const o = new Uint8Array(a.length + b.length); o.set(a); o.set(b, a.length); return o; };
-const advance = (iv, blocks) => {
-  const out = iv.slice(); let carry = blocks;
-  for (let i = 15; i >= 0 && carry > 0; i--) { const s = out[i] + (carry & 0xff); out[i] = s & 0xff; carry = (carry >> 8) + (s > 0xff ? 1 : 0); }
-  return out;
-};
 
 const secretBytes = new Uint8Array(Buffer.from(SECRET, 'hex'));
 const hmacKey = await crypto.subtle.importKey('raw', secretBytes, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
@@ -213,13 +208,11 @@ async function testReattachAndDelete() {
 }
 
 async function testBridgePageAgainstRelay() {
-  const { token, html } = await fetchBridge();
+  const { token } = await fetchBridge();
   const script = buildPageScript({ bootstrap: token, relayBase: 'https://' + HOST + '/', diag: false });
   const androidNonce = 'N'.repeat(43);
   const toLocal = (u) => String(u).replace(/^https:\/\/[^/]+/, BASE).replace(/^wss:\/\/[^/]+/, WS_BASE);
-  const sent = []; const recvQueue = [];
   const posted = [];
-  const app = { onmessage: null };
   const bridge = { onmessage: null, postMessage(v) { posted.push(v); } };
   const fakeWindow = {
     location: { origin: 'https://' + HOST, pathname: '/', hash: '#android=' + androidNonce },
