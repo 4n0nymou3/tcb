@@ -42,7 +42,7 @@ export default {
 };
 `;
 
-export function randomHex(bytes) {
+function randomHex(bytes) {
   const buf = new Uint8Array(bytes);
   crypto.getRandomValues(buf);
   return [...buf].map(b => b.toString(16).padStart(2, '0')).join('');
@@ -79,10 +79,6 @@ export function buildTelegramLink(hostname, secret) {
   return `https://t.me/webproxy?server=${encodeURIComponent(hostname)}&secret=${encodeURIComponent(secret)}`;
 }
 
-export function buildTelegramTgLink(hostname, secret) {
-  return `tg://webproxy?server=${encodeURIComponent(hostname)}&secret=${encodeURIComponent(secret)}`;
-}
-
 function wranglerToml(name, hostname) {
   return [
     `name = "${name}"`,
@@ -115,7 +111,7 @@ const defaultFetchText = async (url) => {
   return res.text();
 };
 
-export function buildReadme(lang, opts) {
+function buildReadme(lang, opts) {
   const { target, hostname, workerName, companionName } = opts;
   if (lang === 'en') {
     const common = [
