@@ -1,7 +1,7 @@
 {
   "name": "Tunnel Config Builder",
   "short_name": "TCB",
-  "description": "ساخت کانفیگ VLESS و Trojan برای Cloudflare Workers",
+  "description": "ساخت کانفیگ‌های VLESS و Trojan برای Cloudflare Workers و Pages، به‌همراه قابلیت Telegram Web Proxy",
   "start_url": "./",
   "icons": [
     {
