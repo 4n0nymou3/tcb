@@ -4,9 +4,9 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const core = (name) => import(path.join(root, 'manual-worker/telegram/core', name));
-const { Session, SESSION_STATE } = await core('session.js');
+const { Session } = await core('session.js');
 const { DcConfigCache, UnknownDcError, parseProxyMultiConf } = await core('dc-config.js');
-const { FrameDecoder, FRAME, encodeOpen, encodeData, encodeWindow } = await core('protocol-v3.js');
+const { FrameDecoder, FRAME, encodeWindow } = await core('protocol-v3.js');
 const { buildClientHeader, FRAME_TAG } = await core('obfuscated2.js');
 const { clientCrypto, parseDcHeader } = await import('./tg-crypto.mjs');
 
