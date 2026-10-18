@@ -25,13 +25,21 @@ function splitFragment(url) {
   return { base: url.slice(0, hashIdx), remark: decodeURIComponent(url.slice(hashIdx + 1)) };
 }
 
+function parsePort(raw) {
+  if (!/^[0-9]+$/.test(raw)) throw new Error(t('err.chainPortInvalid'));
+  const value = Number(raw);
+  if (value < 1 || value > 65535) throw new Error(t('err.chainPortInvalid'));
+  return value;
+}
+
 function splitHostPort(hostPort) {
   if (hostPort.startsWith('[')) {
     const closeIdx = hostPort.indexOf(']');
     if (closeIdx === -1) throw new Error(t('err.ipv6Invalid'));
     const address = hostPort.slice(1, closeIdx);
-    const portPart = hostPort.slice(closeIdx + 2);
-    return { address, port: portPart };
+    const afterBracket = hostPort.slice(closeIdx + 1);
+    if (afterBracket !== '' && afterBracket[0] !== ':') throw new Error(t('err.ipv6Invalid'));
+    return { address, port: afterBracket.slice(1) };
   }
   const idx = hostPort.lastIndexOf(':');
   if (idx === -1) return { address: hostPort, port: '' };
@@ -73,7 +81,7 @@ function parseVless(input) {
     protocol: 'vless',
     uuid: uuid,
     address: address,
-    port: parseInt(port),
+    port: parsePort(port),
     network: (params.get('type') || 'tcp').toLowerCase(),
     security: (params.get('security') || 'none').toLowerCase(),
     sni: params.get('sni') || params.get('host') || address,
@@ -112,7 +120,7 @@ function parseTrojan(input) {
     protocol: 'trojan',
     password: password,
     address: address,
-    port: parseInt(port),
+    port: parsePort(port),
     network: (params.get('type') || 'tcp').toLowerCase(),
     security: (params.get('security') || 'tls').toLowerCase(),
     sni: params.get('sni') || params.get('host') || address,
@@ -151,7 +159,7 @@ function parseShadowsocks(input) {
       method: decoded.slice(0, colonIdx),
       password: decoded.slice(colonIdx + 1),
       address: address,
-      port: parseInt(port),
+      port: parsePort(port),
       network: 'tcp',
       security: 'none',
       remark: remark || 'Chain'
@@ -176,7 +184,7 @@ function parseShadowsocks(input) {
     method: methodPass.slice(0, colonIdx),
     password: methodPass.slice(colonIdx + 1),
     address: address,
-    port: parseInt(port),
+    port: parsePort(port),
     network: 'tcp',
     security: 'none',
     remark: remark || 'Chain'
@@ -221,7 +229,7 @@ function parseSocksHttp(input, protocol) {
     user: user,
     pass: pass,
     address: address,
-    port: parseInt(port),
+    port: parsePort(port),
     network: 'tcp',
     security: input.toLowerCase().startsWith('https://') ? 'tls' : 'none',
     sni: address,
