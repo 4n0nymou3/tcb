@@ -48,7 +48,7 @@ body{
   background-repeat:no-repeat;
 }
 a{color:var(--blue)}
-:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:4px}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 .wrap{max-width:820px;margin:0 auto;padding:20px 16px calc(60px + env(safe-area-inset-bottom))}
 
 .topbar{position:sticky;top:0;z-index:50;background:var(--topbar-overlay);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
@@ -163,6 +163,7 @@ input,textarea,select{
   transition:border-color .15s,box-shadow .15s;
 }
 input:focus,textarea:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(88,166,255,.14)}
+input:not([type=checkbox]):not([type=file]),select{min-height:38px}
 textarea{min-height:140px;resize:vertical;line-height:1.9}
 .cs-textarea{min-height:64px;line-height:1.7}
 .sub-divider{border-top:1px solid var(--border2);margin-top:14px;padding-top:13px;transition:opacity .2s}
