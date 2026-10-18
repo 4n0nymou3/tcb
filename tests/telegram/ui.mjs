@@ -451,5 +451,115 @@ for (let i = 0; i < roundTripScenarios.length; i++) {
   check(`round trip ${i + 1}: LAN credential boxes follow the restored Allow LAN value`, ($('lanAuthWrap').style.display === 'none') === ($('lanAccess').value !== '1'));
 }
 
+w.confirm = () => true;
+click('btn-reset-all'); await sleep(30);
+setVal('uid', '11111111-2222-4333-8444-555555555555'); setVal('tpw', 'pw'); setVal('wdom', 'a.workers.dev'); setVal('ips', '1.1.1.1');
+const chainForms = {
+  trojan: (hp) => `trojan://pw@${hp}`,
+  vless: (hp) => `vless://11111111-2222-4333-8444-555555555555@${hp}`,
+  'ss (userinfo)': (hp) => `ss://YWVzLTI1Ni1nY206cGFzcw@${hp}`,
+  'ss (whole base64)': (hp) => `ss://${Buffer.from(`aes-256-gcm:pass@${hp}`).toString('base64').replace(/=+$/, '')}`,
+  socks: (hp) => `socks://dXNlcjpwYXNz@${hp}`,
+  http: (hp) => `http://u:p@${hp}`
+};
+const badPorts = ['443abc', '443.5', '+443', '0', '00', '65536', '99999', '-1', '4 43', '٤٤٣', '0x1BB', '1e3', ' 443'];
+let badPortFailures = [];
+for (const [name, mk] of Object.entries(chainForms)) {
+  for (const bp of badPorts) {
+    setVal('chainConfig', mk(`1.2.3.4:${bp}`)); $('lAll').innerHTML = ''; click('gb'); await sleep(20);
+    if (!($('lAll').children.length === 0 && $('toast').textContent === translations.fa['err.chainPortInvalid'])) badPortFailures.push(`${name} :${bp} -> ${$('toast').textContent.slice(0, 40)}`);
+  }
+  for (const hp of ['[2001:db8::1]443', '[2001:db8::1]4', '[2001:db8::1];443']) {
+    setVal('chainConfig', mk(hp)); $('lAll').innerHTML = ''; click('gb'); await sleep(20);
+    if (!($('lAll').children.length === 0 && $('toast').textContent === translations.fa['err.ipv6Invalid'])) badPortFailures.push(`${name} ${hp} -> ${$('toast').textContent.slice(0, 40)}`);
+  }
+  setVal('chainConfig', mk('[2001:db8::1]:abc')); $('lAll').innerHTML = ''; click('gb'); await sleep(20);
+  if (!($('lAll').children.length === 0 && $('toast').textContent === translations.fa['err.chainPortInvalid'])) badPortFailures.push(`${name} [..]:abc`);
+}
+check('chain: every protocol rejects letters, decimals, signs, zero, out-of-range and glued IPv6 ports', badPortFailures.length === 0, badPortFailures.slice(0, 5).join(' | '));
+let goodPortFailures = [];
+for (const [name, mk] of Object.entries(chainForms)) {
+  for (const hp of ['1.2.3.4:1', '1.2.3.4:443', '1.2.3.4:65535', '[2001:db8::1]:1', '[2001:db8::1]:65535']) {
+    setVal('chainConfig', mk(hp)); $('lAll').innerHTML = ''; click('gb'); await sleep(450);
+    if ($('lAll').children.length === 0) goodPortFailures.push(`${name} ${hp} -> ${$('toast').textContent.slice(0, 40)}`);
+  }
+}
+check('chain: every protocol still accepts ports 1, 443 and 65535 with IPv4 and bracketed IPv6', goodPortFailures.length === 0, goodPortFailures.slice(0, 5).join(' | '));
+setVal('chainConfig', 'trojan://pw@1.2.3.4:443abc'); click('gb'); await sleep(20);
+$('btn-lang-en').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+$('lAll').innerHTML = ''; click('gb'); await sleep(20);
+check('chain: the invalid port message is shown in English', $('toast').textContent === translations.en['err.chainPortInvalid']);
+setVal('chainConfig', 'trojan://pw@[2001:db8::1]443'); $('lAll').innerHTML = ''; click('gb'); await sleep(20);
+check('chain: the glued IPv6 message is shown in English', $('toast').textContent === translations.en['err.ipv6Invalid']);
+$('btn-lang-fa').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+setVal('chainConfig', '');
+
+setVal('wdom', 'myworker.someone.workers.dev'); setVal('ips', '104.16.0.1');
+click('gb'); await sleep(800);
+const copyUnhandled = [];
+const onCopyRejection = (e) => copyUnhandled.push(String(e));
+process.on('unhandledRejection', onCopyRejection);
+const savedClipboard = Object.getOwnPropertyDescriptor(w.navigator, 'clipboard');
+Object.defineProperty(w.navigator, 'clipboard', { value: undefined, configurable: true });
+const savedExec = w.document.execCommand;
+w.document.execCommand = () => { throw new Error('exec failed'); };
+click('btn-cp-json'); await sleep(60);
+check('copy: a throwing execCommand shows the translated failure message', $('toast').textContent === translations.fa['toast.copyFailed'], $('toast').textContent);
+check('copy: a throwing execCommand leaves no temporary textarea behind', w.document.querySelectorAll('textarea:not([id])').length === 0 && w.document.querySelectorAll('body > textarea').length === 0);
+const savedSelect = w.HTMLTextAreaElement.prototype.select;
+w.HTMLTextAreaElement.prototype.select = function () { throw new Error('select failed'); };
+w.document.execCommand = () => true;
+$('toast').textContent = '';
+click('btn-cp-clash'); await sleep(60);
+check('copy: a throwing select() shows the translated failure message', $('toast').textContent === translations.fa['toast.copyFailed'], $('toast').textContent);
+check('copy: a throwing select() leaves no temporary textarea behind', w.document.querySelectorAll('body > textarea').length === 0);
+w.HTMLTextAreaElement.prototype.select = savedSelect;
+w.document.execCommand = () => true;
+click('btn-cp-json'); await sleep(60);
+check('copy: a successful legacy copy also removes its temporary textarea', $('toast').textContent === translations.fa['toast.jsonCopied'] && w.document.querySelectorAll('body > textarea').length === 0);
+check('copy: no unhandled promise rejection is left by any failing copy path', copyUnhandled.length === 0, copyUnhandled.join());
+process.off('unhandledRejection', onCopyRejection);
+if (savedClipboard) Object.defineProperty(w.navigator, 'clipboard', savedClipboard);
+w.document.execCommand = savedExec;
+
+const failOnce = (el) => {
+  const real = Object.getOwnPropertyDescriptor(w.Element.prototype, 'innerHTML');
+  Object.defineProperty(el, 'innerHTML', { set() { delete el.innerHTML; throw new Error('boom'); }, get() { return real.get.call(el); }, configurable: true });
+};
+const uiState = () => ({
+  rows: [...$('lAll').querySelectorAll('.ctx')].map((e) => e.textContent),
+  counters: ['sv', 'si', 'sa', 'cb2'].map((id) => $(id).textContent),
+  displays: ['jsonDisplay', 'singboxDisplay', 'clashDisplay'].map((id) => $(id).innerHTML),
+  gutters: ['jsonDisplay', 'singboxDisplay', 'clashDisplay'].map((id) => $(id).style.getPropertyValue('--gutter-digits')),
+  results: $('results').style.display,
+  steps: ['sn1', 'sn2', 'sn3', 'sn4'].map((id) => $(id).className)
+});
+const copies = async () => { const out = []; for (const id of ['btn-cp-json', 'btn-cp-singbox', 'btn-cp-clash', 'btn-cp-all']) { click(id); await sleep(20); out.push(clip); } return out; };
+const stateA = uiState(); const copiesA = await copies();
+check('failure: state A has results to protect', stateA.rows.length === 2 && copiesA.every((c) => c.length > 10));
+setVal('ips', '9.9.9.9\n8.8.8.8'); setCk('echEnable', false);
+for (const target of ['singboxDisplay', 'clashDisplay', 'results']) {
+  if (target === 'results') $('results').scrollIntoView = () => { throw new Error('late failure'); }; else failOnce($(target));
+  click('gb'); await sleep(800);
+  const stateAfter = uiState();
+  const toastAfter = $('toast').textContent;
+  check(`failure after partial update (${target}): rows, counters, code views, steps and results visibility are all restored`, JSON.stringify(stateAfter) === JSON.stringify(stateA), Object.keys(stateA).filter((k) => JSON.stringify(stateA[k]) !== JSON.stringify(stateAfter[k])).join());
+  const copiesAfter = await copies();
+  check(`failure after partial update (${target}): copied configs equal the preserved ones`, JSON.stringify(copiesAfter) === JSON.stringify(copiesA));
+  check(`failure after partial update (${target}): visible text equals the copied JSON`, [...$('jsonDisplay').querySelectorAll('.code-content')].map((e) => e.textContent).join('\n') === copiesAfter[0].replace(/\n$/, '').split('\n').map((l) => l || ' ').join('\n'));
+  check(`failure after partial update (${target}): the build button is usable again with the translated error`, !$('gb').disabled && !$('gb').classList.contains('loading') && toastAfter === translations.fa['toast.generateFailed'] && $('gb').textContent.trim() === translations.fa['gen.built'].trim(), `${toastAfter} | ${$('gb').textContent}`);
+  if (target === 'results') delete $('results').scrollIntoView;
+}
+click('gb'); await sleep(800);
+const stateB = uiState(); const copiesB = await copies();
+check('failure: retrying after the failure builds the new results completely', stateB.rows.length === 4 && stateB.rows.every((r) => !stateA.rows.includes(r)) && stateB.counters[2] === '4' && copiesB[3].split('\n').length === 4 && JSON.parse(copiesB[0]) && !$('gb').disabled);
+click('btn-reset-all'); await sleep(400);
+setVal('uid', '11111111-2222-4333-8444-555555555555'); setVal('tpw', 'pw'); setVal('wdom', 'a.workers.dev'); setVal('ips', '1.1.1.1');
+const emptyState = uiState();
+failOnce($('clashDisplay'));
+click('gb'); await sleep(800);
+const firstAfter = uiState();
+check('failure on the first build: nothing from the failed build stays visible or copyable', JSON.stringify(firstAfter) === JSON.stringify(emptyState) && $('results').style.display !== 'block' && $('gb').textContent.trim() === translations.fa['btn.generate'].trim() && !$('gb').disabled, Object.keys(emptyState).filter((k) => JSON.stringify(emptyState[k]) !== JSON.stringify(firstAfter[k])).map((k) => k + ':' + JSON.stringify(emptyState[k]).slice(0, 50) + '=>' + JSON.stringify(firstAfter[k]).slice(0, 50)).join() + ' | ' + $('gb').textContent + ' | ' + $('results').style.display);
+
 console.log(`\n${pass}/${pass + fail} ui checks passed.`);
 process.exit(fail ? 1 : 0);
