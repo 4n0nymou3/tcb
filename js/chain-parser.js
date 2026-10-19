@@ -32,11 +32,22 @@ function parsePort(raw) {
   return value;
 }
 
+function isValidIPv6(address) {
+  if (!/^[0-9A-Fa-f:.]+$/.test(address) || !address.includes(':')) return false;
+  try {
+    new URL('http://[' + address + ']/');
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 function splitHostPort(hostPort) {
   if (hostPort.startsWith('[')) {
     const closeIdx = hostPort.indexOf(']');
     if (closeIdx === -1) throw new Error(t('err.ipv6Invalid'));
     const address = hostPort.slice(1, closeIdx);
+    if (!isValidIPv6(address)) throw new Error(t('err.ipv6Invalid'));
     const afterBracket = hostPort.slice(closeIdx + 1);
     if (afterBracket !== '' && afterBracket[0] !== ':') throw new Error(t('err.ipv6Invalid'));
     return { address, port: afterBracket.slice(1) };
