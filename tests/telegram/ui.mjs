@@ -561,5 +561,31 @@ click('gb'); await sleep(800);
 const firstAfter = uiState();
 check('failure on the first build: nothing from the failed build stays visible or copyable', JSON.stringify(firstAfter) === JSON.stringify(emptyState) && $('results').style.display !== 'block' && $('gb').textContent.trim() === translations.fa['btn.generate'].trim() && !$('gb').disabled, Object.keys(emptyState).filter((k) => JSON.stringify(emptyState[k]) !== JSON.stringify(firstAfter[k])).map((k) => k + ':' + JSON.stringify(emptyState[k]).slice(0, 50) + '=>' + JSON.stringify(firstAfter[k]).slice(0, 50)).join() + ' | ' + $('gb').textContent + ' | ' + $('results').style.display);
 
+click('btn-reset-all'); await sleep(400);
+setVal('uid', '11111111-2222-4333-8444-555555555555'); setVal('tpw', 'pw'); setVal('wdom', 'a.workers.dev'); setVal('ips', '1.1.1.1');
+const badIPv6 = ['not-an-ip', '2001:db8::zz', '1::2::3', ':::', '1:2:3:4:5:6:7:8:9', '12345::1', '::ffff:1.2.3', '1.2.3.4', 'g::1', '::1/x', '::1%eth0', '::1 ', ' ::1', ':', '', '2001:db8::1:'];
+const ipv6Failures = [];
+for (const [name, mk] of Object.entries(chainForms)) {
+  for (const addr of badIPv6) {
+    setVal('chainConfig', mk(`[${addr}]:443`)); $('lAll').innerHTML = ''; click('gb'); await sleep(20);
+    if (!($('lAll').children.length === 0 && $('toast').textContent === translations.fa['err.ipv6Invalid'])) ipv6Failures.push(`${name} [${addr}] -> ${$('toast').textContent.slice(0, 40)}`);
+  }
+}
+check('ipv6: every protocol rejects invalid addresses inside the brackets with the translated message', ipv6Failures.length === 0, ipv6Failures.slice(0, 5).join(' | '));
+const goodIPv6 = ['::1', '::', '2001:db8::1', 'fe80::1', '2001:0db8:0000:0000:0000:0000:0000:0001', '1:2:3:4:5:6:7:8', '::ffff:1.2.3.4', '2001:DB8::ABCD'];
+const ipv6Rejected = [];
+for (const [name, mk] of Object.entries(chainForms)) {
+  for (const addr of goodIPv6) {
+    setVal('chainConfig', mk(`[${addr}]:443`)); $('lAll').innerHTML = ''; click('gb'); await sleep(450);
+    if ($('lAll').children.length === 0) ipv6Rejected.push(`${name} [${addr}] -> ${$('toast').textContent.slice(0, 40)}`);
+  }
+}
+check('ipv6: every protocol still accepts compressed, full, mixed and upper-case IPv6 literals', ipv6Rejected.length === 0, ipv6Rejected.slice(0, 5).join(' | '));
+$('btn-lang-en').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+setVal('chainConfig', 'trojan://pw@[not-an-ip]:443'); $('lAll').innerHTML = ''; click('gb'); await sleep(20);
+check('ipv6: the invalid address message is shown in English', $('toast').textContent === translations.en['err.ipv6Invalid']);
+$('btn-lang-fa').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+setVal('chainConfig', '');
+
 console.log(`\n${pass}/${pass + fail} ui checks passed.`);
 process.exit(fail ? 1 : 0);
