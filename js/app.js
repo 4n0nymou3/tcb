@@ -893,6 +893,11 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-cp-tg').addEventListener('click', (e) => { if (!telegramSecretIsDraft()) copySecret(e); });
   document.getElementById('btn-cp-tg-host').addEventListener('click', copyFrom('tgHost', 'toast.tgHostCopied'));
   document.getElementById('btn-cp-tg-link').addEventListener('click', copyFrom('tgLink', 'toast.tgLinkCopied'));
+  document.getElementById('btn-qr-tg-link').addEventListener('click', () => {
+    const link = document.getElementById('tgLink').value;
+    if (!link) return;
+    showQrModal(link);
+  });
   document.getElementById('btn-dl-tg').addEventListener('click', dlTelegram);
   document.getElementById('btn-mk-token').addEventListener('click', mkToken);
   document.getElementById('btn-cp-token').addEventListener('click', cpToken);
