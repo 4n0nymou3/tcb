@@ -1,660 +1,630 @@
-<!DOCTYPE html>
-<html lang="fa" dir="rtl">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Tunnel Config Builder</title>
-<link rel="stylesheet" href="css/fonts.css"/>
-<link rel="icon" type="image/svg+xml" href="icon.svg"/>
-<link rel="manifest" href="site.webmanifest"/>
-<link rel="stylesheet" href="css/style.css"/>
-</head>
-<body>
-<div class="topbar">
-  <div class="topbar-inner">
-    <div class="topbar-controls">
-      <div class="lang-switch" role="group">
-        <button class="lang-btn active" id="btn-lang-fa" type="button">FA</button>
-        <button class="lang-btn" id="btn-lang-en" type="button">EN</button>
-      </div>
-      <button class="ctrl-btn theme-btn" id="btn-theme-toggle" type="button" data-i18n-title="ctrl.themeToggle" title="تغییر تم" aria-label="تغییر تم">
-        <svg class="icon-sun" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="3.2"/><path d="M8 1.2v1.6M8 13.2v1.6M1.2 8h1.6M13.2 8h1.6M3.3 3.3l1.1 1.1M11.6 11.6l1.1 1.1M3.3 12.7l1.1-1.1M11.6 4.4l1.1-1.1"/></svg>
-        <svg class="icon-moon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 9.3A5.8 5.8 0 1 1 6.7 2.5a4.6 4.6 0 0 0 6.8 6.8z"/></svg>
-      </button>
-    </div>
-    <div class="hdr">
-      <div class="hdr-top">
-        <div class="hdr-dot"></div>
-        <h1>Tunnel Config Builder (TCB)</h1>
-      </div>
-      <p class="hdr-sub" data-i18n="hdr.sub">ساخت کانفیگ‌های VLESS و Trojan برای Cloudflare Worker و Pages، به‌همراه قابلیت Telegram Web Proxy</p>
-      <div class="badges">
-        <span class="badge"><span class="badge-label">TCB</span><span class="badge-value bv-blue">v7.1</span></span>
-        <span class="badge"><span class="badge-label">license</span><span class="badge-value bv-purple">MIT</span></span>
-      </div>
-    </div>
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
+import { createRequire } from 'node:module';
+import { JSDOM } from 'jsdom';
 
-    <div class="steps">
-      <div class="step active" id="sn1"><div class="step-n">1</div><span data-i18n="steps.1">ساخت CF W/P</span></div>
-      <div class="step" id="sn2"><div class="step-n">2</div><span data-i18n="steps.2">تنظیم Token + دامنه</span></div>
-      <div class="step" id="sn3"><div class="step-n">3</div><span data-i18n="steps.3">آدرس IP های سالم</span></div>
-      <div class="step" id="sn4"><div class="step-n">4</div><span data-i18n="steps.4">کانفیگ‌ها</span></div>
-    </div>
-  </div>
-</div>
+const esbuildBin = createRequire(import.meta.url).resolve('esbuild/bin/esbuild');
 
-<div class="wrap">
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const bundle = execFileSync(esbuildBin, [path.join(root, 'js/app.js'), '--bundle', '--format=iife', '--log-level=error'], { encoding: 'utf8', maxBuffer: 1 << 26 });
+const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8').replace(/<script[^>]*src=[^>]*><\/script>/g, '');
 
-<div class="sec">
-  <div class="sec-hdr sec-hdr-toggle" data-target="secBody1">
-    <div class="sec-title"><svg class="sec-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5a3 3 0 0 1-.5-5.95 3.5 3.5 0 0 1 6.7-1.44A3 3 0 0 1 12.5 12.5h-8z"/></svg><span data-i18n="sec1.title">مرحله ۱ — ساخت Cloudflare Worker یا Pages (یک‌بار)</span></div>
-    <span class="chevron"></span>
-  </div>
-  <div class="sec-body-wrap" id="secBody1">
-   <div class="sec-body">
-    <div class="guide">
-      <div class="gitem">
-        <div class="gn"></div>
-        <div class="gb2">
-          <div class="gtitle" data-i18n="g1.title">ثبت‌نام در Cloudflare (رایگان)</div>
-          <div class="gdesc" data-i18n="g1.desc">به <a class="lk" href="https://dash.cloudflare.com/sign-up" target="_blank">dash.cloudflare.com</a> برو و با ایمیل اکانت بساز.</div>
-        </div>
-      </div>
-      <div class="gitem">
-        <div class="gn"></div>
-        <div class="gb2">
-          <div class="gtitle" data-i18n="g2.title">ساخت Worker یا Pages جدید</div>
-          <div class="gdesc" data-i18n="g2.desc">برای <strong class="txt-strong">Worker</strong>: از داشبورد <code>Workers &amp; Pages</code> ← <code>Create Application</code> ← <code>Create Worker</code> — یه اسم بده و <code>Deploy</code> کن. برای <strong class="txt-strong">Pages</strong>: از همان صفحه پایین بیا روی «Looking to deploy Pages? Get started» بزن، سپس «Drag and drop your files» را انتخاب کن — فایل ZIP مرحله بعد را همینجا آپلود خواهی کرد.</div>
-        </div>
-      </div>
-      <div class="gitem">
-        <div class="gn"></div>
-        <div class="gb2">
-          <div class="gtitle" data-i18n="g3.title">اول به مرحله ۲ برو، Token بساز، سپس کد را کپی یا دانلود کن</div>
-          <div class="deploy-tabs" role="tablist">
-            <button class="deploy-tab active" id="tab-worker" type="button" role="tab" aria-selected="true" data-i18n="tab.worker">⚙️ Worker</button>
-            <button class="deploy-tab" id="tab-pages" type="button" role="tab" aria-selected="false" data-i18n="tab.pages">📄 Pages</button>
-          </div>
-          <div class="gdesc" id="g3-desc-worker" data-i18n="g3.descWorker">مقدار Token به‌صورت خودکار داخل کد جاگذاری می‌شود. می‌توانی کد را کپی کنی یا فایل <code>worker.js</code> را مستقیم دانلود کنی. در Worker: <code>Edit Code</code> ← همه را پاک کن ← Paste کن ← <code>Deploy</code>. برای آپلود فایل نیز می‌توانی از گزینه Upload در داشبورد استفاده کنی.</div>
-          <div class="gdesc" id="g3-desc-pages" data-i18n="g3.descPages" style="display:none">مقدار Token به‌صورت خودکار داخل کد جاگذاری می‌شود. دکمه‌ی «دانلود ZIP» را بزن تا فایلی حاوی <code>_worker.js</code> دانلود شود، سپس همین فایل ZIP را در صفحه‌ی «Drag and drop your files» کلادفلر رها کن و <code>Deploy site</code> را بزن. توجه: فایل باید دقیقاً با نام <code>_worker.js</code> در ریشه‌ی ZIP باشد تا Pages آن را به‌عنوان Worker اجرا کند، نه یک فایل استاتیک ساده.</div>
-          <div class="fg mt-14">
-            <label class="ck-lbl-wide"><input type="checkbox" id="tgEnable"> <span data-i18n="tg.enable">فعال‌سازی Telegram WEB Proxy</span></label>
-            <div id="tgBody" style="display:none">
-              <p class="hint" data-i18n="tg.intro">با فعال‌سازی، به‌جای کد تک‌فایلی یک بسته‌ی چندفایلی (<bdi>Worker + Durable Object</bdi>) ساخته می‌شود که علاوه بر VLESS/Trojan، پروکسی WEB تلگرام را هم سرو می‌کند. استقرار از مسیر GitHub و Cloudflare انجام می‌شود، نه copy/paste.</p>
-              <label class="lbl-ltr">Secret</label>
-              <div class="urow">
-                <input type="text" id="tgSecret" autocomplete="off" spellcheck="false" autocapitalize="off"/>
-                <div class="ubtns">
-                  <button class="bsm" id="btn-mk-tg" data-i18n="btn.new">↺ جدید</button>
-                  <button class="bsm" id="btn-cp-tg" data-i18n="btn.copy">⎘ کپی</button>
-                </div>
-              </div>
-              <label class="ck-lbl-wide mt-8"><input type="checkbox" id="tgPadding"> <span data-i18n="tg.padding">فعال‌سازی Random padding (پیشوند dd)</span></label>
-              <p class="hint" data-i18n="tg.secretHint">این secret را در فایل یا GitHub قرار نده؛ فقط به‌عنوان Secret با نام TELEGRAM_SECRET در Cloudflare ذخیره می‌شود. می‌توانی Secret دلخواه خودت را هم در این کادر Paste یا تایپ کنی.</p>
-              <label class="lbl-ltr">Hostname</label>
-              <div class="urow">
-                <input type="text" id="tgHost" readonly autocomplete="off"/>
-                <div class="ubtns">
-                  <button class="bsm" id="btn-cp-tg-host" data-i18n="btn.copy">⎘ کپی</button>
-                </div>
-              </div>
-              <p class="hint" data-i18n="tg.hostHint">همان آدرسی است که در مرحله ۲ وارد کردی (دامنه شخصی اگر فعال باشد). دقیقاً همین را در تلگرام وارد کن.</p>
-              <div class="alert ao mb-8" id="tgWarn" style="display:none"><span class="aico">⚠</span><div id="tgWarnText"></div></div>
-              <label class="lbl-ltr">Link</label>
-              <div class="urow">
-                <input type="text" id="tgLink" readonly autocomplete="off"/>
-                <div class="ubtns">
-                  <button class="bsm" id="btn-cp-tg-link" data-i18n="btn.copy">⎘ کپی</button>
-                </div>
-              </div>
-              <div class="mt-8">
-                <button class="btn-cpscript" id="btn-dl-tg" data-i18n="tg.download">⬇ دانلود بسته‌ی Telegram (ZIP)</button>
-              </div>
-              <p class="hint" data-i18n="tg.note">وقتی این گزینه فعال است، دکمه‌های کپی/دانلود کد تک‌فایلی مخفی می‌شوند؛ کد VLESS/Trojan داخل بسته (tcb-worker.js) هست.</p>
-            </div>
-          </div>
-          <div class="code-viewer">
-            <div class="code-viewer-header">
-              <div class="code-viewer-filename"><span class="lang-dot dot-js"></span><span class="fname" id="workerFname">worker.js</span></div>
-              <div class="code-viewer-actions">
-                <button class="btn-cpscript" id="btn-cp-worker" data-i18n="btn.copyCode">⎘ کپی کد</button>
-                <button class="btn-cpscript" id="btn-dl-worker" data-i18n="btn.dlJs">↓ دانلود .js</button>
-                <button class="btn-cpscript" id="btn-dl-worker-zip" data-i18n="btn.dlZip" style="display:none">↓ دانلود ZIP</button>
-              </div>
-            </div>
-            <div class="code-viewer-body">
-              <div class="code-box" id="workerDisplay"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="gitem">
-        <div class="gn"></div>
-        <div class="gb2">
-          <div class="gtitle" data-i18n="g4.title">آدرس Worker یا Pages را بردار</div>
-          <div class="gdesc" data-i18n="g4.desc">بعد از Deploy، CF آدرسی مثل <code>myworker.username.workers.dev</code> (برای Worker) یا <code>myproject.pages.dev</code> (برای Pages) نشون میده. هرکدام را ساختی، همان را در مرحله ۲ وارد کن.</div>
-        </div>
-      </div>
-      <div class="gitem">
-        <div class="gn"></div>
-        <div class="gb2">
-          <div class="gtitle" data-i18n="g5.title">اتصال دامنه شخصی به Worker (اختیاری)</div>
-          <div class="gdesc" data-i18n="g5.desc">اگر یک دامنه شخصی دارید و می‌خواهید به‌جای آدرس <code>workers.dev</code> از آن استفاده کنید، این قابلیت رایگان و رسمی خود Cloudflare است و هیچ نیازی به کد یا تنظیم اضافی در TCB ندارد؛ همان کد Worker بدون هیچ تغییری کار می‌کند. مراحل: ۱) دامنه‌تان را در Cloudflare اضافه کنید (<code>Account Home</code> ← <code>Add a domain</code>) و منتظر بمانید وضعیت آن به <code>Active</code> برسد (معمولاً با تغییر Nameserver دامنه به Nameserver‌هایی که Cloudflare نشان می‌دهد). ۲) به <code>Workers &amp; Pages</code> بروید و Worker خود را انتخاب کنید. ۳) از مسیر <code>Settings</code> ← <code>Domains &amp; Routes</code> ← <code>Add</code> ← <code>Custom Domain</code>، یک زیردامنه دلخواه مثل <code>vpn.yourdomain.ir</code> وارد و اضافه کنید. Cloudflare به‌طور خودکار DNS و گواهی TLS لازم را می‌سازد؛ نیازی به رکورد DNS دستی یا صدور گواهی جداگانه نیست. بعد از چند دقیقه، همان زیردامنه را در مرحله ۲ به‌جای آدرس <code>workers.dev</code> وارد کنید و حتماً چک‌باکس «از دامنه شخصی استفاده می‌کنم» را در همان بخش فعال کنید.</div>
-        </div>
-      </div>
-    </div>
-   </div>
-  </div>
-</div>
+let pass = 0, fail = 0;
+const check = (name, cond, detail) => { if (cond) { pass++; console.log('[PASS] ' + name); } else { fail++; console.log('[FAIL] ' + name + (detail ? ' :: ' + detail : '')); } };
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-<div class="io-row">
-  <button class="btn-io btn-export" id="btn-export-settings" data-i18n="btn.exportSettings">📤 اکسپورت تنظیمات</button>
-  <button class="btn-io btn-import" id="btn-import-settings" data-i18n="btn.importSettings">📥 ایمپورت تنظیمات</button>
-  <input type="file" id="importFileInput" accept="application/json,.json" style="display:none"/>
-</div>
+const downloads = [];
+const dom = new JSDOM(html, { runScripts: 'outside-only', pretendToBeVisual: true, url: 'https://tcb.example/' });
+const w = dom.window;
+w.TextEncoder = TextEncoder;
+w.TextDecoder = TextDecoder;
+w.URL.createObjectURL = (blob) => { downloads.push(blob); return 'blob:x'; };
+w.URL.revokeObjectURL = () => {};
+w.HTMLAnchorElement.prototype.click = function () { downloads.push({ anchor: this.download }); };
+w.fetch = async (url) => {
+  const file = path.join(root, String(url));
+  if (!fs.existsSync(file)) return { ok: false, status: 404, text: async () => '' };
+  return { ok: true, status: 200, text: async () => fs.readFileSync(file, 'utf8') };
+};
+let clip = '';
+w.Element.prototype.scrollIntoView = function () {};
+Object.defineProperty(w.navigator, 'clipboard', { value: { writeText: async (v) => { clip = v; } }, configurable: true });
+w.eval(bundle);
+w.document.dispatchEvent(new w.Event('DOMContentLoaded'));
+await sleep(200);
 
-<div class="sec">
-  <div class="sec-hdr sec-hdr-toggle" data-target="secBody2">
-    <div class="sec-title"><svg class="sec-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="8" r="3"/><path d="M7.8 8h6.2M11.6 8v2.3M13.6 8v2.3"/></svg><span data-i18n="sec2.title">مرحله ۲ — شناسه‌ها و آدرس Worker یا Pages</span></div>
-    <span class="chevron"></span>
-  </div>
-  <div class="sec-body-wrap" id="secBody2">
-   <div class="sec-body">
-    <div class="fg">
-      <label class="lbl-ltr">Token</label>
-      <div class="urow">
-        <input type="text" id="uid" placeholder="xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx" autocomplete="off"/>
-        <div class="ubtns">
-          <button class="bsm" id="btn-mk-token" data-i18n="btn.new">↺ جدید</button>
-          <button class="bsm" id="btn-cp-token" data-i18n="btn.copy">⎘ کپی</button>
-        </div>
-      </div>
-      <p class="hint" data-i18n="hint.tokenRegenerate">با هر بار تولید Token جدید، کد Worker/Pages بالا نیز به‌صورت خودکار آپدیت می‌شود.</p>
-    </div>
-    <div class="fg mt-14">
-      <label class="lbl-ltr">Password (Trojan)</label>
-      <div class="urow">
-        <input type="text" id="tpw" placeholder="xxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off"/>
-        <div class="ubtns">
-          <button class="bsm" id="btn-mk-pw" data-i18n="btn.new">↺ جدید</button>
-          <button class="bsm" id="btn-cp-pw" data-i18n="btn.copy">⎘ کپی</button>
-        </div>
-      </div>
-      <p class="hint" data-i18n="hint.passwordInfo">این مقدار برای ساخت کانفیگ‌های پروتکل Trojan استفاده می‌شود — همانند Token، با تغییر آن در کد Worker/Pages، کانفیگ‌های Trojan قدیمی از کار می‌افتند. با هر بار تولید Password جدید، کد Worker/Pages بالا نیز به‌صورت خودکار آپدیت می‌شود.</p>
-    </div>
-    <div class="fg">
-      <label for="wdom" data-i18n="lbl.workerDomain">آدرس دامنه Worker یا Pages</label>
-      <div class="alert ao mb-8">
-        <span class="aico">⚠</span>
-        <div data-i18n="alert.domainOnly">فقط نام دامنه را وارد کنید — مثال: <code>myworker.username.workers.dev</code> یا <code>myproject.pages.dev</code> — در صورت وارد کردن <code>https://</code> یا <code>/</code> اضافه، به‌صورت خودکار اصلاح می‌شود.</div>
-      </div>
-      <input type="text" id="wdom" placeholder="myworker.username.workers.dev" autocomplete="off"/>
-      <p class="hint" data-i18n="hint.domainGiven">آدرسی که Cloudflare بعد از Deploy به Worker یا Pages داد</p>
-      <label class="ck-lbl-wide mt-8" id="customDomainRow"><input type="checkbox" id="customDomainUsed"> <span data-i18n="lbl.customDomainUsed">همچنین یک دامنه شخصی هم به Worker متصل کرده‌ام و می‌خواهم کانفیگ‌های آن هم اضافه شود</span></label>
-      <div class="fg mt-8 disabled" id="customDomainInputWrap">
-        <input type="text" id="customDomainInput" placeholder="vpn.yourdomain.ir" autocomplete="off" disabled/>
-        <p class="hint" data-i18n="hint.customDomainNote">با پر کردن این کادر، کانفیگ‌های اضافه‌ای با این دامنه (فقط با TLS، چون دامنه شخصی از پورت‌های بدون TLS پشتیبانی نمی‌کند) به‌صورت ترکیبی به کانفیگ‌های JSON/YAML اضافه می‌شوند و نام آن‌ها با 🌐 و کانفیگ‌های تکی لینک با پسوند D- مشخص می‌شوند؛ کانفیگ‌های عادی با آدرس بالا هم دقیقاً مثل قبل ساخته می‌شوند.</p>
-      </div>
-    </div>
-    <div class="fg mt-14">
-      <label for="fallbackDomain" data-i18n="lbl.fallbackDomain">دامنه پوششی (اختیاری)</label>
-      <input type="text" id="fallbackDomain" placeholder="www.example.com" autocomplete="off"/>
-      <p class="hint" data-i18n="hint.fallbackDomain">⚠️ در صورت پر بودن، بازدیدکننده‌های غیرمجاز به‌جای صفحه خالی، محتوای این سایت را می‌بینند. تغییر یا حذف این مقدار نیاز به دریافت و اعمال مجدد کد Worker/Pages دارد.</p>
-    </div>
-   </div>
-  </div>
-</div>
+const $ = (id) => w.document.getElementById(id);
+const click = (id) => $(id).dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+const setVal = (id, v) => { $(id).value = v; $(id).dispatchEvent(new w.Event('input', { bubbles: true })); };
+const setCk = (id, v) => { $(id).checked = v; $(id).dispatchEvent(new w.Event('change', { bubbles: true })); };
 
-<div class="sec">
-  <div class="sec-hdr sec-hdr-toggle" data-target="secBody3">
-    <div class="sec-title"><svg class="sec-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4.5h6M11 4.5h3M2 8h3M8 8h6M2 11.5h9M13.6 11.5h0.4"/><circle cx="8.5" cy="4.5" r="1.3" fill="var(--card)"/><circle cx="5.5" cy="8" r="1.3" fill="var(--card)"/><circle cx="11.5" cy="11.5" r="1.3" fill="var(--card)"/></svg><span data-i18n="sec3.title">مرحله ۳ — IP های سالم و تنظیمات پیشرفته</span></div>
-    <span class="chevron"></span>
-  </div>
-  <div class="sec-body-wrap" id="secBody3">
-   <div class="sec-body">
+check('default: telegram is off and its body hidden', !$('tgEnable').checked && $('tgBody').style.display === 'none');
+check('default: classic copy/download buttons visible', $('btn-cp-worker').style.display !== 'none' && $('btn-dl-worker').style.display !== 'none');
 
-    <div class="fg settings-box">
-      <label class="box-lbl" data-i18n="lbl.ipSettingsBox">آدرس IP های سالم</label>
-      <label for="ips" data-i18n="lbl.ipAddresses">آدرس‌های IP (هر خط یک IP)</label>
-      <div class="alert ab mb-10">
-        <span class="aico">ℹ</span>
-        <div data-i18n="alert.scannerInfo">برای یافتن IP های سالم Cloudflare می‌توانید از ابزار Clean IP Scanner استفاده کنید. این ابزار مبتنی بر Termux بوده و روی اندروید اجرا می‌شود — نتیجه اسکن را مستقیم در کادر زیر وارد کنید.</div>
-      </div>
-      <a href="https://github.com/4n0nymou3/Clean-IP-Scanner" target="_blank" class="btn-link mb-10">
-        <button class="bgen btn-scanner">
-          <span class="ico">🔍</span> <span data-i18n="btn.scannerTool">ابزار Clean IP Scanner — یافتن IP سالم با Termux</span>
-        </button>
-      </a>
-      <textarea id="ips" placeholder="www.speedtest.net&#10;chatgpt.com&#10;104.16.0.1&#10;104.17.0.1&#10;104.18.0.1&#10;104.19.0.1&#10;104.20.0.1" autocomplete="off"></textarea>
-      <p class="hint" data-i18n="hint.ipCount">هر تعداد IP قابل قبول است — از هر IP چند کانفیگ با پورت‌های مختلف ساخته می‌شود. علاوه بر IP، می‌توانید از برخی دامنه‌ها نیز استفاده کنید (مثلاً chatgpt.com)</p>
-    </div>
+setVal('wdom', 'myworker.someone.workers.dev');
+setCk('tgEnable', true);
+check('enable: body visible and classic copy/download hidden', $('tgBody').style.display === 'block' && $('btn-cp-worker').style.display === 'none' && $('btn-dl-worker').style.display === 'none');
+const secret1 = $('tgSecret').value;
+check('enable: secret is 32 lowercase hex', /^[0-9a-f]{32}$/.test(secret1), secret1);
+check('enable: hostname comes from the worker domain', $('tgHost').value === 'myworker.someone.workers.dev');
+check('enable: link is the t.me/webproxy format', $('tgLink').value === `https://t.me/webproxy?server=myworker.someone.workers.dev&secret=${secret1}`, $('tgLink').value);
 
-    <div class="fg mt-14 settings-box">
-      <label class="box-lbl" data-i18n="lbl.outputProtocols">پروتکل‌های خروجی</label>
-      <div class="port-row">
-        <label class="ck-lbl"><input type="checkbox" id="protoVless" checked> VLESS</label>
-        <label class="ck-lbl"><input type="checkbox" id="protoTrojan"> Trojan</label>
-      </div>
-      <p class="hint mt-8" data-i18n="hint.protocolChoice">می‌توانید فقط VLESS، فقط Trojan یا هر دو را همزمان فعال کنید — تمام کانفیگ‌های Link و فایل‌های JSON/YAML بر اساس همین انتخاب ساخته می‌شوند.</p>
-    </div>
+setCk('tgPadding', true);
+check('padding: secret gets dd prefix and keeps the same random part', $('tgSecret').value === 'dd' + secret1 && /^dd[0-9a-f]{32}$/.test($('tgSecret').value));
+setCk('tgPadding', false);
+check('padding: toggling back restores the plain secret', $('tgSecret').value === secret1);
 
-    <div class="fg mt-14 settings-box">
-      <label class="box-lbl" data-i18n="lbl.portsFingerprint">پورت‌ها و Fingerprint</label>
-      <div class="fg">
-      <label class="mb-9" data-i18n="lbl.tlsPorts">پورت‌های TLS (امن‌تر — برای یوتیوب، اینستاگرام، اکس)</label>
-      <div class="port-row">
-        <label class="ck-lbl"><input type="checkbox" class="ptls" value="443" checked> 443</label>
-        <label class="ck-lbl"><input type="checkbox" class="ptls" value="8443"> 8443</label>
-        <label class="ck-lbl"><input type="checkbox" class="ptls" value="2053"> 2053</label>
-        <label class="ck-lbl"><input type="checkbox" class="ptls" value="2083"> 2083</label>
-        <label class="ck-lbl"><input type="checkbox" class="ptls" value="2087"> 2087</label>
-        <label class="ck-lbl"><input type="checkbox" class="ptls" value="2096"> 2096</label>
-      </div>
-      </div>
+click('btn-mk-tg');
+check('regenerate: a different secret is produced', $('tgSecret').value !== secret1 && /^[0-9a-f]{32}$/.test($('tgSecret').value));
 
-      <div class="fg mt-10">
-      <label class="mb-9" data-i18n="lbl.wsPorts">پورت‌های WebSocket بدون TLS (برای شبکه‌هایی که TLS بلاک است)</label>
-      <div class="port-row" id="wsPortsRow">
-        <label class="ck-lbl"><input type="checkbox" class="pws" value="80" checked> 80</label>
-        <label class="ck-lbl"><input type="checkbox" class="pws" value="8080"> 8080</label>
-        <label class="ck-lbl"><input type="checkbox" class="pws" value="8880"> 8880</label>
-        <label class="ck-lbl"><input type="checkbox" class="pws" value="2052"> 2052</label>
-        <label class="ck-lbl"><input type="checkbox" class="pws" value="2082"> 2082</label>
-        <label class="ck-lbl"><input type="checkbox" class="pws" value="2086"> 2086</label>
-        <label class="ck-lbl"><input type="checkbox" class="pws" value="2095"> 2095</label>
-      </div>
-      <p class="hint" id="wsPortsPagesNote" style="display:none" data-i18n="hint.wsPortsPagesDisabled">کانفیگ‌های بدون TLS اصلاً روی Cloudflare Pages پشتیبانی نمی‌شوند (این یک محدودیت دائمی خود Cloudflare است، نه TCB) — برای استفاده از این پورت‌ها باید تب Worker را انتخاب کنید.</p>
-      </div>
+check('manual secret: the field is editable (not readonly)', !$('tgSecret').readOnly && !$('tgSecret').hasAttribute('readonly'));
+const manual = 'a1b2c3d4e5f60718293a4b5c6d7e8f90';
+setVal('tgSecret', manual);
+check('manual secret: a valid pasted secret is kept as typed', $('tgSecret').value === manual && $('tgSecret').dataset.base === manual && !$('tgPadding').checked, $('tgSecret').value);
+check('manual secret: the link uses the pasted secret', $('tgLink').value === `https://t.me/webproxy?server=myworker.someone.workers.dev&secret=${manual}`, $('tgLink').value);
+setVal('uid', $('uid').value + '');
+setVal('wdom', 'myworker.someone.workers.dev');
+check('manual secret: unrelated panel edits do not replace it', $('tgSecret').value === manual);
+setCk('tgPadding', true);
+check('manual secret: padding toggle keeps the pasted random part', $('tgSecret').value === 'dd' + manual);
+setCk('tgPadding', false);
+setVal('tgSecret', 'DD' + manual.toUpperCase());
+check('manual secret: dd-prefixed uppercase paste is normalised and turns padding on', $('tgSecret').value === 'dd' + manual && $('tgPadding').checked && $('tgSecret').dataset.base === manual, $('tgSecret').value);
+check('manual secret: link carries the dd secret', $('tgLink').value.endsWith('secret=dd' + manual), $('tgLink').value);
+setCk('tgPadding', false);
+setVal('tgSecret', '  ' + manual + '  ');
+check('manual secret: surrounding whitespace is accepted and trimmed', $('tgSecret').value === manual, JSON.stringify($('tgSecret').value));
+const bad = manual.slice(0, 20);
+setVal('tgSecret', bad);
+check('invalid secret: typed text is not replaced by a random one', $('tgSecret').value === bad, $('tgSecret').value);
+check('invalid secret: link is emptied and a warning is shown', $('tgLink').value === '' && $('tgWarn').style.display !== 'none' && $('tgWarnText').textContent.includes('Secret'), $('tgWarnText').textContent);
+setVal('uid', $('uid').value);
+check('invalid secret: other panel edits still do not overwrite the draft', $('tgSecret').value === bad);
+const dlBefore = downloads.length;
+click('btn-dl-tg');
+await sleep(400);
+check('invalid secret: package download is blocked', downloads.length === dlBefore, String(downloads.length - dlBefore));
+setVal('tgSecret', 'zz' + manual.slice(2));
+check('invalid secret: non-hex characters are rejected', $('tgSecret').dataset.draft === '1' && $('tgLink').value === '');
+setVal('tgSecret', '');
+check('invalid secret: an empty box is not silently refilled', $('tgSecret').value === '' && $('tgSecret').dataset.draft === '1');
+setVal('tgSecret', manual);
+check('invalid secret: fixing the value restores link and clears the warning state', $('tgSecret').dataset.draft === undefined && $('tgLink').value.endsWith('secret=' + manual));
+setVal('tgSecret', bad);
+click('btn-mk-tg');
+check('manual secret: New replaces even an invalid draft with a fresh random secret', /^[0-9a-f]{32}$/.test($('tgSecret').value) && $('tgSecret').value !== manual && $('tgSecret').dataset.draft === undefined, $('tgSecret').value);
+setVal('tgSecret', manual);
+const dl0 = downloads.length;
+click('btn-dl-tg');
+await sleep(800);
+const zipBlobs = downloads.slice(dl0).filter((d) => !d.anchor);
+let zipHasSecret = true;
+try {
+  zipHasSecret = false;
+  for (const b of zipBlobs) {
+    const buf = Buffer.from(await new Promise((res, rej) => { const r = new w.FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsArrayBuffer(b); }));
+    if (buf.includes(Buffer.from(manual))) zipHasSecret = true;
+  }
+} catch { zipHasSecret = true; }
+check('manual secret: package download still works and the ZIP never contains the secret', downloads.length > dl0 && zipBlobs.length > 0 && !zipHasSecret, `blobs=${zipBlobs.length}`);
+check('manual secret: field still shows the typed secret after download', $('tgSecret').value === manual);
+click('btn-mk-tg');
 
-      <div class="alert ao mt-14 mb-0">
-      <span class="aico">ℹ</span>
-      <div data-i18n="alert.portCombo">هر ترکیب پورت یک کانفیگ مجزاست. با انتخاب بیشتر، کانفیگ‌های متنوع‌تری برای دور زدن فیلترینگ هوشمند ساخته می‌شه. پیشنهاد: ابتدا فقط پورت 443 را تست کنید و اگر کار نکرد پورت‌های دیگر را هم فعال کنید.</div>
-      </div>
+setCk('customDomainUsed', true);
+setVal('customDomainInput', 'Proxy.Example.com');
+check('custom domain: hostname switches to the lowercase custom domain', $('tgHost').value === 'proxy.example.com', $('tgHost').value);
+setCk('customDomainUsed', false);
+check('custom domain off: hostname returns to the worker domain', $('tgHost').value === 'myworker.someone.workers.dev');
 
-      <div class="fg mt-10">
-      <label class="mb-9" for="fpSelect" data-i18n="lbl.fingerprint">انتخاب TLS Fingerprint — جهت دور زدن DPI</label>
-      <select id="fpSelect">
-        <option value="chrome" selected>chrome</option>
-        <option value="firefox">firefox</option>
-        <option value="safari">safari</option>
-        <option value="ios">ios</option>
-        <option value="android">android</option>
-        <option value="edge">edge</option>
-        <option value="360">360</option>
-        <option value="qq">qq</option>
-        <option value="random">random</option>
-        <option value="randomized">randomized</option>
-      </select>
-      </div>
+setVal('wdom', 'not a domain');
+check('invalid domain: link empty and warning shown', $('tgLink').value === '' && $('tgWarn').style.display !== 'none');
+setVal('wdom', 'myworker.someone.workers.dev');
 
-      <div class="fg mt-10 mb-0">
-      <label class="mb-9" for="pathSelect" data-i18n="lbl.wsPath">مسیر WebSocket Path</label>
-      <select id="pathSelect">
-        <option value="/proxy">/proxy</option>
-        <option value="/v2ray">/v2ray</option>
-        <option value="/vless">/vless</option>
-        <option value="/ws">/ws</option>
-        <option value="/" selected>/</option>
-      </select>
-      </div>
-    </div>
+click('tab-pages');
+check('pages tab: download button label is the two-ZIP Pages label', $('btn-dl-tg').textContent.includes('Pages') && $('btn-dl-tg').textContent.includes('ZIP'), $('btn-dl-tg').textContent);
+check('pages tab: classic pages zip button hidden while telegram is on', $('btn-dl-worker-zip').style.display === 'none');
+click('tab-worker');
 
-    <div class="fg mt-14 settings-box">
-      <label class="box-lbl" data-i18n="lbl.fragmentSettings">تنظیمات Fragment</label>
-      <div class="toggle-row mb-10">
-        <label class="ck-lbl"><input type="checkbox" id="fragEnable"> Fragment</label>
-      </div>
-      <div class="frag-grid disabled" id="fragFields">
-        <div>
-          <label class="adv-lbl" for="fragPackets">Fragment Packets</label>
-          <input type="text" id="fragPackets" value="tlshello" placeholder="مثال: tlshello یا 1-2" data-i18n-placeholder="ph.fragPackets"/>
-        </div>
-        <div>
-          <label class="adv-lbl" for="fragInterval">Fragment Interval</label>
-          <input type="text" id="fragInterval" value="10-20" placeholder="مثال: 10-20 یا 0,1,2" data-i18n-placeholder="ph.fragIntervalMulti"/>
-        </div>
-        <div>
-          <label class="adv-lbl" for="fragLength">Fragment Length</label>
-          <input type="text" id="fragLength" value="10-20" placeholder="مثال: 10-20 یا 5,94,1" data-i18n-placeholder="ph.fragLengthMulti"/>
-        </div>
-        <div>
-          <label class="adv-lbl" for="fragMaxSplit">Fragment Max Split</label>
-          <input type="text" id="fragMaxSplit" value="10" placeholder="10"/>
-        </div>
-      </div>
+const names = () => downloads.filter((d) => d.anchor).map((d) => d.anchor);
+const before = names().length;
+click('btn-dl-tg');
+await sleep(800);
+check('download (worker): exactly one file named tcb-telegram-worker.zip', JSON.stringify(names().slice(before)) === JSON.stringify(['tcb-telegram-worker.zip']), JSON.stringify(names().slice(before)));
 
-      <p class="hint mt-10" data-i18n="hint.fragmentApply">در صورت فعال بودن، تنظیمات fragment فقط در کانفیگ‌های JSON اعمال می‌شود و روی کانفیگ‌های URL تأثیری ندارد.</p>
+click('tab-pages');
+const beforePages = names().length;
+click('btn-dl-tg');
+await sleep(1500);
+check('download (pages): pages-worker.zip then telegram-worker.zip', JSON.stringify(names().slice(beforePages)) === JSON.stringify(['tcb-pages-worker.zip', 'tcb-telegram-worker.zip']), JSON.stringify(names().slice(beforePages)));
+click('tab-worker');
 
-      <div class="sub-divider disabled" id="fragAdvFields">
-        <label class="box-lbl sub-box-lbl" data-i18n="lbl.finalmaskAdvanced">تنظیمات پیشرفته Finalmask (اختیاری — فقط JSON هسته Xray)</label>
+const io = execFileSync(esbuildBin, ['--bundle', '--format=iife', '--global-name=IO', '--log-level=error'], { input: `export * from '${path.join(root, 'js/settings-io.js')}';`, encoding: 'utf8' });
+w.eval(io);
+setCk('tgEnable', true);
+setCk('tgPadding', true);
+const baseBefore = $('tgSecret').dataset.base;
+const exportedText = w.IO.exportSettingsToString('worker');
+const payload = JSON.parse(exportedText);
+check('settings: schema version is 7 and telegram block is present', payload.schemaVersion === 7 && payload.data.telegramWebProxy.enabled === true && payload.data.telegramWebProxy.secretBase === baseBefore && payload.data.telegramWebProxy.randomPadding === true);
+check('settings: v7 payload passes compatibility check', w.IO.isCompatibleExport(payload));
+setCk('tgEnable', false); setCk('tgPadding', false); $('tgSecret').dataset.base = '';
+w.IO.applyImportedSettings(payload);
+check('settings: import restores enabled, padding and secret base', $('tgEnable').checked && $('tgPadding').checked && $('tgSecret').dataset.base === baseBefore);
+const broken = JSON.parse(exportedText); broken.data.telegramWebProxy.secretBase = 'zz';
+check('settings: v7 payload with invalid secret base is rejected', !w.IO.isCompatibleExport(broken));
+const missing = JSON.parse(exportedText); delete missing.data.telegramWebProxy;
+check('settings: v7 payload without telegram block is rejected', !w.IO.isCompatibleExport(missing));
+const v7NoLan = JSON.parse(exportedText); delete v7NoLan.data.advancedJson.lanPassword;
+check('settings: v7 payload without LAN password is rejected', !w.IO.isCompatibleExport(v7NoLan));
+const badSelect = JSON.parse(exportedText); badSelect.data.fingerprint = 'nonexistent';
+check('settings: v7 payload with an unknown select value is rejected', !w.IO.isCompatibleExport(badSelect));
+const asVersion = (v) => { const c = JSON.parse(exportedText); if (v === undefined) delete c.schemaVersion; else c.schemaVersion = v; return c; };
+check('settings: v6 file with current fields present is rejected', !w.IO.isCompatibleExport(asVersion(6)));
+const v6Plain = asVersion(6); delete v6Plain.data.advancedJson.lanUsername; delete v6Plain.data.advancedJson.lanPassword;
+check('settings: genuine v6 file is rejected', !w.IO.isCompatibleExport(v6Plain));
+const v5Plain = asVersion(5); delete v5Plain.data.advancedJson.lanUsername; delete v5Plain.data.advancedJson.lanPassword; delete v5Plain.data.telegramWebProxy;
+check('settings: genuine v5 file is rejected', !w.IO.isCompatibleExport(v5Plain));
+check('settings: v5 file with current fields present is rejected', !w.IO.isCompatibleExport(asVersion(5)));
+check('settings: missing, string and future schema versions are rejected', !w.IO.isCompatibleExport(asVersion(undefined)) && !w.IO.isCompatibleExport(asVersion('7')) && !w.IO.isCompatibleExport(asVersion(8)) && !w.IO.isCompatibleExport(asVersion(null)));
+const wrongApp = JSON.parse(exportedText); wrongApp.appId = 'other';
+check('settings: wrong appId is not a valid import payload', !w.IO.isValidImportPayload(wrongApp));
 
-        <label class="ck-lbl-wide mb-10"><input type="checkbox" id="frag2Enable"> <span data-i18n="lbl.frag2Enable">فعال‌سازی مرحله دوم قطعه‌بندی (دو لایه)</span></label>
-        <div class="frag-grid disabled" id="frag2Fields">
-          <div>
-            <label class="adv-lbl" for="frag2Packets">Stage 2 Packets</label>
-            <input type="text" id="frag2Packets" value="1-1" placeholder="مثال: tlshello یا 1-2" data-i18n-placeholder="ph.fragPackets"/>
-          </div>
-          <div>
-            <label class="adv-lbl" for="frag2Interval">Stage 2 Interval</label>
-            <input type="text" id="frag2Interval" value="10-20" placeholder="مثال: 10-20 یا 0,1,2" data-i18n-placeholder="ph.fragIntervalMulti"/>
-          </div>
-          <div>
-            <label class="adv-lbl" for="frag2Length">Stage 2 Length</label>
-            <input type="text" id="frag2Length" value="100-200" placeholder="مثال: 10-20 یا 5,94,1" data-i18n-placeholder="ph.fragLengthMulti"/>
-          </div>
-          <div>
-            <label class="adv-lbl" for="frag2MaxSplit">Stage 2 Max Split</label>
-            <input type="text" id="frag2MaxSplit" value="10" placeholder="10"/>
-          </div>
-        </div>
-        <p class="hint mt-10" data-i18n="hint.frag2Info">مرحله دوم، خروجی مرحله اول Fragment را دوباره خرد می‌کند (finalmask.tcp دو عضوی). می‌توانید در فیلدهای Length/Interval هر مرحله چند مقدار متوالی با کاما جدا از هم وارد کنید (مثلاً 5,94,1) تا هر برش طول متفاوتی داشته باشد؛ آخرین مقدار برای برش‌های بعدی هم تکرار می‌شود. برای غیرفعال کردن مرحله دوم، تیک بالا را بردارید.</p>
+const translations = (() => { const src = fs.readFileSync(path.join(root, 'js/i18n.js'), 'utf8').replace(/export /g, ''); return new Function(`${src}; return translations;`)(); })();
+const comparable = () => { const c = JSON.parse(w.IO.exportSettingsToString()); delete c.exportedAt; return JSON.stringify(c); };
+const importFile = async (text) => {
+  const input = $('importFileInput');
+  Object.defineProperty(input, 'files', { value: [new w.File([text], 'TCB_Settings.json')], configurable: true });
+  input.dispatchEvent(new w.Event('change'));
+  await sleep(150);
+};
+setVal('fragPackets', 'sentinel-before');
+const stateBefore = comparable();
+const rejectedInputs = {
+  'v6 file': JSON.stringify(v6Plain),
+  'v5 file': JSON.stringify(v5Plain),
+  'v6 with current fields': JSON.stringify(asVersion(6)),
+  'broken structure': JSON.stringify(broken),
+  'not json': '{oops',
+  'foreign app': JSON.stringify(wrongApp)
+};
+for (const [label, text] of Object.entries(rejectedInputs)) {
+  await importFile(text);
+  check(`settings: rejected import (${label}) leaves every setting untouched`, comparable() === stateBefore);
+}
+await importFile(JSON.stringify(v6Plain));
+check('settings: rejected old file shows the translated error toast', $('toast').textContent === translations.fa['toast.oldSettingsFile']);
+const goodFile = JSON.parse(exportedText); goodFile.data.fragment.packets = 'sentinel-after';
+await importFile(JSON.stringify(goodFile));
+check('settings: valid v7 file imports through the real file input', $('fragPackets').value === 'sentinel-after');
 
-        <label class="ck-lbl-wide mt-14 mb-10"><input type="checkbox" id="fpUnsafeXray"> <span data-i18n="lbl.fpUnsafeXray">استفاده از فینگرپرینت خام به‌جای فینگرپرینت بالا</span></label>
+const topKeys = Object.keys(JSON.parse(exportedText));
+check('export: metadata keys come first in a fixed order', JSON.stringify(topKeys) === JSON.stringify(['appId', 'schemaVersion', 'exportedAt', 'data']));
+const expectedDataKeys = ['deployTarget', 'telegramWebProxy', 'token', 'trojanPassword', 'workerDomain', 'customDomainUsed', 'customDomain', 'fallbackDomain', 'ips', 'protocols', 'tlsPorts', 'wsPorts', 'fingerprint', 'wsPath', 'fragment', 'advancedJson', 'ech', 'dns', 'routingCountries', 'blockRules', 'sanctionDns', 'sanctionBypass', 'customSanctionRules', 'customBypassRules', 'customBlockRules', 'observatory', 'chainConfig', 'jsonName'];
+check('export: data keys follow the exact panel order', JSON.stringify(Object.keys(JSON.parse(exportedText).data)) === JSON.stringify(expectedDataKeys), Object.keys(JSON.parse(exportedText).data).join());
+const controlFor = {
+  deployTarget: 'tab-worker', 'telegramWebProxy.enabled': 'tgEnable', 'telegramWebProxy.secretBase': 'tgSecret', 'telegramWebProxy.randomPadding': 'tgPadding',
+  token: 'uid', trojanPassword: 'tpw', workerDomain: 'wdom', customDomainUsed: 'customDomainUsed', customDomain: 'customDomainInput', fallbackDomain: 'fallbackDomain', ips: 'ips',
+  'protocols.vless': 'protoVless', 'protocols.trojan': 'protoTrojan', tlsPorts: '.ptls', wsPorts: '.pws', fingerprint: 'fpSelect', wsPath: 'pathSelect',
+  'fragment.enabled': 'fragEnable', 'fragment.packets': 'fragPackets', 'fragment.interval': 'fragInterval', 'fragment.length': 'fragLength', 'fragment.maxSplit': 'fragMaxSplit',
+  'fragment.stage2.enabled': 'frag2Enable', 'fragment.stage2.packets': 'frag2Packets', 'fragment.stage2.interval': 'frag2Interval', 'fragment.stage2.length': 'frag2Length', 'fragment.stage2.maxSplit': 'frag2MaxSplit',
+  'fragment.xrayTls.unsafeFingerprint': 'fpUnsafeXray', 'fragment.xrayTls.cipherSuites': 'cipherSuitesXray',
+  'advancedJson.fakeDns': 'fakeDns', 'advancedJson.ipv6': 'ipv6', 'advancedJson.lanAccess': 'lanAccess', 'advancedJson.tcpFastOpen': 'tcpFastOpen', 'advancedJson.lanUsername': 'lanUsername', 'advancedJson.lanPassword': 'lanPassword',
+  'ech.enabled': 'echEnable', 'ech.dns': 'echDns', 'dns.local': 'localDns', 'dns.remote': 'remoteDns',
+  'routingCountries.ir': 'routeIr', 'routingCountries.cn': 'routeCn', 'routingCountries.ru': 'routeRu',
+  'blockRules.ads': 'blockPromo', 'blockRules.porn': 'blockPorn', 'blockRules.quic': 'blockQuic', 'blockRules.malware': 'blockMalware', 'blockRules.phishing': 'blockPhishing', 'blockRules.cryptominers': 'blockCryptominers',
+  sanctionDns: 'sanctionDns',
+  'sanctionBypass.openai': 'sanctionOpenai', 'sanctionBypass.googleai': 'sanctionGoogleai', 'sanctionBypass.anthropic': 'sanctionAnthropic', 'sanctionBypass.xai': 'sanctionXai', 'sanctionBypass.microsoft': 'sanctionMicrosoft', 'sanctionBypass.oracle': 'sanctionOracle', 'sanctionBypass.docker': 'sanctionDocker', 'sanctionBypass.adobe': 'sanctionAdobe', 'sanctionBypass.epicgames': 'sanctionEpicgames', 'sanctionBypass.intel': 'sanctionIntel', 'sanctionBypass.amd': 'sanctionAmd', 'sanctionBypass.nvidia': 'sanctionNvidia', 'sanctionBypass.asus': 'sanctionAsus', 'sanctionBypass.hp': 'sanctionHp', 'sanctionBypass.lenovo': 'sanctionLenovo',
+  customSanctionRules: 'customSanctionRules', customBypassRules: 'customBypassRules', customBlockRules: 'customBlockRules',
+  'observatory.leastPingInterval': 'leastPingInterval', 'observatory.leastLoadInterval': 'leastLoadInterval', 'observatory.leastLoadMode': 'leastLoadMode', 'observatory.leastLoadSampling': 'leastLoadSampling', 'observatory.leastLoadTimeout': 'leastLoadTimeout',
+  chainConfig: 'chainConfig', jsonName: 'jsonName'
+};
+const leafPaths = [];
+const walk = (obj, prefix) => { for (const [k, v] of Object.entries(obj)) { const pth = prefix ? `${prefix}.${k}` : k; if (v && typeof v === 'object' && !Array.isArray(v)) walk(v, pth); else leafPaths.push(pth); } };
+walk(JSON.parse(exportedText).data, '');
+check('export: every exported leaf is mapped to a panel control', leafPaths.every((lp) => lp in controlFor), leafPaths.filter((lp) => !(lp in controlFor)).join());
+const domOrder = (sel) => { const el = sel.startsWith('.') ? w.document.querySelector(sel) : $(sel); return el; };
+let orderOk = true; let orderMsg = '';
+for (let i = 1; i < leafPaths.length; i++) {
+  const prev = domOrder(controlFor[leafPaths[i - 1]]); const cur = domOrder(controlFor[leafPaths[i]]);
+  if (!(prev.compareDocumentPosition(cur) & w.Node.DOCUMENT_POSITION_FOLLOWING)) { orderOk = false; orderMsg = `${leafPaths[i - 1]} -> ${leafPaths[i]}`; break; }
+}
+check('export: leaf order matches the on-screen order of the controls', orderOk, orderMsg);
 
-        <div class="fg mt-10 mb-0">
-          <label class="adv-lbl txt-dir" data-i18n="lbl.cipherSuitesXray">فهرست Cipher Suites سفارشی (اختیاری، فقط JSON هسته Xray)</label>
-          <textarea id="cipherSuitesXray" class="cs-textarea" placeholder="مثال: TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256" data-i18n-placeholder="ph.cipherSuites"></textarea>
-        </div>
-        <p class="hint mt-8" data-i18n="hint.fpUnsafeInfo">این دو گزینه طول واقعی بسته ClientHello را ثابت و قابل پیش‌بینی می‌کنند تا نقاط شکستن Fragment همیشه درست بیفتند. برای غیرفعال کردن هرکدام، تیک را بردارید یا کادر را خالی بگذارید.</p>
-      </div>
-    </div>
+const faKeys = Object.keys(translations.fa); const enKeys = Object.keys(translations.en);
+check('i18n: fa and en define exactly the same keys', faKeys.length === enKeys.length && faKeys.every((k) => k in translations.en));
+const firstLetter = (str) => { const plain = str.replace(/<[^>]*>/g, ''); for (const ch of plain) if (/\p{L}/u.test(ch)) return ch; return ''; };
+const identifierOnly = new Set(['lbl.leastPingInterval', 'lbl.leastLoadInterval', 'lbl.leastLoadMode', 'lbl.leastLoadSampling', 'lbl.leastLoadTimeout', 'tab.worker', 'tab.pages']);
+const latinStart = faKeys.filter((k) => !identifierOnly.has(k) && /[A-Za-z]/.test(firstLetter(translations.fa[k])));
+check('i18n: every Persian text starts with a Persian word', latinStart.length === 0, latinStart.join());
+const digitStart = faKeys.filter((k) => /^\s*(\{[a-z]+\}|[0-9])/.test(translations.fa[k].replace(/<[^>]*>/g, '')));
+check('i18n: no Persian text starts with a number or placeholder', digitStart.length === 0, digitStart.join());
+check('i18n: header description mentions Telegram Web Proxy in both languages', translations.fa['hdr.sub'].includes('Telegram Web Proxy') && translations.en['hdr.sub'].includes('Telegram Web Proxy') && translations.fa['hdr.sub'].includes('VLESS') && translations.fa['hdr.sub'].includes('Trojan') && translations.en['hdr.sub'].includes('Trojan'));
+check('i18n: rendered header description follows the selected language', (() => { $('btn-lang-en').dispatchEvent(new w.MouseEvent('click', { bubbles: true })); const en = w.document.querySelector('.hdr-sub').textContent; $('btn-lang-fa').dispatchEvent(new w.MouseEvent('click', { bubbles: true })); const fa = w.document.querySelector('.hdr-sub').textContent; return en === translations.en['hdr.sub'] && fa === translations.fa['hdr.sub']; })());
+const indexSource = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const txtDirLabels = [...indexSource.matchAll(/<label class="adv-lbl[^"]*txt-dir[^"]*"[^>]*data-i18n="([^"]+)"/g)].map((m) => m[1]);
+check('rtl: descriptive labels that contain Persian follow the page direction', txtDirLabels.length >= 11 && txtDirLabels.every((k) => /[\u0600-\u06FF]/.test(translations.fa[k])), txtDirLabels.join());
+const css = fs.readFileSync(path.join(root, 'css/style.css'), 'utf8');
+check('rtl: technical inputs, code boxes and inline code stay LTR in the stylesheet', /input,textarea,select\{[^}]*direction:ltr/.test(css) && /\.code-viewer-body\{[^}]*direction:ltr/.test(css) && /\ncode\{[^}]*direction:ltr;unicode-bidi:isolate/.test(css));
 
-    <div class="fg mt-14 settings-box">
-      <label class="box-lbl" data-i18n="lbl.advancedJson">تنظیمات پیشرفته JSON</label>
-      <div class="adv-grid">
-        <div>
-          <label class="adv-lbl" for="fakeDns">Fake DNS</label>
-          <select id="fakeDns">
-            <option value="1">Enabled</option>
-            <option value="0">Disabled</option>
-          </select>
-        </div>
-        <div>
-          <label class="adv-lbl" for="ipv6">IPv6</label>
-          <select id="ipv6">
-            <option value="0">Disabled</option>
-            <option value="1">Enabled</option>
-          </select>
-        </div>
-        <div>
-          <label class="adv-lbl" for="lanAccess">Allow LAN</label>
-          <select id="lanAccess">
-            <option value="0">Disabled</option>
-            <option value="1">Enabled</option>
-          </select>
-        </div>
-        <div>
-          <label class="adv-lbl" for="tcpFastOpen">TCP Fast Open</label>
-          <select id="tcpFastOpen">
-            <option value="0">Disabled</option>
-            <option value="1">Enabled</option>
-          </select>
-        </div>
-      </div>
-      <div id="lanAuthWrap" class="mt-12" style="display:none">
-        <div class="adv-dns-grid">
-          <div>
-            <label class="adv-lbl txt-dir" for="lanUsername" data-i18n="lbl.lanUsername">نام کاربری</label>
-            <input type="text" id="lanUsername" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"/>
-          </div>
-          <div>
-            <label class="adv-lbl txt-dir" for="lanPassword" data-i18n="lbl.lanPassword">رمز عبور</label>
-            <input type="password" id="lanPassword" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false"/>
-          </div>
-        </div>
-        <p class="hint mt-8" data-i18n="hint.lanAuth">اختیاری — اگر هر دو کادر را خالی بگذارید، Allow LAN بدون احراز هویت فعال می‌ماند. اگر هر دو را پر کنید، ورودی اصلی پروکسی در هر سه خروجی (Xray، Sing-box و Clash) فقط با همین نام کاربری و رمز عبور قابل استفاده می‌شود. پر کردن فقط یکی از دو کادر مجاز نیست و نام کاربری نمی‌تواند شامل «:» باشد. ورودی‌های کمکی DNS تحت‌تأثیر این احراز هویت نیستند.</p>
-      </div>
-      <div id="echWrap" class="mt-12">
-        <div class="toggle-row">
-          <label class="ck-lbl"><input type="checkbox" id="echEnable"> ECH</label>
-        </div>
-        <div id="echFields" class="ech-field disabled">
-          <label class="adv-lbl mt-8 txt-dir" for="echDns" data-i18n="lbl.echDnsServer">سرور DNS برای دریافت کلید ECH</label>
-          <input type="text" id="echDns" value="https://cloudflare-dns.com/dns-query" placeholder="https://cloudflare-dns.com/dns-query"/>
-          <p class="hint mt-6" data-i18n="hint.echInfo">فعال کردن چک‌باکس کافی است — کلید رمزنگاری دامنه Worker یا Pages شما به صورت خودکار از این سرور DNS دریافت می‌شود. ECH روی هر چهار فرمت خروجی (لینک VLESS/Trojan، JSON برای Xray، JSON برای Sing-box و JSON برای Clash) اعمال می‌شود. آدرس پیش‌فرض (DoH Cloudflare) بهترین گزینه برای ایران است زیرا یک آدرس <code>https://</code> رمزگذاری‌شده است و برخلاف <code>udp://8.8.8.8</code> در برابر دستکاری DNS توسط ISPها مقاوم است. اگر DoH Proxy شخصی دارید، آدرس آن را اینجا وارد کنید.</p>
-        </div>
-      </div>
-      <div class="adv-dns-grid mt-12">
-        <div>
-          <label class="adv-lbl" for="localDns">Local DNS</label>
-          <input type="text" id="localDns" value="8.8.8.8" placeholder="8.8.8.8"/>
-        </div>
-        <div>
-          <label class="adv-lbl" for="remoteDns">Remote DNS / DoH</label>
-          <a href="https://github.com/4n0nymou3/cloudflare-doh-proxy" target="_blank" class="btn-link mb-8">
-            <button class="bgen btn-doh">
-              <span class="ico">🌐</span> <span data-i18n="btn.dohTool">ابزار DoH Proxy — ساخت DNS اختصاصی با Cloudflare</span>
-            </button>
-          </a>
-          <input type="text" id="remoteDns" value="https://cloudflare-dns.com/dns-query" placeholder="https://cloudflare-dns.com/dns-query"/>
-        </div>
-      </div>
-      <p class="hint mt-10" data-i18n="hint.dnsInfo">آدرس Local DNS برای resolve دامنه‌های داخلی کشورهای انتخاب‌شده استفاده می‌شود. آدرس Remote DNS به‌صورت پیشفرض روی Cloudflare DoH تنظیم است و می‌توانید آن را با هر آدرس DoH دلخواه جایگزین کنید. با ابزار DoH Proxy می‌توانید یک سرور DoH اختصاصی روی Cloudflare بسازید و آدرس آن را اینجا وارد کنید. گزینه‌ی Allow LAN اتصال سایر دستگاه‌های شبکه محلی را فعال می‌کند. قابلیت ECH فقط در حالت Normal (بدون Fragment) روی هر چهار فرمت خروجی اعمال می‌شود؛ Fragment و ECH را نمی‌توان همزمان فعال کرد.</p>
-    </div>
+const grab = async (id) => { click(id); await sleep(30); return clip; };
+const resultsOf = async () => { click('gb'); await sleep(700); return { xray: await grab('btn-cp-json'), sing: await grab('btn-cp-singbox'), clash: await grab('btn-cp-clash') }; };
+const inboundOf = (o) => ({ x: JSON.parse(o.xray).inbounds[0].settings, s: JSON.parse(o.sing).inbounds.find((i) => i.tag === 'mixed-in'), c: JSON.parse(o.clash) });
+setVal('wdom', 'myworker.someone.workers.dev');
+setVal('ips', '104.16.0.1');
+check('lan auth: boxes hidden by default', $('lanAuthWrap').style.display === 'none' && $('lanUsername').value === '' && $('lanPassword').value === '' && $('lanPassword').type === 'password');
+$('lanAccess').value = '1'; $('lanAccess').dispatchEvent(new w.Event('change', { bubbles: true }));
+check('lan auth: boxes shown when Allow LAN is enabled', $('lanAuthWrap').style.display === '');
+let r = await resultsOf(); let ib = inboundOf(r);
+check('lan auth: both empty keeps noauth in all cores', ib.x.auth === 'noauth' && !ib.x.accounts && ib.s.users === undefined && ib.c.authentication === undefined && ib.c['allow-lan'] === true);
+setVal('lanUsername', 'alice');
+$('jsonDisplay').innerHTML = ''; $('singboxDisplay').innerHTML = ''; $('clashDisplay').innerHTML = ''; $('lAll').innerHTML = '';
+click('gb'); await sleep(700);
+check('lan auth: only one box filled produces no config at all', $('jsonDisplay').textContent === '' && $('singboxDisplay').textContent === '' && $('clashDisplay').textContent === '' && $('lAll').innerHTML === '');
+setVal('lanPassword', 'p@ss:w"o\\rd');
+r = await resultsOf(); ib = inboundOf(r);
+check('lan auth: xray mixed uses password auth with accounts', ib.x.auth === 'password' && ib.x.accounts.length === 1 && ib.x.accounts[0].user === 'alice' && ib.x.accounts[0].pass === 'p@ss:w"o\\rd' && ib.x.udp === true && ib.x.userLevel === 8);
+check('lan auth: sing-box mixed has users', JSON.stringify(ib.s.users) === JSON.stringify([{ username: 'alice', password: 'p@ss:w"o\\rd' }]) && ib.s.listen === '0.0.0.0' && ib.s.listen_port === 2080);
+check('lan auth: clash has authentication user:pass', JSON.stringify(ib.c.authentication) === JSON.stringify(['alice:p@ss:w"o\\rd']) && ib.c['mixed-port'] === 7890);
+setVal('lanUsername', 'a:b');
+$('jsonDisplay').innerHTML = '';
+click('gb'); await sleep(700);
+check('lan auth: colon in username blocks generation', $('jsonDisplay').textContent === '');
+setVal('lanUsername', 'alice');
+const exp7 = JSON.parse(w.IO.exportSettingsToString());
+check('lan auth: export carries credentials after tcpFastOpen', exp7.data.advancedJson.lanUsername === 'alice' && exp7.data.advancedJson.lanPassword === 'p@ss:w"o\\rd' && Object.keys(exp7.data.advancedJson).join() === 'fakeDns,ipv6,lanAccess,tcpFastOpen,lanUsername,lanPassword');
+setVal('lanUsername', ''); setVal('lanPassword', '');
+$('lanAccess').value = '0'; $('lanAccess').dispatchEvent(new w.Event('change', { bubbles: true }));
+w.IO.applyImportedSettings(exp7);
+check('lan auth: import restores credentials', $('lanUsername').value === 'alice' && $('lanPassword').value === 'p@ss:w"o\\rd');
+$('lanAccess').value = '0'; $('lanAccess').dispatchEvent(new w.Event('change', { bubbles: true }));
+check('lan auth: boxes hide again when Allow LAN is disabled', $('lanAuthWrap').style.display === 'none');
+r = await resultsOf(); ib = inboundOf(r);
+check('lan auth: LAN disabled ignores credentials in all cores', ib.x.auth === 'noauth' && ib.s.users === undefined && ib.s.listen === '127.0.0.1' && ib.c.authentication === undefined && ib.c['allow-lan'] === false && JSON.parse(r.xray).inbounds[0].listen === '127.0.0.1');
+w.dispatchEvent(new w.Event('pagehide'));
+check('lan auth: pagehide wipes credentials', $('lanUsername').value === '' && $('lanPassword').value === '');
+setCk('tgEnable', true); setCk('tgEnable', false);
+check('disable: classic buttons return and body hides', $('btn-cp-worker').style.display === '' && $('tgBody').style.display === 'none');
 
-    <div class="fg mt-14 settings-box">
-      <label class="box-lbl" data-i18n="lbl.routingRules">قوانین مسیریابی</label>
-      <label class="adv-lbl mb-8 txt-dir" data-i18n="lbl.bypassRules">دور زدن پروکسی (Bypass rules) — کشورهایی که به‌صورت مستقیم مسیریابی شوند</label>
-      <div class="port-row mb-10">
-        <label class="ck-lbl"><input type="checkbox" id="routeIr" checked> <span data-i18n="country.ir">ایران</span></label>
-        <label class="ck-lbl"><input type="checkbox" id="routeCn"> <span data-i18n="country.cn">چین</span></label>
-        <label class="ck-lbl"><input type="checkbox" id="routeRu"> <span data-i18n="country.ru">روسیه</span></label>
-      </div>
-      <p class="hint mt-8" data-i18n="hint.bypassInfo">کشورهایی که تیک می‌زنید، ترافیک و DNS مربوط به دامنه‌ها و آی‌پی‌های همان کشور به‌صورت مستقیم (بدون عبور از پروکسی) مسیریابی می‌شود؛ این قوانین در هر سه فرمت خروجی JSON، Sing-box و Clash اعمال می‌شوند. حداقل یک کشور باید انتخاب شده باشد.</p>
-      <label class="adv-lbl mb-8 mt-12 txt-dir" data-i18n="lbl.blockRules">مسدودسازی (Block rules) — دسته‌هایی که مسدود شوند</label>
-      <div class="port-row mb-10">
-        <label class="ck-lbl"><input type="checkbox" id="blockPromo"> Ads</label>
-        <label class="ck-lbl"><input type="checkbox" id="blockPorn"> Porn</label>
-        <label class="ck-lbl"><input type="checkbox" id="blockQuic" checked> QUIC</label>
-        <label class="ck-lbl"><input type="checkbox" id="blockMalware"> Malware</label>
-        <label class="ck-lbl"><input type="checkbox" id="blockPhishing"> Phishing</label>
-        <label class="ck-lbl"><input type="checkbox" id="blockCryptominers"> Cryptominers</label>
-      </div>
-      <p class="hint mt-8" data-i18n="hint.blockInfo">دسته‌هایی که تیک می‌زنید در هر سه فرمت خروجی مسدود می‌شوند. QUIC یعنی مسدود شدن ترافیک UDP (شامل HTTP/3) تا مرورگر به‌صورت خودکار روی HTTPS معمولی که از تانل شما عبور می‌کند سوییچ کند.</p>
+click('btn-mk-token'); click('btn-mk-pw');
+await sleep(100);
+click('btn-cp-worker');
+await sleep(50);
+const rawWorker = clip;
+const shownLines = [...$('workerDisplay').querySelectorAll('.code-content')].map((el) => el.textContent);
+check('code view: worker code is rendered and the copy button yields it', rawWorker.length > 1000 && shownLines.length > 20, `${rawWorker.length} ${shownLines.length}`);
+check('code view: visible text equals the copied code exactly (no entities)', shownLines.join('\n') === rawWorker.replace(/\n$/, '').split('\n').map((l) => l || ' ').join('\n'));
+check('code view: no HTML entity text leaks into the visible worker code', !/&#39;|&quot;|&amp;|&lt;|&gt;/.test(shownLines.join('\n')));
+check('code view: single-quoted strings are highlighted as whole strings', [...$('workerDisplay').querySelectorAll('span.s')].some((el) => el.textContent === "'cloudflare:sockets'"));
+check('code view: numbers inside entities no longer get highlighted', [...$('workerDisplay').querySelectorAll('span.n')].every((el) => /^\d+$/.test(el.textContent)));
+const uiMod = w.eval(execFileSync(esbuildBin, ['--bundle', '--format=iife', '--global-name=UIM', '--log-level=error'], { input: `export * from '${path.join(root, 'js/ui.js')}';`, encoding: 'utf8' }) + ';UIM');
+const strip = (h) => { const d = w.document.createElement('div'); d.innerHTML = h; return d.textContent; };
+const samples = ["import{a as b}from'x\\'y';", 'const s="a&b<c>"; // 5', '"key": "v<1>&\'q\'", 7,'];
+check('code view: every highlighter preserves its input text exactly', samples.every((sm) => strip(uiMod.highlightJsLine(sm)) === sm && strip(uiMod.highlightJsonLine(sm)) === sm));
+check('code view: JSON keys and strings are highlighted', uiMod.highlightJsonLine('  "a": "b",').includes('<span class="jk">&quot;a&quot;:</span>') && uiMod.highlightJsonLine('  "a": "b",').includes('<span class="js">&quot;b&quot;</span>'));
+check('code view: special characters stay escaped in generated markup', uiMod.highlightJsLine("x = '<b>';").includes('&lt;b&gt;') && !uiMod.highlightJsLine("x = '<b>';").includes('<b>'));
+const cssNow = fs.readFileSync(path.join(root, 'css/style.css'), 'utf8');
+const resultCards = ['jsonDisplay', 'singboxDisplay', 'clashDisplay'].map((id) => $(id).closest('.sec'));
+setVal('wdom', 'myworker.someone.workers.dev');
+setVal('ips', '104.16.0.1');
+click('gb');
+await sleep(800);
+check('code view: the line-number gutter width follows the digit count of each block', ['workerDisplay', 'jsonDisplay', 'singboxDisplay', 'clashDisplay'].every((id) => { const n = $(id).querySelectorAll('.code-line').length; return n > 0 && $(id).style.getPropertyValue('--gutter-digits') === String(String(n).length); }), ['workerDisplay', 'jsonDisplay', 'singboxDisplay', 'clashDisplay'].map((id) => `${id}:${$(id).querySelectorAll('.code-line').length}:${$(id).style.getPropertyValue('--gutter-digits')}`).join(' '));
+check('code view: the gutter has a width that does not depend on the digits of each line', /\.code-gutter\{[^}]*box-sizing:content-box;min-width:calc\(var\(--gutter-digits,3\) \* 1ch\)/.test(fs.readFileSync(path.join(root, 'css/style.css'), 'utf8')));
+const cardHeaderRule = fs.readFileSync(path.join(root, 'css/style.css'), 'utf8');
+check('cards: result headers may wrap on narrow screens but toggle headers keep their single row', /\.sec-hdr:not\(\.sec-hdr-toggle\)\{flex-wrap:wrap\}/.test(cardHeaderRule) && /\.cb\{[^}]*white-space:nowrap/.test(cardHeaderRule));
+check('cards: the Xray, Sing-box and Clash cards use the same plain card classes', resultCards.every((c) => c && c.className === 'sec' && c.querySelector('.sec-hdr').className === 'sec-hdr'), resultCards.map((c) => c && c.className).join('|'));
+const cssAll = fs.readFileSync(path.join(root, 'css/style.css'), 'utf8');
+const htmlAll = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+check('cards: no colour-specific card or header modifier remains in CSS or HTML', !/sec-green|sec-hdr-green/.test(cssAll + htmlAll));
+check('code view: the YAML highlighter is gone and the Clash preview uses the JSON key class', !/highlightYaml/.test(fs.readFileSync(path.join(root, 'js/ui.js'), 'utf8') + fs.readFileSync(path.join(root, 'js/app.js'), 'utf8')) && !/\.jc\{/.test(cssAll));
+const cssClasses = [...new Set([...cssAll.replace(/\{[^{}]*\}/g, '{}').matchAll(/\.([A-Za-z_][\w-]*)/g)].map((m) => m[1]))];
+const appSources = ['app.js', 'ui.js', 'i18n.js', 'telegram-webproxy.js', 'settings-io.js'].map((f) => fs.readFileSync(path.join(root, 'js', f), 'utf8')).join('\n');
+const unreferenced = cssClasses.filter((k) => !new RegExp(`(?<![\\w-])${k}(?![\\w-])`).test(indexSource + appSources));
+check('css: every class selector is referenced by the HTML or by a script', unreferenced.length === 0, unreferenced.join());
+const htmlIds = [...indexSource.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]);
+const scriptSources = fs.readdirSync(path.join(root, 'js')).map((f) => fs.readFileSync(path.join(root, 'js', f), 'utf8')).join('\n');
+const orphanIds = htmlIds.filter((i) => !scriptSources.includes(`'${i}'`) && !cssAll.includes(`#${i}`) && !indexSource.includes(`for="${i}"`) && !indexSource.includes(`data-target="${i}"`));
+check('html: every element id is used by a script, a stylesheet, a label or a toggle', orphanIds.length === 0, orphanIds.join());
+const scriptIds = [...scriptSources.matchAll(/getElementById\('([^']+)'\)/g)].map((m) => m[1]);
+check('html: every id looked up by a script exists in the page', scriptIds.every((i) => htmlIds.includes(i)), scriptIds.filter((i) => !htmlIds.includes(i)).join());
+const i18nKeys = Object.keys(translations.fa);
+const usedKeys = new Set([...indexSource.matchAll(/data-i18n(?:-placeholder|-title)?="([^"]+)"/g)].map((m) => m[1]));
+const scriptNoI18n = scriptSources.replace(fs.readFileSync(path.join(root, 'js/i18n.js'), 'utf8'), '');
+const unusedKeys = i18nKeys.filter((k) => !usedKeys.has(k) && !scriptNoI18n.includes(`'${k}'`) && !scriptNoI18n.includes(`"${k}"`));
+check('i18n: every translation key is used by the page or by a script', unusedKeys.length === 0, unusedKeys.join());
 
-      <label class="adv-lbl mb-8 mt-12 txt-dir" data-i18n="lbl.sanctionBypass">ضدتحریم (Bypass Sanctions) — دور زدن مستقیم سرویس‌های تحریمی</label>
-      <div class="fg mb-8">
-        <label class="adv-lbl txt-dir" for="sanctionDns" data-i18n="lbl.sanctionDns">آدرس DNS ضدتحریم</label>
-        <input type="text" id="sanctionDns" value="178.22.122.100" placeholder="178.22.122.100"/>
-      </div>
-      <div class="port-row mb-10">
-        <label class="ck-lbl"><input type="checkbox" id="sanctionOpenai"> OpenAI</label>
-        <label class="ck-lbl"><input type="checkbox" id="sanctionGoogleai"> Google AIs</label>
-        <label class="ck-lbl"><input type="checkbox" id="sanctionAnthropic"> Anthropic</label>
-        <label class="ck-lbl"><input type="checkbox" id="sanctionXai"> xAI</label>
-        <label class="ck-lbl"><input type="checkbox" id="sanctionMicrosoft"> Microsoft</label>
-        <label class="ck-lbl"><input type="checkbox" id="sanctionOracle"> Oracle</label>
-        <label class="ck-lbl"><input type="checkbox" id="sanctionDocker"> Docker</label>
-        <label class="ck-lbl"><input type="checkbox" id="sanctionAdobe"> Adobe</label>
-        <label class="ck-lbl"><input type="checkbox" id="sanctionEpicgames"> Epic Games</label>
-        <label class="ck-lbl"><input type="checkbox" id="sanctionIntel"> Intel</label>
-        <label class="ck-lbl"><input type="checkbox" id="sanctionAmd"> AMD</label>
-        <label class="ck-lbl"><input type="checkbox" id="sanctionNvidia"> Nvidia</label>
-        <label class="ck-lbl"><input type="checkbox" id="sanctionAsus"> Asus</label>
-        <label class="ck-lbl"><input type="checkbox" id="sanctionHp"> HP</label>
-        <label class="ck-lbl"><input type="checkbox" id="sanctionLenovo"> Lenovo</label>
-      </div>
-      <p class="hint mt-8" data-i18n="hint.sanctionInfo">سرویس‌هایی که تیک می‌زنید همیشه مستقیم (با DNS بالا) مسیریابی می‌شوند، حتی اگر IP خروجی شما ایرانی تشخیص داده شود.</p>
+check('rtl: inline code wraps only when a string cannot fit, not mid-word', /\ncode\{[^}]*overflow-wrap:anywhere/.test(cssNow) && !/\ncode\{[^}]*word-break:break-all/.test(cssNow));
 
-      <label class="adv-lbl mb-8 mt-12 txt-dir" data-i18n="lbl.customSanctionRules">دامنه‌های سفارشی ضدتحریم — هر خط یک دامنه (فقط دامنه، بدون IP)</label>
-      <textarea id="customSanctionRules" placeholder="example.com" autocomplete="off"></textarea>
-      <p class="hint mt-8" data-i18n="hint.customSanctionRulesInfo">این دامنه‌ها هم مستقیم مسیریابی می‌شوند و هم از DNS ضدتحریم بالا استفاده می‌کنند. چون DNS فقط دامنه Resolve می‌کند، این کادر فقط دامنه قبول می‌کند؛ برای IP/CIDR از کادر قوانین سفارشی Bypass پایین‌تر استفاده کنید.</p>
+setVal('wdom', 'myworker.someone.workers.dev');
+setVal('ips', '104.16.0.1');
+click('gb');
+await sleep(800);
+click('btn-cp-clash');
+await sleep(50);
+const rawClash = clip;
+const clashLines = [...$('clashDisplay').querySelectorAll('.code-content')].map((el) => el.textContent);
+const clashKeys = [...$('clashDisplay').querySelectorAll('span.jk')].map((el) => el.textContent);
+check('clash view: visible text equals the copied Clash config exactly', clashLines.join('\n') === rawClash.replace(/\n$/, '').split('\n').map((l) => l || ' ').join('\n'));
+check('clash view: top-level keys use the JSON key class', clashKeys.includes('"mixed-port":') && clashKeys.includes('"allow-lan":') && clashKeys.includes('"proxies":'), clashKeys.slice(0, 5).join());
+check('clash view: every quoted key is highlighted as a key', clashLines.filter((l) => /^\s*"[^"]*"\s*:/.test(l)).length === clashKeys.length);
+check('clash view: strings, numbers and booleans are highlighted', $('clashDisplay').querySelectorAll('span.js').length > 0 && $('clashDisplay').querySelectorAll('span.jn').length > 0 && $('clashDisplay').querySelectorAll('span.jb').length > 0);
+check('clash view: copied config is still valid JSON text with the same mixed-port', JSON.parse(rawClash)['mixed-port'] === 7890);
+click('btn-dl-clash');
+check('clash view: download keeps the .yaml name', downloads.some((d) => d.anchor === 'TCB.yaml' || (d.anchor && d.anchor.endsWith('.yaml'))), JSON.stringify(downloads.filter((d) => d.anchor).map((d) => d.anchor)));
 
-      <label class="adv-lbl mb-8 mt-12 txt-dir" data-i18n="lbl.customBypassRules">قوانین سفارشی Bypass — هر خط یک دامنه/IP/CIDR</label>
-      <textarea id="customBypassRules" placeholder="example.com&#10;192.168.1.1&#10;192.168.1.0/24" autocomplete="off"></textarea>
-      <p class="hint mt-8" data-i18n="hint.customRulesInfo">دامنه‌ی وارد شده و همه زیردامنه‌هایش هم شامل می‌شود.</p>
+setVal('wdom', 'myworker.someone.workers.dev');
+setVal('ips', '104.16.0.1');
+click('gb');
+await sleep(800);
+const goodJson = (() => { click('btn-cp-json'); return clip; })();
+await sleep(20);
+const unhandled = [];
+const onRejection = (e) => unhandled.push(String(e));
+process.on('unhandledRejection', onRejection);
+const originalClipboard = Object.getOwnPropertyDescriptor(w.navigator, 'clipboard');
+const setClipboard = (value) => Object.defineProperty(w.navigator, 'clipboard', { value, configurable: true });
+setClipboard(undefined);
+w.document.execCommand = () => false;
+click('btn-cp-json'); await sleep(50);
+check('errors: copy without a clipboard API shows the translated failure message', $('toast').textContent === translations.fa['toast.copyFailed'], $('toast').textContent);
+setClipboard({ writeText: () => Promise.reject(new Error('denied')) });
+click('btn-cp-clash'); await sleep(50);
+check('errors: a rejected clipboard write shows the failure message without an unhandled rejection', $('toast').textContent === translations.fa['toast.copyFailed'] && unhandled.length === 0, unhandled.join());
+click('btn-cp-all'); await sleep(50);
+check('errors: copy-all failure is reported too', $('toast').textContent === translations.fa['toast.copyFailed']);
+let legacyCopied = '';
+w.document.execCommand = (cmd) => { const area = w.document.querySelector('body > textarea'); legacyCopied = area ? area.value : ''; return cmd === 'copy'; };
+setClipboard(undefined);
+click('btn-cp-json'); await sleep(50);
+check('errors: the legacy copy fallback is used when the clipboard API is missing', $('toast').textContent === translations.fa['toast.jsonCopied'] && legacyCopied === goodJson, $('toast').textContent);
+check('errors: the legacy fallback leaves no temporary element behind', w.document.querySelectorAll('body > textarea').length === 0);
+Object.defineProperty(w.navigator, 'clipboard', originalClipboard);
+process.off('unhandledRejection', onRejection);
 
-      <label class="adv-lbl mb-8 mt-12 txt-dir" data-i18n="lbl.customBlockRules">قوانین سفارشی Block — هر خط یک دامنه/IP/CIDR</label>
-      <textarea id="customBlockRules" placeholder="example.com&#10;192.168.1.1&#10;192.168.1.0/24" autocomplete="off"></textarea>
-      <p class="hint mt-8" data-i18n="hint.customRulesInfo">دامنه‌ی وارد شده و همه زیردامنه‌هایش هم شامل می‌شود.</p>
-    </div>
+const lAll = $('lAll');
+Object.defineProperty(lAll, 'innerHTML', { set() { throw new Error('boom'); }, get() { return ''; }, configurable: true });
+click('gb'); await sleep(800);
+delete lAll.innerHTML;
+check('errors: a failure during generation re-enables the button and shows the translated message', !$('gb').disabled && !$('gb').classList.contains('loading') && $('toast').textContent === translations.fa['toast.generateFailed'], $('toast').textContent);
+click('btn-cp-json'); await sleep(50);
+check('errors: after a failed generation the previous configs stay consistent and copyable', clip === goodJson);
 
-    <div class="fg mt-14 settings-box">
-      <label class="box-lbl" data-i18n="lbl.observatorySettings">تنظیمات Observatory</label>
-      <div class="observatory-grid">
-        <div>
-          <label class="adv-lbl" for="leastPingInterval" data-i18n="lbl.leastPingInterval">leastPing Interval</label>
-          <input type="text" id="leastPingInterval" value="3m" placeholder="3m"/>
-        </div>
-        <div>
-          <label class="adv-lbl" for="leastLoadInterval" data-i18n="lbl.leastLoadInterval">leastLoad Interval</label>
-          <input type="text" id="leastLoadInterval" value="5m" placeholder="5m"/>
-        </div>
-        <div>
-          <label class="adv-lbl" for="leastLoadMode" data-i18n="lbl.leastLoadMode">leastLoad Mode</label>
-          <select id="leastLoadMode">
-            <option value="HEAD" selected>HEAD</option>
-            <option value="GET">GET</option>
-          </select>
-        </div>
-        <div>
-          <label class="adv-lbl" for="leastLoadSampling" data-i18n="lbl.leastLoadSampling">leastLoad Sampling</label>
-          <input type="text" id="leastLoadSampling" value="2" placeholder="2"/>
-        </div>
-        <div>
-          <label class="adv-lbl" for="leastLoadTimeout" data-i18n="lbl.leastLoadTimeout">leastLoad Timeout</label>
-          <input type="text" id="leastLoadTimeout" value="30s" placeholder="30s"/>
-        </div>
-      </div>
-      <p class="hint mt-10" data-i18n="hint.observatoryInfo">این تنظیمات نحوه‌ی تست و انتخاب بهترین سرور توسط هسته‌ی Xray را کنترل می‌کنند. مقادیر زمانی را با پسوند m (دقیقه) یا s (ثانیه) وارد کنید؛ مثلاً 3m یا 30s. leastLoad Sampling باید یک عدد صحیح مثبت باشد.</p>
-    </div>
+w.confirm = () => true;
+click('btn-reset-all'); await sleep(50);
+setVal('uid', '11111111-2222-4333-8444-555555555555'); setVal('tpw', 'pw'); setVal('wdom', 'a.workers.dev'); setVal('ips', '1.1.1.1');
+const chainCases = [['trojan://pw@1.2.3.4:99999', 'err.chainPortInvalid'], ['trojan://pw@1.2.3.4:0', 'err.chainPortInvalid'], ['trojan://pw@1.2.3.4:abc', 'err.chainPortInvalid'], ['http://u:p@h:-1', 'err.chainPortInvalid'], ['trojan://p%E0@1.2.3.4:443', 'err.chainLinkInvalid'], ['vless://11111111-2222-4333-8444-555555555555@1.2.3.4:443#%E0%A4%A', 'err.chainLinkInvalid']];
+for (const [link, key] of chainCases) {
+  setVal('chainConfig', link); $('lAll').innerHTML = ''; click('gb'); await sleep(50);
+  check(`chain: ${link.slice(0, 40)} is rejected with a translated message`, $('lAll').children.length === 0 && $('toast').textContent === translations.fa[key], $('toast').textContent);
+}
+for (const link of ['trojan://pw@1.2.3.4:1', 'trojan://pw@1.2.3.4:65535', 'socks://dXNlcjpwYXNz@1.2.3.4:1080']) {
+  setVal('chainConfig', link); click('gb'); await sleep(800);
+  check(`chain: boundary-valid link ${link.slice(0, 40)} still generates`, $('lAll').children.length > 0);
+}
+setVal('chainConfig', '');
+click('gb'); await sleep(800);
+$('btn-lang-en').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+check('ui: result row buttons follow a language switch to English', w.document.querySelector('.bcp').textContent === translations.en['btn.copyPlain'] && w.document.querySelector('.bqr').title === translations.en['title.showQr'] && w.document.querySelector('.bqr').getAttribute('aria-label') === translations.en['title.showQr']);
+$('btn-lang-fa').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+check('ui: result row buttons follow a language switch back to Persian', w.document.querySelector('.bcp').textContent === translations.fa['btn.copyPlain'] && w.document.querySelector('.bqr').title === translations.fa['title.showQr']);
+const cssFinal = fs.readFileSync(path.join(root, 'css/style.css'), 'utf8');
+check('ui: keyboard focus does not change the corner radius of controls', !/:focus-visible\{[^}]*border-radius/.test(cssFinal));
+check('ui: inputs and selects share one minimum height', /input:not\(\[type=checkbox\]\):not\(\[type=file\]\),select\{min-height:38px\}/.test(cssFinal));
 
-    <div class="fg mt-14 settings-box">
-      <label class="box-lbl" data-i18n="lbl.chainProxy">قابلیت Chain Proxy — ثابت کردن IP خروجی (اختیاری)</label>
-      <textarea id="chainConfig" placeholder="مثال: vless://... یا trojan://... یا ss://... یا socks://... یا http://..." data-i18n-placeholder="ph.chainConfig" autocomplete="off"></textarea>
-      <p class="hint mt-8" data-i18n="hint.chainInfo">یک کانفیگ با فرمت URL از یک سرور دیگر (مثلاً یک VPS با IP ثابت) اینجا وارد کنید تا کانفیگ‌های TCB به آن Chain شوند: ابتدا از طریق Worker یا Pages شما (برای عبور از فیلترینگ) و سپس از طریق این سرور به اینترنت متصل می‌شوید — یعنی IP خروجی شما همیشه ثابت و برابر با IP همان سرور خواهد بود. فرمت‌های پشتیبانی‌شده: VLESS (tcp/ws/grpc با none/tls/reality)، Trojan (tcp/ws/grpc با tls)، Shadowsocks، SOCKS5 و HTTP. این قابلیت فقط روی کانفیگ‌های JSON برای Xray، Sing-box و Clash اعمال می‌شود (نه روی کانفیگ‌های تکی فرمت لینک)، چون Chain به دو گره هماهنگ نیاز دارد که فقط در یک فایل کانفیگ کامل قابل تعریف است. وقتی این قابلیت فعال باشد، ایموجی ⛓️ کنار نام کانفیگ‌های JSON اضافه می‌شود. برای غیرفعال کردن، این کادر را خالی بگذارید. نکته مهم: کانفیگی که اینجا وارد می‌کنید نباید مربوط به یک Cloudflare Worker یا Pages دیگر باشد، چون هیچ‌کدام آی‌پی اختصاصی و ثابت ندارند؛ حتماً از کانفیگ یک سرور واقعی (مثل VPS) با آی‌پی اختصاصی خودش استفاده کنید تا هدف ثابت ماندن IP خروجی برآورده شود.</p>
-    </div>
+setVal('wdom', 'myworker.someone.workers.dev'); setVal('ips', '104.16.0.1');
+click('gb'); await sleep(800);
+const qrButton = w.document.createElement('button');
+qrButton.className = 'bqr'; qrButton.dataset.cfg = encodeURIComponent('x'.repeat(5000));
+$('lAll').appendChild(qrButton);
+qrButton.dispatchEvent(new w.MouseEvent('click', { bubbles: true })); await sleep(50);
+check('errors: a config too long for a QR code shows the translated message and keeps the modal closed', $('toast').textContent === translations.fa['toast.qrTooLong'] && !$('qrModal').classList.contains('show'));
+qrButton.dataset.cfg = encodeURIComponent('vless://short'); qrButton.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+check('errors: a normal config still opens the QR modal', $('qrModal').classList.contains('show') && $('qrModalBox').innerHTML.includes('<svg'));
+click('qrModalClose'); qrButton.remove();
 
-    <div class="fg mt-14 settings-box">
-      <label class="box-lbl" data-i18n="lbl.configNameBox">نام کانفیگ</label>
-      <label for="jsonName" data-i18n="lbl.jsonName">نام کانفیگ (اختیاری)</label>
-      <input type="text" id="jsonName" placeholder="در صورت خالی بودن، نام به‌صورت خودکار تعیین می‌شود" data-i18n-placeholder="ph.jsonName" autocomplete="off"/>
-      <p class="hint" data-i18n="hint.jsonNameInfo">این نام روی هر سه کانفیگ Xray، Sing-box و Clash و همچنین نام فایل‌های دانلودی اعمال می‌شود. اگر خالی بماند، پنل نام پیش‌فرض را بر اساس Normal، Fragment یا ECH انتخاب خواهد کرد.</p>
-    </div>
-   </div>
-  </div>
-</div>
+click('gb');
+$('btn-lang-en').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+check('ui: switching language while generating keeps the loading label', $('gb').classList.contains('loading') && $('gb').textContent.includes(translations.en['gen.building']), $('gb').textContent);
+await sleep(800);
+check('ui: after generating the button shows the finished label in the current language', !$('gb').disabled && $('gb').textContent.trim() === translations.en['gen.built'].trim(), $('gb').textContent);
+$('btn-lang-fa').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
 
-<button class="bgen mt-14" id="gb" data-i18n="btn.generate">⚙ ساخت کانفیگ</button>
-<button class="bgen-danger" id="btn-reset-all" type="button" data-i18n="btn.resetAll">🔄 پاکسازی کامل و شروع مجدد</button>
+const roundTripState = () => { const c = JSON.parse(w.IO.exportSettingsToString()); delete c.exportedAt; return JSON.stringify(c); };
+const roundTripScenarios = [
+  () => { setCk('fragEnable', true); setCk('frag2Enable', true); setVal('fragPackets', '1-3'); setVal('localDns', '9.9.9.9'); },
+  () => { $('lanAccess').value = '1'; $('lanAccess').dispatchEvent(new w.Event('change', { bubbles: true })); setVal('lanUsername', 'ünï'); setVal('lanPassword', 'p:w "x"'); setVal('chainConfig', 'socks://dXNlcjpwYXNz@1.2.3.4:1080'); },
+  () => { setCk('echEnable', true); setVal('echDns', 'https://dns.example/q'); setCk('tgEnable', true); setCk('tgPadding', true); setCk('customDomainUsed', true); setVal('customDomainInput', 'my.example.org'); setCk('routeCn', true); setCk('blockPorn', true); setCk('sanctionOpenai', true); setVal('customBlockRules', 'a.com\n  b.com  '); setVal('jsonName', '  Name ß '); setVal('leastLoadSampling', '7'); }
+];
+for (let i = 0; i < roundTripScenarios.length; i++) {
+  w.confirm = () => true;
+  click('btn-reset-all'); await sleep(30);
+  setVal('uid', '11111111-2222-4333-8444-555555555555'); setVal('tpw', 'pw'); setVal('wdom', 'a.workers.dev'); setVal('ips', '1.1.1.1\n2.2.2.2');
+  roundTripScenarios[i]();
+  const before = roundTripState();
+  const exported = w.IO.exportSettingsToString();
+  click('btn-reset-all'); await sleep(30);
+  check(`round trip ${i + 1}: reset really clears the state`, roundTripState() !== before);
+  await importFile(exported);
+  { const after = roundTripState(); const diffs = []; const A = JSON.parse(before).data, B = JSON.parse(after).data; const cmp = (x, y, pth) => { if (x && typeof x === 'object') { for (const k of Object.keys(x)) cmp(x[k], y ? y[k] : undefined, pth + '.' + k); } else if (JSON.stringify(x) !== JSON.stringify(y)) diffs.push(pth + ': ' + JSON.stringify(x) + ' -> ' + JSON.stringify(y)); }; cmp(A, B, ''); check(`round trip ${i + 1}: export, reset and import restores every setting`, before === after, diffs.join('; ')); }
+  check(`round trip ${i + 1}: LAN credential boxes follow the restored Allow LAN value`, ($('lanAuthWrap').style.display === 'none') === ($('lanAccess').value !== '1'));
+}
 
-<div id="results">
-  <hr class="dv"/>
-  <div class="sec">
-    <div class="sec-hdr">
-      <div class="sec-title"><i class="dot-orange"></i><span data-i18n="res.xrayTitle">کانفیگ JSON — Xray 🚀</span></div>
-      <div class="flex-gap-6">
-        <button class="cb" id="btn-cp-json" data-i18n="btn.copyJson">⎘ کپی JSON</button>
-        <button class="cb" id="btn-dl-json" data-i18n="btn.dlJsonFile">↓ دانلود TCB.json</button>
-      </div>
-    </div>
-    <div class="sec-body">
-      <div class="code-viewer">
-        <div class="code-viewer-header">
-          <div class="code-viewer-filename"><span class="lang-dot dot-json-orange"></span><span class="fname">TCB.json</span></div>
-          <div class="code-viewer-actions">
-            <button class="btn-cpscript" id="btn-cp-json-2" data-i18n="btn.copy">⎘ کپی</button>
-            <button class="btn-cpscript" id="btn-dl-json-2" data-i18n="btn.download">↓ دانلود</button>
-          </div>
-        </div>
-        <div class="code-viewer-body lg">
-          <div class="code-box" id="jsonDisplay"></div>
-        </div>
-      </div>
-      <p class="hint mt-10" data-i18n="hint.xrayUsage">این کانفیگ را در v2rayNG یا هر کلاینت سازگار با Xray وارد کن — از حالت least ping برای انتخاب سریع‌ترین سرور استفاده می‌کند.</p>
-    </div>
-  </div>
-  <div class="sec">
-    <div class="sec-hdr">
-      <div class="sec-title"><i class="dot-green"></i><span data-i18n="res.singboxTitle">کانفیگ JSON — Sing-box 📦</span></div>
-      <div class="flex-gap-6">
-        <button class="cb" id="btn-cp-singbox" data-i18n="btn.copyJson">⎘ کپی JSON</button>
-        <button class="cb" id="btn-dl-singbox" data-i18n="btn.dlJsonFile">↓ دانلود TCB.json</button>
-      </div>
-    </div>
-    <div class="sec-body">
-      <div class="code-viewer">
-        <div class="code-viewer-header">
-          <div class="code-viewer-filename"><span class="lang-dot dot-json-green"></span><span class="fname">TCB_Singbox.json</span></div>
-          <div class="code-viewer-actions">
-            <button class="btn-cpscript" id="btn-cp-singbox-2" data-i18n="btn.copy">⎘ کپی</button>
-            <button class="btn-cpscript" id="btn-dl-singbox-2" data-i18n="btn.download">↓ دانلود</button>
-          </div>
-        </div>
-        <div class="code-viewer-body lg">
-          <div class="code-box" id="singboxDisplay"></div>
-        </div>
-      </div>
-      <p class="hint mt-10" data-i18n="hint.singboxUsage">این کانفیگ مستقیماً برای Sing-box و کلاینت‌های مبتنی بر هسته‌ی Sing-box ساخته شده و در صورت فعال بودن ECH، این قابلیت روی آن نیز اعمال می‌شود (Fragment و سایر تنظیمات شما نیز اعمال شده‌اند).</p>
-    </div>
-  </div>
-  <div class="sec">
-    <div class="sec-hdr">
-      <div class="sec-title"><i class="dot-purple"></i><span data-i18n="res.clashTitle">کانفیگ JSON — Clash 🐱</span></div>
-      <div class="flex-gap-6">
-        <button class="cb" id="btn-cp-clash" data-i18n="btn.copyJson">⎘ کپی JSON</button>
-        <button class="cb" id="btn-dl-clash" data-i18n="btn.dlYamlFile">↓ دانلود TCB.yaml</button>
-      </div>
-    </div>
-    <div class="sec-body">
-      <div class="code-viewer">
-        <div class="code-viewer-header">
-          <div class="code-viewer-filename"><span class="lang-dot dot-yaml"></span><span class="fname">TCB.yaml</span></div>
-          <div class="code-viewer-actions">
-            <button class="btn-cpscript" id="btn-cp-clash-2" data-i18n="btn.copy">⎘ کپی</button>
-            <button class="btn-cpscript" id="btn-dl-clash-2" data-i18n="btn.download">↓ دانلود</button>
-          </div>
-        </div>
-        <div class="code-viewer-body lg">
-          <div class="code-box" id="clashDisplay"></div>
-        </div>
-      </div>
-      <p class="hint mt-10" data-i18n="hint.clashUsage">فرمت و دانلود این کانفیگ با پسوند <code>.yaml</code> انجام می‌شود تا کلاینت‌های Clash/Mihomo آن را به‌عنوان پروفایل بشناسند. در صورت فعال بودن ECH، این قابلیت روی این کانفیگ نیز اعمال می‌شود. توجه: فرمت Clash/Mihomo اصولاً قابلیت Fragment ندارد، بنابراین تنظیمات Fragment روی این کانفیگ اعمال نمی‌شود.</p>
-    </div>
-  </div>
-  <div class="stats">
-    <div class="stat"><span class="sn sn-blue" id="sv">0</span><div class="sl" data-i18n="stat.tls">کانفیگ TLS</div></div>
-    <div class="stat"><span class="sn sn-orange" id="si">0</span><div class="sl" data-i18n="stat.ws">کانفیگ WS</div></div>
-    <div class="stat"><span class="sn sn-green" id="sa">0</span><div class="sl" data-i18n="stat.total">مجموع</div></div>
-  </div>
-  <div class="sec">
-    <div class="sec-hdr">
-      <div class="sec-title"><svg class="sec-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="2.5" cy="4" r="0.9" fill="currentColor" stroke="none"/><circle cx="2.5" cy="8" r="0.9" fill="currentColor" stroke="none"/><circle cx="2.5" cy="12" r="0.9" fill="currentColor" stroke="none"/><path d="M5.5 4h8M5.5 8h8M5.5 12h8"/></svg><span data-i18n="res.generatedTitle">کانفیگ‌های تولید شده</span></div>
-      <span class="cnt" id="cb2">0</span>
-    </div>
-    <div class="sec-body">
-      <div class="rh">
-        <div class="rt" data-i18n="res.linkConfigs">کانفیگ‌های Link</div>
-        <div class="rh-buttons">
-          <button class="cb" id="btn-cp-all" data-i18n="btn.copyAll">⎘ کپی همه</button>
-          <button class="cb" id="btn-dl-all" data-i18n="btn.dlTxtFile">↓ دانلود TCB.txt</button>
-        </div>
-      </div>
-      <div class="cfgl" id="lAll"></div>
-    </div>
-  </div>
-  <div class="alert ag">
-    <span class="aico">✓</span>
-    <div data-i18n="alert.configsReady">کانفیگ‌ها آماده‌اند. کانفیگ JSON متناسب با کلاینت خودت را انتخاب کن: کانفیگ <strong class="txt-strong">Xray</strong> برای v2rayNG و تمام کلاینت‌های مبتنی بر هسته‌ی Xray، کانفیگ <strong class="txt-strong">Sing-box</strong> برای NekoBox/Hiddify و تمام کلاینت‌های مبتنی بر هسته‌ی Sing-box، و کانفیگ <strong class="txt-strong">Clash</strong> برای Mihomo/Clash Verge و... .</div>
-  </div>
-</div>
+w.confirm = () => true;
+click('btn-reset-all'); await sleep(30);
+setVal('uid', '11111111-2222-4333-8444-555555555555'); setVal('tpw', 'pw'); setVal('wdom', 'a.workers.dev'); setVal('ips', '1.1.1.1');
+const chainForms = {
+  trojan: (hp) => `trojan://pw@${hp}`,
+  vless: (hp) => `vless://11111111-2222-4333-8444-555555555555@${hp}`,
+  'ss (userinfo)': (hp) => `ss://YWVzLTI1Ni1nY206cGFzcw@${hp}`,
+  'ss (whole base64)': (hp) => `ss://${Buffer.from(`aes-256-gcm:pass@${hp}`).toString('base64').replace(/=+$/, '')}`,
+  socks: (hp) => `socks://dXNlcjpwYXNz@${hp}`,
+  http: (hp) => `http://u:p@${hp}`
+};
+const badPorts = ['443abc', '443.5', '+443', '0', '00', '65536', '99999', '-1', '4 43', '٤٤٣', '0x1BB', '1e3', ' 443'];
+let badPortFailures = [];
+for (const [name, mk] of Object.entries(chainForms)) {
+  for (const bp of badPorts) {
+    setVal('chainConfig', mk(`1.2.3.4:${bp}`)); $('lAll').innerHTML = ''; click('gb'); await sleep(20);
+    if (!($('lAll').children.length === 0 && $('toast').textContent === translations.fa['err.chainPortInvalid'])) badPortFailures.push(`${name} :${bp} -> ${$('toast').textContent.slice(0, 40)}`);
+  }
+  for (const hp of ['[2001:db8::1]443', '[2001:db8::1]4', '[2001:db8::1];443']) {
+    setVal('chainConfig', mk(hp)); $('lAll').innerHTML = ''; click('gb'); await sleep(20);
+    if (!($('lAll').children.length === 0 && $('toast').textContent === translations.fa['err.ipv6Invalid'])) badPortFailures.push(`${name} ${hp} -> ${$('toast').textContent.slice(0, 40)}`);
+  }
+  setVal('chainConfig', mk('[2001:db8::1]:abc')); $('lAll').innerHTML = ''; click('gb'); await sleep(20);
+  if (!($('lAll').children.length === 0 && $('toast').textContent === translations.fa['err.chainPortInvalid'])) badPortFailures.push(`${name} [..]:abc`);
+}
+check('chain: every protocol rejects letters, decimals, signs, zero, out-of-range and glued IPv6 ports', badPortFailures.length === 0, badPortFailures.slice(0, 5).join(' | '));
+let goodPortFailures = [];
+for (const [name, mk] of Object.entries(chainForms)) {
+  for (const hp of ['1.2.3.4:1', '1.2.3.4:443', '1.2.3.4:65535', '[2001:db8::1]:1', '[2001:db8::1]:65535']) {
+    setVal('chainConfig', mk(hp)); $('lAll').innerHTML = ''; click('gb'); await sleep(450);
+    if ($('lAll').children.length === 0) goodPortFailures.push(`${name} ${hp} -> ${$('toast').textContent.slice(0, 40)}`);
+  }
+}
+check('chain: every protocol still accepts ports 1, 443 and 65535 with IPv4 and bracketed IPv6', goodPortFailures.length === 0, goodPortFailures.slice(0, 5).join(' | '));
+setVal('chainConfig', 'trojan://pw@1.2.3.4:443abc'); click('gb'); await sleep(20);
+$('btn-lang-en').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+$('lAll').innerHTML = ''; click('gb'); await sleep(20);
+check('chain: the invalid port message is shown in English', $('toast').textContent === translations.en['err.chainPortInvalid']);
+setVal('chainConfig', 'trojan://pw@[2001:db8::1]443'); $('lAll').innerHTML = ''; click('gb'); await sleep(20);
+check('chain: the glued IPv6 message is shown in English', $('toast').textContent === translations.en['err.ipv6Invalid']);
+$('btn-lang-fa').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+setVal('chainConfig', '');
 
-</div>
+setVal('wdom', 'myworker.someone.workers.dev'); setVal('ips', '104.16.0.1');
+click('gb'); await sleep(800);
+const copyUnhandled = [];
+const onCopyRejection = (e) => copyUnhandled.push(String(e));
+process.on('unhandledRejection', onCopyRejection);
+const savedClipboard = Object.getOwnPropertyDescriptor(w.navigator, 'clipboard');
+Object.defineProperty(w.navigator, 'clipboard', { value: undefined, configurable: true });
+const savedExec = w.document.execCommand;
+w.document.execCommand = () => { throw new Error('exec failed'); };
+click('btn-cp-json'); await sleep(60);
+check('copy: a throwing execCommand shows the translated failure message', $('toast').textContent === translations.fa['toast.copyFailed'], $('toast').textContent);
+check('copy: a throwing execCommand leaves no temporary textarea behind', w.document.querySelectorAll('textarea:not([id])').length === 0 && w.document.querySelectorAll('body > textarea').length === 0);
+const savedSelect = w.HTMLTextAreaElement.prototype.select;
+w.HTMLTextAreaElement.prototype.select = function () { throw new Error('select failed'); };
+w.document.execCommand = () => true;
+$('toast').textContent = '';
+click('btn-cp-clash'); await sleep(60);
+check('copy: a throwing select() shows the translated failure message', $('toast').textContent === translations.fa['toast.copyFailed'], $('toast').textContent);
+check('copy: a throwing select() leaves no temporary textarea behind', w.document.querySelectorAll('body > textarea').length === 0);
+w.HTMLTextAreaElement.prototype.select = savedSelect;
+w.document.execCommand = () => true;
+click('btn-cp-json'); await sleep(60);
+check('copy: a successful legacy copy also removes its temporary textarea', $('toast').textContent === translations.fa['toast.jsonCopied'] && w.document.querySelectorAll('body > textarea').length === 0);
+check('copy: no unhandled promise rejection is left by any failing copy path', copyUnhandled.length === 0, copyUnhandled.join());
+process.off('unhandledRejection', onCopyRejection);
+if (savedClipboard) Object.defineProperty(w.navigator, 'clipboard', savedClipboard);
+w.document.execCommand = savedExec;
 
-<div class="footer">
-  <p>Engineered by: <a href="https://t.me/An0nymou3Bot" target="_blank" class="footer-link">Anonymous</a></p>
-</div>
+const failOnce = (el) => {
+  const real = Object.getOwnPropertyDescriptor(w.Element.prototype, 'innerHTML');
+  Object.defineProperty(el, 'innerHTML', { set() { delete el.innerHTML; throw new Error('boom'); }, get() { return real.get.call(el); }, configurable: true });
+};
+const uiState = () => ({
+  rows: [...$('lAll').querySelectorAll('.ctx')].map((e) => e.textContent),
+  counters: ['sv', 'si', 'sa', 'cb2'].map((id) => $(id).textContent),
+  displays: ['jsonDisplay', 'singboxDisplay', 'clashDisplay'].map((id) => $(id).innerHTML),
+  gutters: ['jsonDisplay', 'singboxDisplay', 'clashDisplay'].map((id) => $(id).style.getPropertyValue('--gutter-digits')),
+  results: $('results').style.display,
+  steps: ['sn1', 'sn2', 'sn3', 'sn4'].map((id) => $(id).className)
+});
+const copies = async () => { const out = []; for (const id of ['btn-cp-json', 'btn-cp-singbox', 'btn-cp-clash', 'btn-cp-all']) { click(id); await sleep(20); out.push(clip); } return out; };
+const stateA = uiState(); const copiesA = await copies();
+check('failure: state A has results to protect', stateA.rows.length === 2 && copiesA.every((c) => c.length > 10));
+setVal('ips', '9.9.9.9\n8.8.8.8'); setCk('echEnable', false);
+for (const target of ['singboxDisplay', 'clashDisplay', 'results']) {
+  if (target === 'results') $('results').scrollIntoView = () => { throw new Error('late failure'); }; else failOnce($(target));
+  click('gb'); await sleep(800);
+  const stateAfter = uiState();
+  const toastAfter = $('toast').textContent;
+  check(`failure after partial update (${target}): rows, counters, code views, steps and results visibility are all restored`, JSON.stringify(stateAfter) === JSON.stringify(stateA), Object.keys(stateA).filter((k) => JSON.stringify(stateA[k]) !== JSON.stringify(stateAfter[k])).join());
+  const copiesAfter = await copies();
+  check(`failure after partial update (${target}): copied configs equal the preserved ones`, JSON.stringify(copiesAfter) === JSON.stringify(copiesA));
+  check(`failure after partial update (${target}): visible text equals the copied JSON`, [...$('jsonDisplay').querySelectorAll('.code-content')].map((e) => e.textContent).join('\n') === copiesAfter[0].replace(/\n$/, '').split('\n').map((l) => l || ' ').join('\n'));
+  check(`failure after partial update (${target}): the build button is usable again with the translated error`, !$('gb').disabled && !$('gb').classList.contains('loading') && toastAfter === translations.fa['toast.generateFailed'] && $('gb').textContent.trim() === translations.fa['gen.built'].trim(), `${toastAfter} | ${$('gb').textContent}`);
+  if (target === 'results') delete $('results').scrollIntoView;
+}
+click('gb'); await sleep(800);
+const stateB = uiState(); const copiesB = await copies();
+check('failure: retrying after the failure builds the new results completely', stateB.rows.length === 4 && stateB.rows.every((r) => !stateA.rows.includes(r)) && stateB.counters[2] === '4' && copiesB[3].split('\n').length === 4 && JSON.parse(copiesB[0]) && !$('gb').disabled);
+click('btn-reset-all'); await sleep(400);
+setVal('uid', '11111111-2222-4333-8444-555555555555'); setVal('tpw', 'pw'); setVal('wdom', 'a.workers.dev'); setVal('ips', '1.1.1.1');
+const emptyState = uiState();
+failOnce($('clashDisplay'));
+click('gb'); await sleep(800);
+const firstAfter = uiState();
+check('failure on the first build: nothing from the failed build stays visible or copyable', JSON.stringify(firstAfter) === JSON.stringify(emptyState) && $('results').style.display !== 'block' && $('gb').textContent.trim() === translations.fa['btn.generate'].trim() && !$('gb').disabled, Object.keys(emptyState).filter((k) => JSON.stringify(emptyState[k]) !== JSON.stringify(firstAfter[k])).map((k) => k + ':' + JSON.stringify(emptyState[k]).slice(0, 50) + '=>' + JSON.stringify(firstAfter[k]).slice(0, 50)).join() + ' | ' + $('gb').textContent + ' | ' + $('results').style.display);
 
-<div class="toast" id="toast"></div>
+click('btn-reset-all'); await sleep(400);
+setVal('uid', '11111111-2222-4333-8444-555555555555'); setVal('tpw', 'pw'); setVal('wdom', 'a.workers.dev'); setVal('ips', '1.1.1.1');
+const badIPv6 = ['not-an-ip', '2001:db8::zz', '1::2::3', ':::', '1:2:3:4:5:6:7:8:9', '12345::1', '::ffff:1.2.3', '1.2.3.4', 'g::1', '::1/x', '::1%eth0', '::1 ', ' ::1', ':', '', '2001:db8::1:'];
+const ipv6Failures = [];
+for (const [name, mk] of Object.entries(chainForms)) {
+  for (const addr of badIPv6) {
+    setVal('chainConfig', mk(`[${addr}]:443`)); $('lAll').innerHTML = ''; click('gb'); await sleep(20);
+    if (!($('lAll').children.length === 0 && $('toast').textContent === translations.fa['err.ipv6Invalid'])) ipv6Failures.push(`${name} [${addr}] -> ${$('toast').textContent.slice(0, 40)}`);
+  }
+}
+check('ipv6: every protocol rejects invalid addresses inside the brackets with the translated message', ipv6Failures.length === 0, ipv6Failures.slice(0, 5).join(' | '));
+const goodIPv6 = ['::1', '::', '2001:db8::1', 'fe80::1', '2001:0db8:0000:0000:0000:0000:0000:0001', '1:2:3:4:5:6:7:8', '::ffff:1.2.3.4', '2001:DB8::ABCD'];
+const ipv6Rejected = [];
+for (const [name, mk] of Object.entries(chainForms)) {
+  for (const addr of goodIPv6) {
+    setVal('chainConfig', mk(`[${addr}]:443`)); $('lAll').innerHTML = ''; click('gb'); await sleep(450);
+    if ($('lAll').children.length === 0) ipv6Rejected.push(`${name} [${addr}] -> ${$('toast').textContent.slice(0, 40)}`);
+  }
+}
+check('ipv6: every protocol still accepts compressed, full, mixed and upper-case IPv6 literals', ipv6Rejected.length === 0, ipv6Rejected.slice(0, 5).join(' | '));
+$('btn-lang-en').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+setVal('chainConfig', 'trojan://pw@[not-an-ip]:443'); $('lAll').innerHTML = ''; click('gb'); await sleep(20);
+check('ipv6: the invalid address message is shown in English', $('toast').textContent === translations.en['err.ipv6Invalid']);
+$('btn-lang-fa').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+setVal('chainConfig', '');
 
-<div class="qr-modal" id="qrModal">
-  <div class="qr-modal-inner">
-    <button class="qr-modal-close" id="qrModalClose">✕</button>
-    <div class="qr-modal-box" id="qrModalBox"></div>
-    <p class="qr-modal-hint" data-i18n="qr.hint">این QR Code مخصوص همین کانفیگ است</p>
-  </div>
-</div>
+w.confirm = () => true;
+click('btn-reset-all'); await sleep(400);
+setVal('wdom', 'myworker.someone.workers.dev'); setVal('ips', '104.16.0.1');
+setCk('tgEnable', true);
+const qrLib = w.eval(execFileSync(esbuildBin, ['--bundle', '--format=iife', '--global-name=QRL', '--log-level=error'], { input: `export * from '${path.join(root, 'js/qrcode.js')}';`, encoding: 'utf8' }) + ';QRL');
+const expectedQr = (text) => { const holder = w.document.createElement('div'); holder.innerHTML = qrLib.qrMatrixToSvg(qrLib.generateQRMatrix(text, 'M'), 4); return holder.innerHTML; };
+const tgQrButton = $('btn-qr-tg-link');
+check('tg qr: the button sits right after the copy button in the same row group', !!tgQrButton && tgQrButton.previousElementSibling === $('btn-cp-tg-link') && tgQrButton.parentElement === $('btn-cp-tg-link').parentElement);
+check('tg qr: the button reuses the config QR button style, icon and tooltip conventions', tgQrButton.className === 'bqr' && tgQrButton.textContent === '▦' && tgQrButton.getAttribute('data-i18n-title') === 'title.showQr' && tgQrButton.title === translations.fa['title.showQr'] && tgQrButton.getAttribute('aria-label') === translations.fa['title.showQr']);
+const tgLinkNow = $('tgLink').value;
+check('tg qr: a Telegram link exists to encode', tgLinkNow.startsWith('https://t.me/webproxy?server=myworker.someone.workers.dev&secret='), tgLinkNow);
+tgQrButton.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+check('tg qr: clicking opens the shared modal with the QR of the complete link', $('qrModal').classList.contains('show') && $('qrModalBox').innerHTML === expectedQr(tgLinkNow));
+check('tg qr: the QR is not the hostname-only QR', $('qrModalBox').innerHTML !== expectedQr('myworker.someone.workers.dev'));
+click('qrModalClose');
+check('tg qr: the shared modal closes and is emptied', !$('qrModal').classList.contains('show') && $('qrModalBox').innerHTML === '');
+setCk('tgPadding', true);
+const tgLinkChanged = $('tgLink').value;
+tgQrButton.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+check('tg qr: the latest link value is read at click time', tgLinkChanged !== tgLinkNow && $('qrModalBox').innerHTML === expectedQr(tgLinkChanged));
+$('qrModal').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+check('tg qr: clicking the backdrop still closes the modal', !$('qrModal').classList.contains('show'));
+$('btn-lang-en').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+check('tg qr: the tooltip and label follow a language switch', tgQrButton.title === translations.en['title.showQr'] && tgQrButton.getAttribute('aria-label') === translations.en['title.showQr']);
+$('btn-lang-fa').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+const toastBeforeEmpty = $('toast').textContent;
+$('tgLink').value = '';
+tgQrButton.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+check('tg qr: an empty link does nothing', !$('qrModal').classList.contains('show') && $('qrModalBox').innerHTML === '' && $('toast').textContent === toastBeforeEmpty);
+setVal('tgSecret', 'zz'); $('tgSecret').dispatchEvent(new w.Event('input', { bubbles: true }));
+tgQrButton.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+check('tg qr: an invalid secret leaves the link empty and the button inert', $('tgLink').value === '' && !$('qrModal').classList.contains('show'));
+click('gb'); await sleep(800);
+const rowQr = w.document.querySelector('#lAll .bqr');
+const rowCfg = decodeURIComponent(rowQr.dataset.cfg);
+rowQr.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+check('tg qr: the existing config QR buttons still open the modal with their own config', $('qrModal').classList.contains('show') && $('qrModalBox').innerHTML === expectedQr(rowCfg));
+click('qrModalClose');
 
-<script type="module" src="js/app.js"></script>
-</body>
-</html>
+console.log(`\n${pass}/${pass + fail} ui checks passed.`);
+process.exit(fail ? 1 : 0);
