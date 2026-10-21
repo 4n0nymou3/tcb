@@ -626,5 +626,15 @@ rowQr.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
 check('tg qr: the existing config QR buttons still open the modal with their own config', $('qrModal').classList.contains('show') && $('qrModalBox').innerHTML === expectedQr(rowCfg));
 click('qrModalClose');
 
+const qrHintEl = w.document.querySelector('.qr-modal-hint');
+check('qr hint: the Persian and English texts are the generic ones', translations.fa['qr.hint'] === 'این QR Code شامل لینک یا کانفیگ انتخاب‌شده است.' && translations.en['qr.hint'] === 'This QR code contains the selected link or configuration.');
+check('qr hint: the HTML fallback equals the Persian translation', indexSource.includes('data-i18n="qr.hint">' + translations.fa['qr.hint'] + '</p>'));
+$('btn-lang-fa').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+check('qr hint: the modal shows the Persian hint', qrHintEl.textContent === translations.fa['qr.hint']);
+$('btn-lang-en').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+check('qr hint: the modal shows the English hint after switching language', qrHintEl.textContent === translations.en['qr.hint']);
+$('btn-lang-fa').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+check('qr hint: switching back restores the Persian hint', qrHintEl.textContent === translations.fa['qr.hint']);
+
 console.log(`\n${pass}/${pass + fail} ui checks passed.`);
 process.exit(fail ? 1 : 0);
