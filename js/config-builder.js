@@ -240,8 +240,10 @@ export function buildJsonConfig(token, password, dom, ips, tlsPorts, wsPorts, fp
   let firstProxyTag = null;
   let firstChainTag = null;
 
+  if (!tlsPorts.length) return '';
+
   ips.forEach(ip => {
-    [...tlsPorts.map(p => ({ port: p, security: 'tls' })), ...wsPorts.map(p => ({ port: p, security: 'none' }))].forEach(({ port, security }) => {
+    tlsPorts.map(p => ({ port: p, security: 'tls' })).forEach(({ port, security }) => {
       if (useVless) {
         const tag = 'vless-proxy-' + idx;
         if (!firstProxyTag) firstProxyTag = tag;
