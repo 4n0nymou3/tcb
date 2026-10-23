@@ -244,6 +244,7 @@ function updateWsPortsAvailability() {
   const isPages = deployTarget === 'pages';
   document.getElementById('wsPortsRow').classList.toggle('disabled', isPages);
   document.getElementById('wsPortsPagesNote').style.display = isPages ? 'block' : 'none';
+  document.getElementById('wsPortsXrayNote').style.display = isPages ? 'none' : 'block';
   document.getElementById('customDomainRow').style.display = isPages ? 'none' : 'flex';
   if (isPages) {
     document.querySelectorAll('.pws').forEach(el => { el.checked = false; });
@@ -553,7 +554,8 @@ function gen() {
       document.getElementById('cb2').textContent = allC.length;
 
       lastJsonStr = jsonStr;
-      renderCodeBlock('jsonDisplay', jsonStr, highlightJsonLine);
+      if (jsonStr) renderCodeBlock('jsonDisplay', jsonStr, highlightJsonLine);
+      else renderCodeBlock('jsonDisplay', t('json.xrayNeedsTls'), null);
       lastSingboxStr = singboxStr;
       renderCodeBlock('singboxDisplay', singboxStr, highlightJsonLine);
       lastClashStr = clashStr;
