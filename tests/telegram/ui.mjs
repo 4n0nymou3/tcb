@@ -636,5 +636,26 @@ check('qr hint: the modal shows the English hint after switching language', qrHi
 $('btn-lang-fa').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
 check('qr hint: switching back restores the Persian hint', qrHintEl.textContent === translations.fa['qr.hint']);
 
+const setPorts = (cls, vals) => { w.document.querySelectorAll('.' + cls).forEach((el) => { el.checked = vals.includes(el.value); }); };
+const xrayPlain = (cfg) => JSON.parse(cfg).outbounds.filter((o) => /^(vless|trojan)-proxy-/.test(o.tag) && !(o.streamSettings && o.streamSettings.security));
+setVal('wdom', 'myworker.someone.workers.dev');
+setVal('ips', '104.16.0.1');
+$('lanAccess').value = '0'; $('lanAccess').dispatchEvent(new w.Event('change', { bubbles: true }));
+setCk('protoTrojan', true);
+setPorts('ptls', ['443']); setPorts('pws', ['80', '8080']);
+let mixed = await resultsOf();
+check('xray tls-only: mixed ports keep only TLS proxy outbounds in the Xray JSON', xrayPlain(mixed.xray).length === 0 && JSON.parse(mixed.xray).outbounds.filter((o) => /^(vless|trojan)-proxy-\d+$/.test(o.tag)).length === 2);
+check('xray tls-only: the Sing-box JSON still has the non-TLS ports', /"server_port": 80\b/.test(mixed.sing) && /"server_port": 8080\b/.test(mixed.sing));
+check('xray tls-only: the Clash YAML still has the non-TLS ports', /"port": 80\b/.test(mixed.clash) && /"port": 8080\b/.test(mixed.clash));
+check('xray tls-only: single links still list the non-TLS ports', /VLESS-WS-80/.test($('lAll').textContent) && /TROJAN-WS-8080/.test($('lAll').textContent));
+setPorts('ptls', []); setPorts('pws', ['80']);
+$('lAll').innerHTML = '';
+clip = '';
+let wsOnly = await resultsOf();
+check('xray ws-only: no Xray JSON is produced and nothing can be copied', wsOnly.xray === '');
+check('xray ws-only: the Xray box explains why instead of staying blank', $('jsonDisplay').textContent.includes(translations.fa['json.xrayNeedsTls']));
+check('xray ws-only: Sing-box and Clash are still generated', /"server_port": 80\b/.test(wsOnly.sing) && /"port": 80\b/.test(wsOnly.clash));
+check('xray ws-only: the explanation key exists in both languages', !!translations.fa['json.xrayNeedsTls'] && !!translations.en['json.xrayNeedsTls'] && !!translations.fa['hint.wsPortsXray'] && !!translations.en['hint.wsPortsXray']);
+
 console.log(`\n${pass}/${pass + fail} ui checks passed.`);
 process.exit(fail ? 1 : 0);
