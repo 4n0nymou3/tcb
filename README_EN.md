@@ -6,7 +6,7 @@
 
 <div align="left" dir="ltr">
 
-# Tunnel Config Builder (TCB) v7.1
+# Tunnel Config Builder (TCB) v7.2
 
 A tool for building VLESS and Trojan configs and the Telegram Web Proxy setup package for Cloudflare Workers and Cloudflare Pages — no VPS or personal server required
 
@@ -27,7 +27,7 @@ Tunnel Config Builder is a web-based tool that lets you build VLESS and Trojan c
 - TLS Fingerprint selection from 10 options to bypass DPI
 - WebSocket Path selection
 - Fragment settings to counter deep packet inspection filtering
-- Advanced JSON settings: Fake DNS, IPv6, Allow LAN, TCP Fast Open, Local DNS, Remote DNS / DoH
+- Advanced JSON settings: Fake DNS, IPv6, Allow LAN, TCP Fast Open, Log Level, Local DNS, Remote DNS / DoH
 - ECH support to encrypt the Client Hello and hide the SNI from DPI systems
 - Configurable routing rules: select Iran, China, and Russia for direct routing (Bypass), and select the Ads, Porn, QUIC, Malware, Phishing, and Cryptominers categories for blocking; both groups apply simultaneously across all three output formats (Xray, Sing-box, Clash)
 - **Bypass Sanctions**: direct routing for sanctioned services (OpenAI, Google AIs, Anthropic, xAI, Microsoft, Oracle, Docker, Adobe, Epic Games, Intel, AMD, Nvidia, Asus, HP, Lenovo) using a configurable anti-sanction DNS (default: 178.22.122.100), even if your outbound IP is detected as Iranian
@@ -76,7 +76,7 @@ This step and Steps 2 to 4 are for building VLESS and Trojan configs by copying 
 
 At any step, you can use the "📤 Export Settings" button to download a backup file of all settings entered on the page (Token, Password, selected protocols, Worker/Pages address, IPs, ports, Fingerprint, WebSocket Path, Fragment settings, advanced JSON settings, ECH, DNS, routing rules, Observatory Settings, Chain Proxy, and the config name). Use the "📥 Import Settings" button to load that same file back into the page so all settings are restored automatically.
 
-This button only accepts a file that was exported from this exact same version of TCB. Settings files from older versions (even if manually edited) are always rejected, so an incomplete or version-mismatched set of settings can never be applied to the page by mistake. If you kept a settings file from an older version of TCB, you'll need to re-enter your settings manually in this version once, then export a fresh file so it can be imported going forward.
+The app version (7.2) and the settings-file schema version (schema 8) are two separate things. This button only accepts settings files with schema 8 and valid schema 7 files (from TCB 7.1). A schema 7 file has no Log Level field, so importing it sets Log Level to `none` to preserve its previous behavior; for fresh use of the page the default is `warning`. Files from older versions (even if manually edited) and files with a future schema are always rejected, so an incomplete or mismatched set of settings can never be applied to the page by mistake. If you kept a settings file from a version older than 7.1, you'll need to re-enter your settings manually in this version once, then export a fresh file.
 
 ### Step 3 — Build the Config
 
@@ -422,6 +422,7 @@ Simply enabling the checkbox is enough. The default address in the DNS box (Clou
 - **IPv6**: enable or disable IPv6 support.
 - **Allow LAN**: lets other devices on the local network use the proxy.
 - **TCP Fast Open**: improves connection speed by reducing handshake latency.
+- **Log Level**: choose one of five levels — `debug`, `info`, `warning`, `error` or `none` — for the log of the JSON configs of all three cores (Xray, Sing-box and Clash/Mihomo). The default is `warning`, and `none` turns logging off completely. The chosen value is converted to match each core's own structure: in Sing-box `warning` becomes `warn` and `none` becomes `disabled: true`; in Clash/Mihomo `none` becomes `silent`; in Xray the chosen value is placed in `loglevel`, the Access Log is always disabled, and with `none` the Error Log is disabled too. No log file path is ever written into the config.
 - **Local DNS**: the DNS server used to resolve domestic domains of the selected countries (default: 8.8.8.8).
 - **Remote DNS / DoH**: the DNS server for traffic outside the selected countries (default: Cloudflare DoH). You can use the [DoH Proxy](https://github.com/4n0nymou3/cloudflare-doh-proxy) tool to build your own dedicated DoH server on Cloudflare.
 
