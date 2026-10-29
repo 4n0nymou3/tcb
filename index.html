@@ -29,7 +29,7 @@
       </div>
       <p class="hdr-sub" data-i18n="hdr.sub">ساخت کانفیگ‌های VLESS و Trojan برای Cloudflare Worker و Pages، به‌همراه قابلیت Telegram Web Proxy</p>
       <div class="badges">
-        <span class="badge"><span class="badge-label">TCB</span><span class="badge-value bv-blue">v7.1</span></span>
+        <span class="badge"><span class="badge-label">TCB</span><span class="badge-value bv-blue">v7.2</span></span>
         <span class="badge"><span class="badge-label">license</span><span class="badge-value bv-purple">MIT</span></span>
       </div>
     </div>
@@ -390,6 +390,16 @@
           <select id="tcpFastOpen">
             <option value="0">Disabled</option>
             <option value="1">Enabled</option>
+          </select>
+        </div>
+        <div>
+          <label class="adv-lbl txt-dir" for="logLevel" data-i18n="lbl.logLevel">سطح لاگ</label>
+          <select id="logLevel">
+            <option value="debug">debug</option>
+            <option value="info">info</option>
+            <option value="warning" selected>warning</option>
+            <option value="error">error</option>
+            <option value="none">none</option>
           </select>
         </div>
       </div>
