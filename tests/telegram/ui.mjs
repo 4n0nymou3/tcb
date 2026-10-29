@@ -147,19 +147,19 @@ setCk('tgPadding', true);
 const baseBefore = $('tgSecret').dataset.base;
 const exportedText = w.IO.exportSettingsToString('worker');
 const payload = JSON.parse(exportedText);
-check('settings: schema version is 7 and telegram block is present', payload.schemaVersion === 7 && payload.data.telegramWebProxy.enabled === true && payload.data.telegramWebProxy.secretBase === baseBefore && payload.data.telegramWebProxy.randomPadding === true);
-check('settings: v7 payload passes compatibility check', w.IO.isCompatibleExport(payload));
+check('settings: schema version is 8 and telegram block is present', payload.schemaVersion === 8 && payload.data.telegramWebProxy.enabled === true && payload.data.telegramWebProxy.secretBase === baseBefore && payload.data.telegramWebProxy.randomPadding === true);
+check('settings: v8 payload passes compatibility check', w.IO.isCompatibleExport(payload));
 setCk('tgEnable', false); setCk('tgPadding', false); $('tgSecret').dataset.base = '';
 w.IO.applyImportedSettings(payload);
 check('settings: import restores enabled, padding and secret base', $('tgEnable').checked && $('tgPadding').checked && $('tgSecret').dataset.base === baseBefore);
 const broken = JSON.parse(exportedText); broken.data.telegramWebProxy.secretBase = 'zz';
-check('settings: v7 payload with invalid secret base is rejected', !w.IO.isCompatibleExport(broken));
+check('settings: v8 payload with invalid secret base is rejected', !w.IO.isCompatibleExport(broken));
 const missing = JSON.parse(exportedText); delete missing.data.telegramWebProxy;
-check('settings: v7 payload without telegram block is rejected', !w.IO.isCompatibleExport(missing));
+check('settings: v8 payload without telegram block is rejected', !w.IO.isCompatibleExport(missing));
 const v7NoLan = JSON.parse(exportedText); delete v7NoLan.data.advancedJson.lanPassword;
-check('settings: v7 payload without LAN password is rejected', !w.IO.isCompatibleExport(v7NoLan));
+check('settings: v8 payload without LAN password is rejected', !w.IO.isCompatibleExport(v7NoLan));
 const badSelect = JSON.parse(exportedText); badSelect.data.fingerprint = 'nonexistent';
-check('settings: v7 payload with an unknown select value is rejected', !w.IO.isCompatibleExport(badSelect));
+check('settings: v8 payload with an unknown select value is rejected', !w.IO.isCompatibleExport(badSelect));
 const asVersion = (v) => { const c = JSON.parse(exportedText); if (v === undefined) delete c.schemaVersion; else c.schemaVersion = v; return c; };
 check('settings: v6 file with current fields present is rejected', !w.IO.isCompatibleExport(asVersion(6)));
 const v6Plain = asVersion(6); delete v6Plain.data.advancedJson.lanUsername; delete v6Plain.data.advancedJson.lanPassword;
@@ -167,7 +167,7 @@ check('settings: genuine v6 file is rejected', !w.IO.isCompatibleExport(v6Plain)
 const v5Plain = asVersion(5); delete v5Plain.data.advancedJson.lanUsername; delete v5Plain.data.advancedJson.lanPassword; delete v5Plain.data.telegramWebProxy;
 check('settings: genuine v5 file is rejected', !w.IO.isCompatibleExport(v5Plain));
 check('settings: v5 file with current fields present is rejected', !w.IO.isCompatibleExport(asVersion(5)));
-check('settings: missing, string and future schema versions are rejected', !w.IO.isCompatibleExport(asVersion(undefined)) && !w.IO.isCompatibleExport(asVersion('7')) && !w.IO.isCompatibleExport(asVersion(8)) && !w.IO.isCompatibleExport(asVersion(null)));
+check('settings: missing, string and future schema versions are rejected', !w.IO.isCompatibleExport(asVersion(undefined)) && !w.IO.isCompatibleExport(asVersion('7')) && !w.IO.isCompatibleExport(asVersion('8')) && !w.IO.isCompatibleExport(asVersion(9)) && !w.IO.isCompatibleExport(asVersion(null)));
 const wrongApp = JSON.parse(exportedText); wrongApp.appId = 'other';
 check('settings: wrong appId is not a valid import payload', !w.IO.isValidImportPayload(wrongApp));
 
@@ -197,7 +197,7 @@ await importFile(JSON.stringify(v6Plain));
 check('settings: rejected old file shows the translated error toast', $('toast').textContent === translations.fa['toast.oldSettingsFile']);
 const goodFile = JSON.parse(exportedText); goodFile.data.fragment.packets = 'sentinel-after';
 await importFile(JSON.stringify(goodFile));
-check('settings: valid v7 file imports through the real file input', $('fragPackets').value === 'sentinel-after');
+check('settings: valid v8 file imports through the real file input', $('fragPackets').value === 'sentinel-after');
 
 const topKeys = Object.keys(JSON.parse(exportedText));
 check('export: metadata keys come first in a fixed order', JSON.stringify(topKeys) === JSON.stringify(['appId', 'schemaVersion', 'exportedAt', 'data']));
@@ -210,7 +210,7 @@ const controlFor = {
   'fragment.enabled': 'fragEnable', 'fragment.packets': 'fragPackets', 'fragment.interval': 'fragInterval', 'fragment.length': 'fragLength', 'fragment.maxSplit': 'fragMaxSplit',
   'fragment.stage2.enabled': 'frag2Enable', 'fragment.stage2.packets': 'frag2Packets', 'fragment.stage2.interval': 'frag2Interval', 'fragment.stage2.length': 'frag2Length', 'fragment.stage2.maxSplit': 'frag2MaxSplit',
   'fragment.xrayTls.unsafeFingerprint': 'fpUnsafeXray', 'fragment.xrayTls.cipherSuites': 'cipherSuitesXray',
-  'advancedJson.fakeDns': 'fakeDns', 'advancedJson.ipv6': 'ipv6', 'advancedJson.lanAccess': 'lanAccess', 'advancedJson.tcpFastOpen': 'tcpFastOpen', 'advancedJson.lanUsername': 'lanUsername', 'advancedJson.lanPassword': 'lanPassword',
+  'advancedJson.fakeDns': 'fakeDns', 'advancedJson.ipv6': 'ipv6', 'advancedJson.lanAccess': 'lanAccess', 'advancedJson.tcpFastOpen': 'tcpFastOpen', 'advancedJson.logLevel': 'logLevel', 'advancedJson.lanUsername': 'lanUsername', 'advancedJson.lanPassword': 'lanPassword',
   'ech.enabled': 'echEnable', 'ech.dns': 'echDns', 'dns.local': 'localDns', 'dns.remote': 'remoteDns',
   'routingCountries.ir': 'routeIr', 'routingCountries.cn': 'routeCn', 'routingCountries.ru': 'routeRu',
   'blockRules.ads': 'blockPromo', 'blockRules.porn': 'blockPorn', 'blockRules.quic': 'blockQuic', 'blockRules.malware': 'blockMalware', 'blockRules.phishing': 'blockPhishing', 'blockRules.cryptominers': 'blockCryptominers',
@@ -273,7 +273,7 @@ click('gb'); await sleep(700);
 check('lan auth: colon in username blocks generation', $('jsonDisplay').textContent === '');
 setVal('lanUsername', 'alice');
 const exp7 = JSON.parse(w.IO.exportSettingsToString());
-check('lan auth: export carries credentials after tcpFastOpen', exp7.data.advancedJson.lanUsername === 'alice' && exp7.data.advancedJson.lanPassword === 'p@ss:w"o\\rd' && Object.keys(exp7.data.advancedJson).join() === 'fakeDns,ipv6,lanAccess,tcpFastOpen,lanUsername,lanPassword');
+check('lan auth: export carries credentials after tcpFastOpen and logLevel', exp7.data.advancedJson.lanUsername === 'alice' && exp7.data.advancedJson.lanPassword === 'p@ss:w"o\\rd' && Object.keys(exp7.data.advancedJson).join() === 'fakeDns,ipv6,lanAccess,tcpFastOpen,logLevel,lanUsername,lanPassword');
 setVal('lanUsername', ''); setVal('lanPassword', '');
 $('lanAccess').value = '0'; $('lanAccess').dispatchEvent(new w.Event('change', { bubbles: true }));
 w.IO.applyImportedSettings(exp7);
@@ -656,6 +656,110 @@ check('xray ws-only: no Xray JSON is produced and nothing can be copied', wsOnly
 check('xray ws-only: the Xray box explains why instead of staying blank', $('jsonDisplay').textContent.includes(translations.fa['json.xrayNeedsTls']));
 check('xray ws-only: Sing-box and Clash are still generated', /"server_port": 80\b/.test(wsOnly.sing) && /"port": 80\b/.test(wsOnly.clash));
 check('xray ws-only: the explanation key exists in both languages', !!translations.fa['json.xrayNeedsTls'] && !!translations.en['json.xrayNeedsTls'] && !!translations.fa['hint.wsPortsXray'] && !!translations.en['hint.wsPortsXray']);
+
+w.confirm = () => true;
+click('btn-reset-all'); await sleep(400);
+setVal('wdom', 'myworker.someone.workers.dev'); setVal('ips', '104.16.0.1');
+const logSelect = $('logLevel');
+const logOptions = [...logSelect.options].map((o) => o.value);
+check('log level: the dropdown exists inside the advanced JSON settings box', !!logSelect && logSelect.tagName === 'SELECT' && logSelect.closest('.settings-box') === $('fakeDns').closest('.settings-box') && logSelect.closest('.adv-grid') === $('tcpFastOpen').closest('.adv-grid'));
+check('log level: exactly five options in the required order', JSON.stringify(logOptions) === JSON.stringify(['debug', 'info', 'warning', 'error', 'none']) && [...logSelect.options].every((o) => o.textContent === o.value), logOptions.join());
+check('log level: warning is the default selection', logSelect.value === 'warning' && [...logSelect.options].find((o) => o.defaultSelected).value === 'warning');
+check('log level: its label is linked to the select and translated in Persian', w.document.querySelector('label[for="logLevel"]').getAttribute('data-i18n') === 'lbl.logLevel' && w.document.querySelector('label[for="logLevel"]').textContent === 'سطح لاگ' && translations.fa['lbl.logLevel'] === 'سطح لاگ');
+$('btn-lang-en').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+check('log level: its label is translated in English', w.document.querySelector('label[for="logLevel"]').textContent === 'Log Level' && translations.en['lbl.logLevel'] === 'Log Level');
+$('btn-lang-fa').dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+logSelect.value = 'debug';
+click('btn-reset-all'); await sleep(400);
+check('log level: Reset restores the warning default', $('logLevel').value === 'warning');
+setVal('wdom', 'myworker.someone.workers.dev'); setVal('ips', '104.16.0.1');
+
+const stripCase = (text) => text.toLowerCase();
+const withoutLog = { xray: (o) => { const c = JSON.parse(o.xray); delete c.log; return stripCase(JSON.stringify(c)); }, sing: (o) => { const c = JSON.parse(o.sing); delete c.log; return stripCase(JSON.stringify(c)); }, clash: (o) => { const c = JSON.parse(o.clash); delete c['log-level']; return stripCase(JSON.stringify(c)); } };
+const singMap = { debug: 'debug', info: 'info', warning: 'warn', error: 'error' };
+const logRuns = {};
+for (const level of ['debug', 'info', 'warning', 'error', 'none']) {
+  $('logLevel').value = level;
+  const out = await resultsOf();
+  logRuns[level] = { out, links: stripCase($('lAll').textContent) };
+  const xl = JSON.parse(out.xray).log; const sl = JSON.parse(out.sing).log; const cl = JSON.parse(out.clash)['log-level'];
+  if (level === 'none') {
+    check('log level none: xray disables access log, error log and the level', xl.access === 'none' && xl.error === 'none' && xl.loglevel === 'none' && JSON.stringify(Object.keys(xl)) === JSON.stringify(['access', 'error', 'loglevel']), JSON.stringify(xl));
+    check('log level none: sing-box log is disabled with no level and keeps the timestamp', sl.disabled === true && sl.timestamp === true && !('level' in sl) && !('output' in sl), JSON.stringify(sl));
+    check('log level none: clash log-level is silent', cl === 'silent', cl);
+  } else {
+    check(`log level ${level}: xray sets the error log level and keeps the access log disabled`, xl.loglevel === level && xl.access === 'none' && !('error' in xl) && JSON.stringify(Object.keys(xl)) === JSON.stringify(['access', 'loglevel']), JSON.stringify(xl));
+    check(`log level ${level}: sing-box enables logging with the mapped level and keeps the timestamp`, sl.disabled === false && sl.level === singMap[level] && sl.timestamp === true && !('output' in sl), JSON.stringify(sl));
+    check(`log level ${level}: clash log-level carries the chosen level`, cl === level, cl);
+  }
+  check(`log level ${level}: no log file path is written into any core`, !/[\/\\]/.test(JSON.stringify(xl)) && !('output' in sl) && !/[\/\\]/.test(String(cl)));
+}
+const logLevelsOnly = Object.keys(logRuns);
+check('log level: the Xray JSON apart from log is identical across all five levels', logLevelsOnly.every((l) => withoutLog.xray(logRuns[l].out) === withoutLog.xray(logRuns.warning.out)));
+check('log level: the Sing-box JSON apart from log is identical across all five levels', logLevelsOnly.every((l) => withoutLog.sing(logRuns[l].out) === withoutLog.sing(logRuns.warning.out)));
+check('log level: the Clash config apart from log-level is identical across all five levels', logLevelsOnly.every((l) => withoutLog.clash(logRuns[l].out) === withoutLog.clash(logRuns.warning.out)));
+check('log level: VLESS and Trojan link output does not depend on the level', logLevelsOnly.every((l) => logRuns[l].links === logRuns.warning.links) && logRuns.warning.links.includes('vless://'));
+check('log level: the default panel produces warning in all three cores', (() => { click('btn-reset-all'); return true; })());
+await sleep(400);
+setVal('wdom', 'myworker.someone.workers.dev'); setVal('ips', '104.16.0.1');
+const defaultOut = await resultsOf();
+check('log level: a default panel build writes warning, warn and warning', JSON.parse(defaultOut.xray).log.loglevel === 'warning' && JSON.parse(defaultOut.sing).log.level === 'warn' && JSON.parse(defaultOut.sing).log.disabled === false && JSON.parse(defaultOut.clash)['log-level'] === 'warning');
+
+const logPayload = (level) => { $('logLevel').value = level; return JSON.parse(w.IO.exportSettingsToString()); };
+for (const level of ['debug', 'info', 'warning', 'error', 'none']) {
+  const p = logPayload(level);
+  $('logLevel').value = level === 'debug' ? 'error' : 'debug';
+  const compatible = w.IO.isCompatibleExport(p);
+  w.IO.applyImportedSettings(p);
+  check(`import/export: logLevel ${level} is saved and restored`, p.schemaVersion === 8 && p.data.advancedJson.logLevel === level && compatible && $('logLevel').value === level);
+}
+const v8Base = logPayload('error');
+const v8Rejects = { 'unknown value': 'verbose', 'empty string': '', 'upper case': 'WARNING', 'trace': 'trace', 'warn': 'warn', 'silent': 'silent', 'number': 3, 'null': null, 'boolean': true, 'array': ['debug'] };
+for (const [label, value] of Object.entries(v8Rejects)) {
+  const bad = JSON.parse(JSON.stringify(v8Base)); bad.data.advancedJson.logLevel = value;
+  check(`import/export: schema 8 with logLevel ${label} is rejected`, !w.IO.isCompatibleExport(bad));
+}
+const v8Missing = JSON.parse(JSON.stringify(v8Base)); delete v8Missing.data.advancedJson.logLevel;
+check('import/export: schema 8 without logLevel is rejected', !w.IO.isCompatibleExport(v8Missing));
+const v7Legacy = JSON.parse(JSON.stringify(v8Base)); v7Legacy.schemaVersion = 7; delete v7Legacy.data.advancedJson.logLevel;
+check('import/export: a valid schema 7 file without logLevel is accepted', w.IO.isCompatibleExport(v7Legacy) && w.IO.isValidImportPayload(v7Legacy));
+$('logLevel').value = 'debug';
+w.IO.applyImportedSettings(v7Legacy);
+check('import/export: importing schema 7 sets logLevel to none', $('logLevel').value === 'none');
+const v7WithField = JSON.parse(JSON.stringify(v8Base)); v7WithField.schemaVersion = 7;
+check('import/export: schema 7 carrying the schema 8 field is rejected', !w.IO.isCompatibleExport(v7WithField));
+const v7Broken = JSON.parse(JSON.stringify(v7Legacy)); delete v7Broken.data.advancedJson.lanPassword;
+check('import/export: a broken schema 7 file is rejected', !w.IO.isCompatibleExport(v7Broken));
+const v7BadSelect = JSON.parse(JSON.stringify(v7Legacy)); v7BadSelect.data.fingerprint = 'nonexistent';
+check('import/export: a schema 7 file with an unknown select value is rejected', !w.IO.isCompatibleExport(v7BadSelect));
+check('import/export: schema 6, 5, 9, "8", null and a missing version are rejected', [6, 5, 9, '8', null, undefined].every((v) => { const c = JSON.parse(JSON.stringify(v8Base)); if (v === undefined) delete c.schemaVersion; else c.schemaVersion = v; return !w.IO.isCompatibleExport(c); }));
+const v6Like = JSON.parse(JSON.stringify(v7Legacy)); v6Like.schemaVersion = 6;
+check('import/export: a schema 6 file shaped like schema 7 is rejected', !w.IO.isCompatibleExport(v6Like));
+$('logLevel').value = 'info'; setVal('fragPackets', 'sentinel-log-before');
+const logStateBefore = comparable();
+for (const [label, value] of [['invalid logLevel', 'verbose'], ['numeric logLevel', 7]]) {
+  const bad = JSON.parse(JSON.stringify(v8Base)); bad.data.advancedJson.logLevel = value; bad.data.fragment.packets = 'sentinel-log-after';
+  await importFile(JSON.stringify(bad));
+  check(`import/export: a rejected file with ${label} leaves every panel setting untouched`, comparable() === logStateBefore && $('fragPackets').value === 'sentinel-log-before');
+}
+await importFile(JSON.stringify(v8Missing));
+check('import/export: a rejected schema 8 file without logLevel changes nothing', comparable() === logStateBefore);
+const v7File = JSON.parse(JSON.stringify(v7Legacy)); v7File.data.fragment.packets = 'sentinel-v7';
+await importFile(JSON.stringify(v7File));
+check('import/export: a schema 7 file imports through the real file input with logLevel none', $('fragPackets').value === 'sentinel-v7' && $('logLevel').value === 'none' && $('toast').textContent === translations.fa['toast.settingsImported'], $('toast').textContent);
+const v8File = JSON.parse(JSON.stringify(v8Base)); v8File.data.advancedJson.logLevel = 'debug';
+await importFile(JSON.stringify(v8File));
+check('import/export: a schema 8 file restores its stored logLevel through the real file input', $('logLevel').value === 'debug');
+const roundLog = JSON.parse(w.IO.exportSettingsToString());
+check('import/export: logLevel sits between tcpFastOpen and the LAN credentials in the exported data', Object.keys(roundLog.data.advancedJson).join() === 'fakeDns,ipv6,lanAccess,tcpFastOpen,logLevel,lanUsername,lanPassword');
+
+const readText = (file) => fs.readFileSync(path.join(root, file), 'utf8');
+const versionBadge = indexSource.match(/<span class="badge-label">TCB<\/span><span class="badge-value[^"]*">([^<]+)<\/span>/);
+check('version: the panel badge shows v7.2', !!versionBadge && versionBadge[1] === 'v7.2', versionBadge && versionBadge[1]);
+check('version: both READMEs announce v7.2 in their title', /^# Tunnel Config Builder \(TCB\) v7\.2$/m.test(readText('README.md')) && /^# Tunnel Config Builder \(TCB\) v7\.2$/m.test(readText('README_EN.md')));
+check('version: no current-version reference to v7.1 remains in the panel, scripts or READMEs', ![indexSource, readText('README.md'), ...fs.readdirSync(path.join(root, 'js')).map((f) => readText('js/' + f))].some((txt) => /TCB\)? v7\.1|badge-value[^>]*>v7\.1/.test(txt)));
+check('version: the app version and the settings schema are independent numbers', versionBadge[1] === 'v7.2' && payload.schemaVersion === 8 && roundLog.schemaVersion === 8 && String(roundLog.schemaVersion) !== versionBadge[1].slice(1));
+check('i18n: the new label key exists in both languages', 'lbl.logLevel' in translations.fa && 'lbl.logLevel' in translations.en);
 
 console.log(`\n${pass}/${pass + fail} ui checks passed.`);
 process.exit(fail ? 1 : 0);
