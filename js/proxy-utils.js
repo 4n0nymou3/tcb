@@ -124,3 +124,9 @@ export function resolveLanAuth(lanAccess, lanUsername, lanPassword) {
   if (!lanAccess || !lanUsername) return null;
   return { username: lanUsername, password: lanPassword };
 }
+
+export const LOG_LEVELS = ['debug', 'info', 'warning', 'error', 'none'];
+
+export function resolveLogLevel(value) {
+  return LOG_LEVELS.includes(value) ? value : 'warning';
+}
