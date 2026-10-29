@@ -1,5 +1,7 @@
 const APP_ID = 'tcb';
-const SCHEMA_VERSION = 7;
+const SCHEMA_VERSION = 8;
+const PREVIOUS_SCHEMA_VERSION = 7;
+const LOG_LEVEL_VALUES = ['debug', 'info', 'warning', 'error', 'none'];
 
 function collectExportData() {
   return {
@@ -51,6 +53,7 @@ function collectExportData() {
         ipv6: document.getElementById('ipv6').value,
         lanAccess: document.getElementById('lanAccess').value,
         tcpFastOpen: document.getElementById('tcpFastOpen').value,
+        logLevel: document.getElementById('logLevel').value,
         lanUsername: document.getElementById('lanUsername').value,
         lanPassword: document.getElementById('lanPassword').value
       },
@@ -152,7 +155,7 @@ function isOptionOf(id, value) {
   return !!el && [...el.options].some(o => o.value === value);
 }
 
-function hasExactExportShape(d) {
+function hasExactExportShape(d, hasLogLevel) {
   if (!isPlainObject(d)) return false;
   if (!isStr(d.token)) return false;
   if (!isStr(d.trojanPassword)) return false;
@@ -191,6 +194,8 @@ function hasExactExportShape(d) {
   if (!isStr(d.advancedJson.ipv6) || !isOptionOf('ipv6', d.advancedJson.ipv6)) return false;
   if (!isStr(d.advancedJson.lanAccess) || !isOptionOf('lanAccess', d.advancedJson.lanAccess)) return false;
   if (!isStr(d.advancedJson.tcpFastOpen) || !isOptionOf('tcpFastOpen', d.advancedJson.tcpFastOpen)) return false;
+  if (hasLogLevel && (!isStr(d.advancedJson.logLevel) || !LOG_LEVEL_VALUES.includes(d.advancedJson.logLevel))) return false;
+  if (!hasLogLevel && 'logLevel' in d.advancedJson) return false;
   if (!isStr(d.advancedJson.lanUsername)) return false;
   if (!isStr(d.advancedJson.lanPassword)) return false;
 
@@ -252,7 +257,9 @@ function hasExactExportShape(d) {
 }
 
 export function isCompatibleExport(payload) {
-  return payload.schemaVersion === SCHEMA_VERSION && hasExactExportShape(payload.data);
+  if (payload.schemaVersion === SCHEMA_VERSION) return hasExactExportShape(payload.data, true);
+  if (payload.schemaVersion === PREVIOUS_SCHEMA_VERSION) return hasExactExportShape(payload.data, false);
+  return false;
 }
 
 export function applyImportedSettings(payload) {
@@ -296,6 +303,7 @@ export function applyImportedSettings(payload) {
   document.getElementById('ipv6').value = d.advancedJson.ipv6;
   document.getElementById('lanAccess').value = d.advancedJson.lanAccess;
   document.getElementById('tcpFastOpen').value = d.advancedJson.tcpFastOpen;
+  document.getElementById('logLevel').value = typeof d.advancedJson.logLevel === 'string' ? d.advancedJson.logLevel : 'none';
   document.getElementById('lanUsername').value = d.advancedJson.lanUsername;
   document.getElementById('lanPassword').value = d.advancedJson.lanPassword;
 
