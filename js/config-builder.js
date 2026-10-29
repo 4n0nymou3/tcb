@@ -371,7 +371,7 @@ export function buildJsonConfig(token, password, dom, ips, tlsPorts, wsPorts, fp
   const sniffingDestOverride = fakeDnsEnable ? ['http', 'tls', 'fakedns'] : ['http', 'tls'];
 
   const configObj = {
-    version: { min: '26.7.28' },
+    version: { min: '26.10.29' },
     dns: {
       hosts: {
         'domain:googleapis.cn': 'googleapis.com',
