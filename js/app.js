@@ -362,6 +362,7 @@ function collectSettings() {
     remoteDnsVal: document.getElementById('remoteDns').value.trim() || 'https://cloudflare-dns.com/dns-query',
     localDnsVal:  document.getElementById('localDns').value.trim()  || '8.8.8.8',
     tcpFastOpen:  document.getElementById('tcpFastOpen').value === '1',
+    logLevel:     document.getElementById('logLevel').value,
     echEnable:    echEnable && !fragEnable,
     echDns:       document.getElementById('echDns').value.trim() || 'https://cloudflare-dns.com/dns-query',
     jsonName:     document.getElementById('jsonName').value.trim(),
