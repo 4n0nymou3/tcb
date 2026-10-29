@@ -1,4 +1,4 @@
-import { randomizeCase, resolveSelectedCountries, resolveSelectedBlockRules, resolveSelectedSanctionRules, resolveTcbLabel, resolveLanAuth } from './proxy-utils.js';
+import { randomizeCase, resolveSelectedCountries, resolveSelectedBlockRules, resolveSelectedSanctionRules, resolveTcbLabel, resolveLanAuth, resolveLogLevel } from './proxy-utils.js';
 
 export function buildConfig(token, dom, ip, port, security, fp, path, label, echActive, echDns) {
   const h = ip.includes(':') ? `[${ip}]` : ip;
@@ -190,12 +190,17 @@ export function buildJsonConfig(token, password, dom, ips, tlsPorts, wsPorts, fp
     frag2Enable, frag2Packets, frag2Length, frag2Interval, frag2MaxSplit,
     fpUnsafeXray, cipherSuitesXray,
     fakeDnsEnable, ipv6Enable, lanAccess, lanUsername, lanPassword, remoteDnsVal, localDnsVal,
-    tcpFastOpen, echEnable, echDns, jsonName, customDomainUsed, customDomain, routingCountries, blockRules,
+    tcpFastOpen, logLevel, echEnable, echDns, jsonName, customDomainUsed, customDomain, routingCountries, blockRules,
     leastPingInterval, leastLoadInterval, leastLoadMode, leastLoadSampling, leastLoadTimeout, parsedChain,
     sanctionDnsVal, sanctionBypass, customBypassRules, customBlockRules, customSanctionRules
   } = settings;
 
   const lanAuth = resolveLanAuth(lanAccess, lanUsername, lanPassword);
+
+  const selectedLogLevel = resolveLogLevel(logLevel);
+  const xrayLog = selectedLogLevel === 'none'
+    ? { access: 'none', error: 'none', loglevel: 'none' }
+    : { access: 'none', loglevel: selectedLogLevel };
 
   const advTls = { frag2Enable, frag2Packets, frag2Length, frag2Interval, frag2MaxSplit, fpUnsafeXray, cipherSuitesXray };
 
@@ -402,7 +407,7 @@ export function buildJsonConfig(token, password, dom, ips, tlsPorts, wsPorts, fp
         tag: 'dns-in'
       }
     ],
-    log: { loglevel: 'none' },
+    log: xrayLog,
     observatory: { enableConcurrency: true, probeInterval: leastPingInterval, probeUrl: 'https://www.gstatic.com/generate_204', subjectSelector: balancerSelector },
     burstObservatory: {
       subjectSelector: balancerSelector,
