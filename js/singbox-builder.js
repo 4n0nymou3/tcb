@@ -1,4 +1,4 @@
-import { randomizeCase, resolveSelectedCountries, resolveSelectedBlockRules, resolveSelectedSanctionRules, durationToSeconds, resolveTcbLabel, resolveLanAuth } from './proxy-utils.js';
+import { randomizeCase, resolveSelectedCountries, resolveSelectedBlockRules, resolveSelectedSanctionRules, durationToSeconds, resolveTcbLabel, resolveLanAuth, resolveLogLevel } from './proxy-utils.js';
 
 function isDomainAddr(addr) {
   return /^(?!-)(?:[A-Za-z0-9-]{1,63}\.)+[A-Za-z]{2,}$/.test(addr);
@@ -122,11 +122,16 @@ function parseDnsUrl(value) {
 export function buildSingboxConfig(token, password, dom, ips, tlsPorts, wsPorts, fp, settings, protocols) {
   const {
     basePath, fragEnable, fakeDnsEnable, ipv6Enable, lanAccess, lanUsername, lanPassword,
-    remoteDnsVal, localDnsVal, tcpFastOpen, routingCountries, blockRules, leastPingInterval, echEnable, parsedChain, jsonName, customDomainUsed, customDomain,
+    remoteDnsVal, localDnsVal, tcpFastOpen, logLevel, routingCountries, blockRules, leastPingInterval, echEnable, parsedChain, jsonName, customDomainUsed, customDomain,
     sanctionDnsVal, sanctionBypass, customBypassRules, customBlockRules, customSanctionRules
   } = settings;
 
   const lanAuth = resolveLanAuth(lanAccess, lanUsername, lanPassword);
+
+  const selectedLogLevel = resolveLogLevel(logLevel);
+  const singboxLog = selectedLogLevel === 'none'
+    ? { disabled: true, timestamp: true }
+    : { disabled: false, level: selectedLogLevel === 'warning' ? 'warn' : selectedLogLevel, timestamp: true };
 
   const selectedCountries = resolveSelectedCountries(routingCountries);
   const geositeTags = selectedCountries.map(c => 'geosite-' + SINGBOX_GEOSITE_SUFFIX[c]);
@@ -408,7 +413,7 @@ export function buildSingboxConfig(token, password, dom, ips, tlsPorts, wsPorts,
   }));
 
   const configObj = {
-    log: { disabled: true, timestamp: true },
+    log: singboxLog,
     dns: {
       servers: dnsServers,
       rules: dnsRules,
