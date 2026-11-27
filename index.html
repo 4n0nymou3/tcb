@@ -29,7 +29,7 @@
       </div>
       <p class="hdr-sub" data-i18n="hdr.sub">ساخت کانفیگ‌های VLESS و Trojan برای Cloudflare Worker و Pages، به‌همراه قابلیت Telegram Web Proxy</p>
       <div class="badges">
-        <span class="badge"><span class="badge-label">TCB</span><span class="badge-value bv-blue">v7.2</span></span>
+        <span class="badge"><span class="badge-label">TCB</span><span class="badge-value bv-blue">v7.3</span></span>
         <span class="badge"><span class="badge-label">license</span><span class="badge-value bv-purple">MIT</span></span>
       </div>
     </div>
@@ -236,6 +236,14 @@
         <label class="ck-lbl"><input type="checkbox" id="protoVless" checked> VLESS</label>
         <label class="ck-lbl"><input type="checkbox" id="protoTrojan"> Trojan</label>
       </div>
+      <div class="fg mt-10 mb-0">
+        <label class="mb-9" for="transport" data-i18n="lbl.transport">نوع انتقال (Transport)</label>
+        <select id="transport">
+          <option value="ws" selected>WebSocket</option>
+          <option value="xhttp">XHTTP (stream-one)</option>
+        </select>
+      </div>
+      <p class="hint mt-8" id="xhttpNote" style="display:none" data-i18n="hint.xhttp">حالت XHTTP فقط VLESS روی پورت‌های TLS می‌سازد و فقط در کانفیگ‌های لینک، Xray و Clash/Mihomo ظاهر می‌شود؛ Sing-box از XHTTP پشتیبانی نمی‌کند.</p>
       <p class="hint mt-8" data-i18n="hint.protocolChoice">می‌توانید فقط VLESS، فقط Trojan یا هر دو را همزمان فعال کنید — تمام کانفیگ‌های Link و فایل‌های JSON/YAML بر اساس همین انتخاب ساخته می‌شوند.</p>
     </div>
 
@@ -265,6 +273,7 @@
         <label class="ck-lbl"><input type="checkbox" class="pws" value="2095"> 2095</label>
       </div>
       <p class="hint" id="wsPortsXrayNote" data-i18n="hint.wsPortsXray">کانفیگ JSON مخصوص Xray (در هسته‌های جدید) فقط پورت‌های TLS را شامل می‌شود، چون این هسته‌ها VLESS و Trojan بدون TLS را برای آدرس عمومی رد می‌کنند؛ کانفیگ‌های Sing-box و Clash و لینک‌های تکی همچنان همهٔ پورت‌های انتخاب‌شده را دارند.</p>
+      <p class="hint" id="wsPortsXhttpNote" style="display:none" data-i18n="hint.wsPortsXhttpDisabled">در حالت XHTTP فقط پورت‌های TLS استفاده می‌شوند، چون XHTTP برای عبور از Cloudflare به HTTP/2 روی TLS نیاز دارد.</p>
       <p class="hint" id="wsPortsPagesNote" style="display:none" data-i18n="hint.wsPortsPagesDisabled">کانفیگ‌های بدون TLS اصلاً روی Cloudflare Pages پشتیبانی نمی‌شوند (این یک محدودیت دائمی خود Cloudflare است، نه TCB) — برای استفاده از این پورت‌ها باید تب Worker را انتخاب کنید.</p>
       </div>
 
