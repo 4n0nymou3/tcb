@@ -147,7 +147,7 @@ setCk('tgPadding', true);
 const baseBefore = $('tgSecret').dataset.base;
 const exportedText = w.IO.exportSettingsToString('worker');
 const payload = JSON.parse(exportedText);
-check('settings: schema version is 8 and telegram block is present', payload.schemaVersion === 8 && payload.data.telegramWebProxy.enabled === true && payload.data.telegramWebProxy.secretBase === baseBefore && payload.data.telegramWebProxy.randomPadding === true);
+check('settings: schema version is 9 and telegram block is present', payload.schemaVersion === 9 && payload.data.telegramWebProxy.enabled === true && payload.data.telegramWebProxy.secretBase === baseBefore && payload.data.telegramWebProxy.randomPadding === true);
 check('settings: v8 payload passes compatibility check', w.IO.isCompatibleExport(payload));
 setCk('tgEnable', false); setCk('tgPadding', false); $('tgSecret').dataset.base = '';
 w.IO.applyImportedSettings(payload);
@@ -167,7 +167,7 @@ check('settings: genuine v6 file is rejected', !w.IO.isCompatibleExport(v6Plain)
 const v5Plain = asVersion(5); delete v5Plain.data.advancedJson.lanUsername; delete v5Plain.data.advancedJson.lanPassword; delete v5Plain.data.telegramWebProxy;
 check('settings: genuine v5 file is rejected', !w.IO.isCompatibleExport(v5Plain));
 check('settings: v5 file with current fields present is rejected', !w.IO.isCompatibleExport(asVersion(5)));
-check('settings: missing, string and future schema versions are rejected', !w.IO.isCompatibleExport(asVersion(undefined)) && !w.IO.isCompatibleExport(asVersion('7')) && !w.IO.isCompatibleExport(asVersion('8')) && !w.IO.isCompatibleExport(asVersion(9)) && !w.IO.isCompatibleExport(asVersion(null)));
+check('settings: missing, string and future schema versions are rejected', !w.IO.isCompatibleExport(asVersion(undefined)) && !w.IO.isCompatibleExport(asVersion('7')) && !w.IO.isCompatibleExport(asVersion('8')) && !w.IO.isCompatibleExport(asVersion(10)) && !w.IO.isCompatibleExport(asVersion(null)));
 const wrongApp = JSON.parse(exportedText); wrongApp.appId = 'other';
 check('settings: wrong appId is not a valid import payload', !w.IO.isValidImportPayload(wrongApp));
 
@@ -201,12 +201,12 @@ check('settings: valid v8 file imports through the real file input', $('fragPack
 
 const topKeys = Object.keys(JSON.parse(exportedText));
 check('export: metadata keys come first in a fixed order', JSON.stringify(topKeys) === JSON.stringify(['appId', 'schemaVersion', 'exportedAt', 'data']));
-const expectedDataKeys = ['deployTarget', 'telegramWebProxy', 'token', 'trojanPassword', 'workerDomain', 'customDomainUsed', 'customDomain', 'fallbackDomain', 'ips', 'protocols', 'tlsPorts', 'wsPorts', 'fingerprint', 'wsPath', 'fragment', 'advancedJson', 'ech', 'dns', 'routingCountries', 'blockRules', 'sanctionDns', 'sanctionBypass', 'customSanctionRules', 'customBypassRules', 'customBlockRules', 'observatory', 'chainConfig', 'jsonName'];
+const expectedDataKeys = ['deployTarget', 'telegramWebProxy', 'token', 'trojanPassword', 'workerDomain', 'customDomainUsed', 'customDomain', 'fallbackDomain', 'ips', 'protocols', 'transport', 'tlsPorts', 'wsPorts', 'fingerprint', 'wsPath', 'fragment', 'advancedJson', 'ech', 'dns', 'routingCountries', 'blockRules', 'sanctionDns', 'sanctionBypass', 'customSanctionRules', 'customBypassRules', 'customBlockRules', 'observatory', 'chainConfig', 'jsonName'];
 check('export: data keys follow the exact panel order', JSON.stringify(Object.keys(JSON.parse(exportedText).data)) === JSON.stringify(expectedDataKeys), Object.keys(JSON.parse(exportedText).data).join());
 const controlFor = {
   deployTarget: 'tab-worker', 'telegramWebProxy.enabled': 'tgEnable', 'telegramWebProxy.secretBase': 'tgSecret', 'telegramWebProxy.randomPadding': 'tgPadding',
   token: 'uid', trojanPassword: 'tpw', workerDomain: 'wdom', customDomainUsed: 'customDomainUsed', customDomain: 'customDomainInput', fallbackDomain: 'fallbackDomain', ips: 'ips',
-  'protocols.vless': 'protoVless', 'protocols.trojan': 'protoTrojan', tlsPorts: '.ptls', wsPorts: '.pws', fingerprint: 'fpSelect', wsPath: 'pathSelect',
+  'protocols.vless': 'protoVless', 'protocols.trojan': 'protoTrojan', transport: 'transport', tlsPorts: '.ptls', wsPorts: '.pws', fingerprint: 'fpSelect', wsPath: 'pathSelect',
   'fragment.enabled': 'fragEnable', 'fragment.packets': 'fragPackets', 'fragment.interval': 'fragInterval', 'fragment.length': 'fragLength', 'fragment.maxSplit': 'fragMaxSplit',
   'fragment.stage2.enabled': 'frag2Enable', 'fragment.stage2.packets': 'frag2Packets', 'fragment.stage2.interval': 'frag2Interval', 'fragment.stage2.length': 'frag2Length', 'fragment.stage2.maxSplit': 'frag2MaxSplit',
   'fragment.xrayTls.unsafeFingerprint': 'fpUnsafeXray', 'fragment.xrayTls.cipherSuites': 'cipherSuitesXray',
@@ -711,9 +711,9 @@ for (const level of ['debug', 'info', 'warning', 'error', 'none']) {
   $('logLevel').value = level === 'debug' ? 'error' : 'debug';
   const compatible = w.IO.isCompatibleExport(p);
   w.IO.applyImportedSettings(p);
-  check(`import/export: logLevel ${level} is saved and restored`, p.schemaVersion === 8 && p.data.advancedJson.logLevel === level && compatible && $('logLevel').value === level);
+  check(`import/export: logLevel ${level} is saved and restored`, p.schemaVersion === 9 && p.data.advancedJson.logLevel === level && compatible && $('logLevel').value === level);
 }
-const v8Base = logPayload('error');
+const v8Base = (() => { const c = logPayload('error'); c.schemaVersion = 8; delete c.data.transport; return c; })();
 const v8Rejects = { 'unknown value': 'verbose', 'empty string': '', 'upper case': 'WARNING', 'trace': 'trace', 'warn': 'warn', 'silent': 'silent', 'number': 3, 'null': null, 'boolean': true, 'array': ['debug'] };
 for (const [label, value] of Object.entries(v8Rejects)) {
   const bad = JSON.parse(JSON.stringify(v8Base)); bad.data.advancedJson.logLevel = value;
@@ -732,7 +732,7 @@ const v7Broken = JSON.parse(JSON.stringify(v7Legacy)); delete v7Broken.data.adva
 check('import/export: a broken schema 7 file is rejected', !w.IO.isCompatibleExport(v7Broken));
 const v7BadSelect = JSON.parse(JSON.stringify(v7Legacy)); v7BadSelect.data.fingerprint = 'nonexistent';
 check('import/export: a schema 7 file with an unknown select value is rejected', !w.IO.isCompatibleExport(v7BadSelect));
-check('import/export: schema 6, 5, 9, "8", null and a missing version are rejected', [6, 5, 9, '8', null, undefined].every((v) => { const c = JSON.parse(JSON.stringify(v8Base)); if (v === undefined) delete c.schemaVersion; else c.schemaVersion = v; return !w.IO.isCompatibleExport(c); }));
+check('import/export: schema 6, 5, 9, "8", null and a missing version are rejected', [6, 5, 10, '8', null, undefined].every((v) => { const c = JSON.parse(JSON.stringify(v8Base)); if (v === undefined) delete c.schemaVersion; else c.schemaVersion = v; return !w.IO.isCompatibleExport(c); }));
 const v6Like = JSON.parse(JSON.stringify(v7Legacy)); v6Like.schemaVersion = 6;
 check('import/export: a schema 6 file shaped like schema 7 is rejected', !w.IO.isCompatibleExport(v6Like));
 $('logLevel').value = 'info'; setVal('fragPackets', 'sentinel-log-before');
@@ -755,10 +755,10 @@ check('import/export: logLevel sits between tcpFastOpen and the LAN credentials 
 
 const readText = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 const versionBadge = indexSource.match(/<span class="badge-label">TCB<\/span><span class="badge-value[^"]*">([^<]+)<\/span>/);
-check('version: the panel badge shows v7.2', !!versionBadge && versionBadge[1] === 'v7.2', versionBadge && versionBadge[1]);
-check('version: both READMEs announce v7.2 in their title', /^# Tunnel Config Builder \(TCB\) v7\.2$/m.test(readText('README.md')) && /^# Tunnel Config Builder \(TCB\) v7\.2$/m.test(readText('README_EN.md')));
+check('version: the panel badge shows v7.3', !!versionBadge && versionBadge[1] === 'v7.3', versionBadge && versionBadge[1]);
+check('version: both READMEs announce v7.3 in their title', /^# Tunnel Config Builder \(TCB\) v7\.3$/m.test(readText('README.md')) && /^# Tunnel Config Builder \(TCB\) v7\.3$/m.test(readText('README_EN.md')));
 check('version: no current-version reference to v7.1 remains in the panel, scripts or READMEs', ![indexSource, readText('README.md'), ...fs.readdirSync(path.join(root, 'js')).map((f) => readText('js/' + f))].some((txt) => /TCB\)? v7\.1|badge-value[^>]*>v7\.1/.test(txt)));
-check('version: the app version and the settings schema are independent numbers', versionBadge[1] === 'v7.2' && payload.schemaVersion === 8 && roundLog.schemaVersion === 8 && String(roundLog.schemaVersion) !== versionBadge[1].slice(1));
+check('version: the app version and the settings schema are independent numbers', versionBadge[1] === 'v7.3' && payload.schemaVersion === 9 && roundLog.schemaVersion === 9 && String(roundLog.schemaVersion) !== versionBadge[1].slice(1));
 check('i18n: the new label key exists in both languages', 'lbl.logLevel' in translations.fa && 'lbl.logLevel' in translations.en);
 
 console.log(`\n${pass}/${pass + fail} ui checks passed.`);
