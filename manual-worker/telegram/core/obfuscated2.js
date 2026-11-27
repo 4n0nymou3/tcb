@@ -106,29 +106,34 @@ class CtrStream {
   }
 }
 const RESERVED_FIRST_WORDS = new Set([1145128264, 1414745936, 541279567, 1229345359, 33489686, 3722304989, 4008636142]);
+function wireHeaderOk(header) {
+  if (header[0] === 239) return false;
+  const first = new DataView(header.buffer, header.byteOffset, 4).getUint32(0, true);
+  if (RESERVED_FIRST_WORDS.has(first)) return false;
+  return (header[4] | header[5] | header[6] | header[7]) !== 0;
+}
 async function dcHandshake(targetDc, tag, randomBytesFn = defaultRandomBytes) {
-  let frame;
   for (;;) {
-    frame = randomBytesFn(64);
+    const frame = randomBytesFn(64);
     if (frame[0] === 239) continue;
     const first = new DataView(frame.buffer, frame.byteOffset, 4).getUint32(0, true);
     if (RESERVED_FIRST_WORDS.has(first)) continue;
     if ((frame[4] | frame[5] | frame[6] | frame[7]) === 0) continue;
-    break;
+    const view = new DataView(frame.buffer, frame.byteOffset, 64);
+    view.setUint32(56, tag, false);
+    view.setInt16(60, targetDc, true);
+    const sendKey = frame.slice(8, 40);
+    const sendIv = frame.slice(40, 56);
+    const recvKey = reverseSlice(frame, 24, 56);
+    const recvIv = reverseSlice(frame, 8, 24);
+    const send = new CtrStream(sendKey, sendIv, 0);
+    const encrypted = await send.process(frame);
+    const header = encrypted.slice();
+    header.set(frame.slice(8, 56), 8);
+    if (!wireHeaderOk(header)) continue;
+    const recv = new CtrStream(recvKey, recvIv, 0);
+    return { header, send, recv };
   }
-  const view = new DataView(frame.buffer, frame.byteOffset, 64);
-  view.setUint32(56, tag, false);
-  view.setInt16(60, targetDc, true);
-  const sendKey = frame.slice(8, 40);
-  const sendIv = frame.slice(40, 56);
-  const recvKey = reverseSlice(frame, 24, 56);
-  const recvIv = reverseSlice(frame, 8, 24);
-  const send = new CtrStream(sendKey, sendIv, 0);
-  const encrypted = await send.process(frame);
-  const header = encrypted.slice();
-  header.set(frame.slice(8, 56), 8);
-  const recv = new CtrStream(recvKey, recvIv, 0);
-  return { header, send, recv };
 }
 export {
   CtrStream,
