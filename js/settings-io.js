@@ -1,6 +1,7 @@
 const APP_ID = 'tcb';
-const SCHEMA_VERSION = 8;
-const PREVIOUS_SCHEMA_VERSION = 7;
+const SCHEMA_VERSION = 9;
+const SCHEMA_VERSION_8 = 8;
+const SCHEMA_VERSION_7 = 7;
 const LOG_LEVEL_VALUES = ['debug', 'info', 'warning', 'error', 'none'];
 
 function collectExportData() {
@@ -26,6 +27,7 @@ function collectExportData() {
         vless: document.getElementById('protoVless').checked,
         trojan: document.getElementById('protoTrojan').checked
       },
+      transport: document.getElementById('transport').value,
       tlsPorts: [...document.querySelectorAll('.ptls:checked')].map(el => el.value),
       wsPorts: [...document.querySelectorAll('.pws:checked')].map(el => el.value),
       fingerprint: document.getElementById('fpSelect').value,
@@ -155,7 +157,7 @@ function isOptionOf(id, value) {
   return !!el && [...el.options].some(o => o.value === value);
 }
 
-function hasExactExportShape(d, hasLogLevel) {
+function hasExactExportShape(d, hasLogLevel, hasTransport) {
   if (!isPlainObject(d)) return false;
   if (!isStr(d.token)) return false;
   if (!isStr(d.trojanPassword)) return false;
@@ -168,6 +170,8 @@ function hasExactExportShape(d, hasLogLevel) {
   if (!isPlainObject(d.protocols)) return false;
   if (!isBool(d.protocols.vless)) return false;
   if (!isBool(d.protocols.trojan)) return false;
+  if (hasTransport && (!isStr(d.transport) || !isOptionOf('transport', d.transport))) return false;
+  if (!hasTransport && 'transport' in d) return false;
   if (!isStrArray(d.tlsPorts)) return false;
   if (!isStrArray(d.wsPorts)) return false;
   if (!isStr(d.fingerprint) || !isOptionOf('fpSelect', d.fingerprint)) return false;
@@ -257,8 +261,9 @@ function hasExactExportShape(d, hasLogLevel) {
 }
 
 export function isCompatibleExport(payload) {
-  if (payload.schemaVersion === SCHEMA_VERSION) return hasExactExportShape(payload.data, true);
-  if (payload.schemaVersion === PREVIOUS_SCHEMA_VERSION) return hasExactExportShape(payload.data, false);
+  if (payload.schemaVersion === SCHEMA_VERSION) return hasExactExportShape(payload.data, true, true);
+  if (payload.schemaVersion === SCHEMA_VERSION_8) return hasExactExportShape(payload.data, true, false);
+  if (payload.schemaVersion === SCHEMA_VERSION_7) return hasExactExportShape(payload.data, false, false);
   return false;
 }
 
@@ -274,6 +279,7 @@ export function applyImportedSettings(payload) {
   document.getElementById('ips').value = d.ips;
   document.getElementById('protoVless').checked = d.protocols.vless;
   document.getElementById('protoTrojan').checked = d.protocols.trojan;
+  document.getElementById('transport').value = typeof d.transport === 'string' ? d.transport : 'ws';
 
   const tlsSet = new Set(d.tlsPorts);
   document.querySelectorAll('.ptls').forEach(el => { el.checked = tlsSet.has(el.value); });
