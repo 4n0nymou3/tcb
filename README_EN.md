@@ -6,7 +6,7 @@
 
 <div align="left" dir="ltr">
 
-# Tunnel Config Builder (TCB) v7.2
+# Tunnel Config Builder (TCB) v7.3
 
 A tool for building VLESS and Trojan configs and the Telegram Web Proxy setup package for Cloudflare Workers and Cloudflare Pages — no VPS or personal server required
 
@@ -26,6 +26,8 @@ Tunnel Config Builder is a web-based tool that lets you build VLESS and Trojan c
 - Support for multiple IPs and domains at once
 - TLS Fingerprint selection from 10 options to bypass DPI
 - WebSocket Path selection
+- Optional XHTTP transport (`stream-one`, VLESS over TLS) for the link, Xray and Clash/Mihomo outputs, besides the default WebSocket
+- DNS queries sent to Cloudflare's own resolvers (1.1.1.1, 1.0.0.1 and the security/family variants) are answered by the Worker through DNS over HTTPS instead of a direct connection
 - Fragment settings to counter deep packet inspection filtering
 - Advanced JSON settings: Fake DNS, IPv6, Allow LAN, TCP Fast Open, Log Level, Local DNS, Remote DNS / DoH
 - ECH support to encrypt the Client Hello and hide the SNI from DPI systems
@@ -77,7 +79,7 @@ This step and Steps 2 to 4 are for building VLESS and Trojan configs by copying 
 
 At any step, you can use the "📤 Export Settings" button to download a backup file of all settings entered on the page (Token, Password, selected protocols, Worker/Pages address, IPs, ports, Fingerprint, WebSocket Path, Fragment settings, advanced JSON settings, ECH, DNS, routing rules, Observatory Settings, Chain Proxy, and the config name). Use the "📥 Import Settings" button to load that same file back into the page so all settings are restored automatically.
 
-The app version (7.2) and the settings-file schema version (schema 8) are two separate things. This button only accepts settings files with schema 8 and valid schema 7 files (from TCB 7.1). A schema 7 file has no Log Level field, so importing it sets Log Level to `none` to preserve its previous behavior; for fresh use of the page the default is `warning`. Files from older versions (even if manually edited) and files with a future schema are always rejected, so an incomplete or mismatched set of settings can never be applied to the page by mistake. If you kept a settings file from a version older than 7.1, you'll need to re-enter your settings manually in this version once, then export a fresh file.
+The app version (7.3) and the settings-file schema version (schema 9) are two separate things. This button accepts settings files with schema 9 and valid schema 8 and 7 files (from TCB 7.2 and 7.1). Schema 8 and 7 files have no Transport field, so importing them sets the transport to WebSocket. A schema 7 file has no Log Level field, so importing it sets Log Level to `none` to preserve its previous behavior; for fresh use of the page the default is `warning`. Files from older versions (even if manually edited) and files with a future schema are always rejected, so an incomplete or mismatched set of settings can never be applied to the page by mistake. If you kept a settings file from a version older than 7.1, you'll need to re-enter your settings manually in this version once, then export a fresh file.
 
 ### Step 3 — Build the Config
 
@@ -344,9 +346,19 @@ This setting determines which browser or device your client presents itself as d
 
 `chrome` — `firefox` — `safari` — `ios` — `android` — `edge` — `360` — `qq` — `random` — `randomized`
 
+### Transport — WebSocket or XHTTP
+
+WebSocket is the default and works as in earlier versions. XHTTP (`stream-one` mode) is optional and only used when you select it.
+
+- It builds VLESS only and TLS ports only (XHTTP needs HTTP/2 over TLS to pass through Cloudflare).
+- It appears only in the links, the Xray JSON and the Clash/Mihomo YAML. The Sing-box core does not support XHTTP, so no Sing-box output is built for it.
+- The Xray core prints a deprecation warning for WebSocket, but it is not removed and WebSocket still works.
+- This mode has not been tested on real Cloudflare: the tests used real Xray and Mihomo clients against a local workerd. If it does not work on your network, go back to WebSocket.
+- Cloudflare limit: a request body can be at most 100 MB and in XHTTP mode each connection is one request, so a very large download or upload on a single connection may be cut.
+
 ### WebSocket Path
 
-The WebSocket path used in the configs. Available options: `/vless`, `/proxy`, `/v2ray`, `/ws`, `/`
+The WebSocket path used in the configs (in XHTTP mode the same path is used for XHTTP). Available options: `/vless`, `/proxy`, `/v2ray`, `/ws`, `/`
 
 ### Non-TLS Ports and the Cloudflare Pages Limitation
 
