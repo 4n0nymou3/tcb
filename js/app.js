@@ -242,12 +242,17 @@ async function dlTelegram() {
 
 function updateWsPortsAvailability() {
   const isPages = deployTarget === 'pages';
-  document.getElementById('wsPortsRow').classList.toggle('disabled', isPages);
+  const isXhttp = document.getElementById('transport').value === 'xhttp';
+  const noPlain = isPages || isXhttp;
+  document.getElementById('wsPortsRow').classList.toggle('disabled', noPlain);
   document.getElementById('wsPortsPagesNote').style.display = isPages ? 'block' : 'none';
-  document.getElementById('wsPortsXrayNote').style.display = isPages ? 'none' : 'block';
+  document.getElementById('wsPortsXhttpNote').style.display = isXhttp && !isPages ? 'block' : 'none';
+  document.getElementById('wsPortsXrayNote').style.display = noPlain ? 'none' : 'block';
   document.getElementById('customDomainRow').style.display = isPages ? 'none' : 'flex';
-  if (isPages) {
+  if (noPlain) {
     document.querySelectorAll('.pws').forEach(el => { el.checked = false; });
+  }
+  if (isPages) {
     document.getElementById('customDomainUsed').checked = false;
     updateCustomDomainField();
   }
@@ -410,15 +415,31 @@ function collectSettings() {
     leastLoadMode: document.getElementById('leastLoadMode').value,
     leastLoadSampling: document.getElementById('leastLoadSampling').value.trim() || '2',
     leastLoadTimeout: document.getElementById('leastLoadTimeout').value.trim() || '30s',
-    chainConfig: document.getElementById('chainConfig').value.trim()
+    chainConfig: document.getElementById('chainConfig').value.trim(),
+    transport: document.getElementById('transport').value === 'xhttp' ? 'xhttp' : 'ws'
   };
 }
 
 function collectProtocols() {
+  if (document.getElementById('transport').value === 'xhttp') return { vless: true, trojan: false };
   return {
     vless: document.getElementById('protoVless').checked,
     trojan: document.getElementById('protoTrojan').checked
   };
+}
+
+function updateTransportUi() {
+  const isXhttp = document.getElementById('transport').value === 'xhttp';
+  const vless = document.getElementById('protoVless');
+  const trojan = document.getElementById('protoTrojan');
+  if (isXhttp) {
+    vless.checked = true;
+    trojan.checked = false;
+  }
+  vless.disabled = isXhttp;
+  trojan.disabled = isXhttp;
+  document.getElementById('xhttpNote').style.display = isXhttp ? 'block' : 'none';
+  updateWsPortsAvailability();
 }
 
 function gen() {
@@ -466,7 +487,7 @@ function gen() {
   if (!ips.length) { toast(t('toast.noIpAfterFilter')); return; }
 
   const tlsPorts = getChecked('ptls');
-  const wsPorts  = getChecked('pws');
+  const wsPorts  = settings.transport === 'xhttp' ? [] : getChecked('pws');
   const fp       = document.getElementById('fpSelect').value;
 
   if (!tlsPorts.length && !wsPorts.length) { toast(t('toast.selectOnePort')); return; }
@@ -503,24 +524,24 @@ function gen() {
         tlsPorts.forEach(port => {
           if (protocols.vless) {
             const label = `VLESS-${ipLabel}-TLS${port}-${fp}`;
-            allC.push({ cfg: buildConfig(token, dom, ip, port, 'tls', fp, settings.basePath, label, settings.echEnable, settings.echDns), tag: `VLESS-TLS-${port}`, tagColor: 'var(--blue)' });
+            allC.push({ cfg: buildConfig(token, dom, ip, port, 'tls', fp, settings.basePath, label, settings.echEnable, settings.echDns, settings.transport), tag: `VLESS-TLS-${port}`, tagColor: 'var(--blue)' });
             tlsCount++;
           }
           if (protocols.trojan) {
             const label = `TROJAN-${ipLabel}-TLS${port}-${fp}`;
-            allC.push({ cfg: buildTrojanConfig(password, dom, ip, port, 'tls', fp, settings.basePath, label, settings.echEnable, settings.echDns), tag: `TROJAN-TLS-${port}`, tagColor: 'var(--green)' });
+            allC.push({ cfg: buildTrojanConfig(password, dom, ip, port, 'tls', fp, settings.basePath, label, settings.echEnable, settings.echDns, settings.transport), tag: `TROJAN-TLS-${port}`, tagColor: 'var(--green)' });
             tlsCount++;
           }
         });
         wsPorts.forEach(port => {
           if (protocols.vless) {
             const label = `VLESS-${ipLabel}-WS${port}`;
-            allC.push({ cfg: buildConfig(token, dom, ip, port, 'none', '', settings.basePath, label, false, ''), tag: `VLESS-WS-${port}`, tagColor: 'var(--orange)' });
+            allC.push({ cfg: buildConfig(token, dom, ip, port, 'none', '', settings.basePath, label, false, '', settings.transport), tag: `VLESS-WS-${port}`, tagColor: 'var(--orange)' });
             wsCount++;
           }
           if (protocols.trojan) {
             const label = `TROJAN-${ipLabel}-WS${port}`;
-            allC.push({ cfg: buildTrojanConfig(password, dom, ip, port, 'none', '', settings.basePath, label, false, ''), tag: `TROJAN-WS-${port}`, tagColor: 'var(--yellow)' });
+            allC.push({ cfg: buildTrojanConfig(password, dom, ip, port, 'none', '', settings.basePath, label, false, '', settings.transport), tag: `TROJAN-WS-${port}`, tagColor: 'var(--yellow)' });
             wsCount++;
           }
         });
@@ -532,12 +553,12 @@ function gen() {
           tlsPorts.forEach(port => {
             if (protocols.vless) {
               const label = `VLESS-${ipLabel}-TLS${port}-${fp}-D`;
-              allC.push({ cfg: buildConfig(token, settings.customDomain, ip, port, 'tls', fp, settings.basePath, label, settings.echEnable, settings.echDns), tag: `VLESS-TLS-${port}-D`, tagColor: 'var(--blue)' });
+              allC.push({ cfg: buildConfig(token, settings.customDomain, ip, port, 'tls', fp, settings.basePath, label, settings.echEnable, settings.echDns, settings.transport), tag: `VLESS-TLS-${port}-D`, tagColor: 'var(--blue)' });
               tlsCount++;
             }
             if (protocols.trojan) {
               const label = `TROJAN-${ipLabel}-TLS${port}-${fp}-D`;
-              allC.push({ cfg: buildTrojanConfig(password, settings.customDomain, ip, port, 'tls', fp, settings.basePath, label, settings.echEnable, settings.echDns), tag: `TROJAN-TLS-${port}-D`, tagColor: 'var(--green)' });
+              allC.push({ cfg: buildTrojanConfig(password, settings.customDomain, ip, port, 'tls', fp, settings.basePath, label, settings.echEnable, settings.echDns, settings.transport), tag: `TROJAN-TLS-${port}-D`, tagColor: 'var(--green)' });
               tlsCount++;
             }
           });
@@ -545,7 +566,7 @@ function gen() {
       }
 
       const jsonStr = buildJsonConfig(token, password, dom, ips, tlsPorts, wsPorts, fp, settings, protocols);
-      const singboxStr = buildSingboxConfig(token, password, dom, ips, tlsPorts, wsPorts, fp, settings, protocols);
+      const singboxStr = settings.transport === 'xhttp' ? '' : buildSingboxConfig(token, password, dom, ips, tlsPorts, wsPorts, fp, settings, protocols);
       const clashStr = buildClashConfig(token, password, dom, ips, tlsPorts, wsPorts, fp, settings, protocols);
 
       document.getElementById('lAll').innerHTML = allC.map((c, i) => row(c, i + 1)).join('');
@@ -558,7 +579,8 @@ function gen() {
       if (jsonStr) renderCodeBlock('jsonDisplay', jsonStr, highlightJsonLine);
       else renderCodeBlock('jsonDisplay', t('json.xrayNeedsTls'), null);
       lastSingboxStr = singboxStr;
-      renderCodeBlock('singboxDisplay', singboxStr, highlightJsonLine);
+      if (singboxStr) renderCodeBlock('singboxDisplay', singboxStr, highlightJsonLine);
+      else renderCodeBlock('singboxDisplay', t('json.singboxNoXhttp'), null);
       lastClashStr = clashStr;
       renderCodeBlock('clashDisplay', clashStr, highlightJsonLine);
 
@@ -710,6 +732,7 @@ function resetAll() {
   toggleLanAuth();
   switchDeployTab('worker');
   updateCustomDomainField();
+  updateTransportUi();
 
   const tok = uuid4();
   const p = genPassword();
@@ -779,6 +802,7 @@ function importSettings(file) {
     }
     const restoredTarget = applyImportedSettings(parsed);
     switchDeployTab(restoredTarget);
+    updateTransportUi();
     updateCustomDomainField();
     updateTelegramUi();
     toggleFrag();
@@ -910,6 +934,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('frag2Enable').addEventListener('change', toggleFrag2);
   document.getElementById('echEnable').addEventListener('change', toggleEch);
   document.getElementById('lanAccess').addEventListener('change', toggleLanAuth);
+  document.getElementById('transport').addEventListener('change', updateTransportUi);
   toggleLanAuth();
   document.getElementById('blockMalware').addEventListener('change', warnBlockRuleToggle);
   document.getElementById('blockPhishing').addEventListener('change', warnBlockRuleToggle);
