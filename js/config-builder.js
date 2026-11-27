@@ -1,16 +1,19 @@
 import { randomizeCase, resolveSelectedCountries, resolveSelectedBlockRules, resolveSelectedSanctionRules, resolveTcbLabel, resolveLanAuth, resolveLogLevel } from './proxy-utils.js';
 
-export function buildConfig(token, dom, ip, port, security, fp, path, label, echActive, echDns) {
+export function buildConfig(token, dom, ip, port, security, fp, path, label, echActive, echDns, transport) {
   const h = ip.includes(':') ? `[${ip}]` : ip;
-  const edPath = path + '?ed=2560';
-  const params = new URLSearchParams({
+  const isXhttp = transport === 'xhttp';
+  const params = new URLSearchParams(isXhttp ? {
+    encryption: 'none', security: security, type: 'xhttp',
+    host: dom, path: path, mode: 'stream-one'
+  } : {
     encryption: 'none', security: security, type: 'ws',
-    host: dom, path: edPath
+    host: dom, path: path + '?ed=2560'
   });
   if (security === 'tls') {
     params.set('sni', randomizeCase(dom));
     params.set('fp', fp);
-    params.set('alpn', 'http/1.1');
+    params.set('alpn', isXhttp ? 'h2' : 'http/1.1');
     if (echActive) {
       params.set('ech', echDns);
     }
@@ -87,14 +90,17 @@ function toFinalMaskArray(raw) {
 }
 
 function buildStreamSettings(dom, path, fp, security, echEnable, echDns, fragEnable, fragPackets, fragLength, fragInterval, fragMaxSplit, outboundSockopt, advTls) {
-  const streamSettings = { network: 'ws', wsSettings: { headers: { Host: dom }, path: path }, sockopt: outboundSockopt };
+  const isXhttp = !!(advTls && advTls.isXhttp);
+  const streamSettings = isXhttp
+    ? { network: 'xhttp', xhttpSettings: { host: dom, path: path, mode: 'stream-one' }, sockopt: outboundSockopt }
+    : { network: 'ws', wsSettings: { host: dom, path: path }, sockopt: outboundSockopt };
   if (security === 'tls') {
     streamSettings.security = 'tls';
     const tlsSettings = {
       fingerprint: (fragEnable && advTls && advTls.fpUnsafeXray) ? 'unsafe' : fp,
       serverName: randomizeCase(dom),
       show: false,
-      alpn: ['http/1.1']
+      alpn: [isXhttp ? 'h2' : 'http/1.1']
     };
     if (echEnable) {
       tlsSettings.echConfigList = echDns;
@@ -123,7 +129,7 @@ function buildStreamSettings(dom, path, fp, security, echEnable, echDns, fragEna
 function buildChainStreamSettingsXray(pc) {
   const streamSettings = { network: pc.network };
   if (pc.network === 'ws') {
-    streamSettings.wsSettings = { path: pc.path || '/', headers: pc.host ? { Host: pc.host } : {} };
+    streamSettings.wsSettings = pc.host ? { path: pc.path || '/', host: pc.host } : { path: pc.path || '/' };
   } else if (pc.network === 'grpc') {
     streamSettings.grpcSettings = { serviceName: pc.serviceName || '', multiMode: false };
   } else {
@@ -192,8 +198,9 @@ export function buildJsonConfig(token, password, dom, ips, tlsPorts, wsPorts, fp
     fakeDnsEnable, ipv6Enable, lanAccess, lanUsername, lanPassword, remoteDnsVal, localDnsVal,
     tcpFastOpen, logLevel, echEnable, echDns, jsonName, customDomainUsed, customDomain, routingCountries, blockRules,
     leastPingInterval, leastLoadInterval, leastLoadMode, leastLoadSampling, leastLoadTimeout, parsedChain,
-    sanctionDnsVal, sanctionBypass, customBypassRules, customBlockRules, customSanctionRules
+    sanctionDnsVal, sanctionBypass, customBypassRules, customBlockRules, customSanctionRules, transport
   } = settings;
+  const isXhttp = transport === 'xhttp';
 
   const lanAuth = resolveLanAuth(lanAccess, lanUsername, lanPassword);
 
@@ -202,11 +209,11 @@ export function buildJsonConfig(token, password, dom, ips, tlsPorts, wsPorts, fp
     ? { access: 'none', error: 'none', loglevel: 'none' }
     : { access: 'none', loglevel: selectedLogLevel };
 
-  const advTls = { frag2Enable, frag2Packets, frag2Length, frag2Interval, frag2MaxSplit, fpUnsafeXray, cipherSuitesXray };
+  const advTls = { frag2Enable, frag2Packets, frag2Length, frag2Interval, frag2MaxSplit, fpUnsafeXray, cipherSuitesXray, isXhttp };
 
-  const path = basePath + '?ed=2560';
-  const useVless = !protocols || protocols.vless !== false;
-  const useTrojan = !!(protocols && protocols.trojan);
+  const path = isXhttp ? basePath : basePath + '?ed=2560';
+  const useVless = isXhttp || !protocols || protocols.vless !== false;
+  const useTrojan = !isXhttp && !!(protocols && protocols.trojan);
 
   const selectedCountries = resolveSelectedCountries(routingCountries);
   const directDomains = [...new Set(selectedCountries.flatMap(c => COUNTRY_GEOSITE[c] || []))];
@@ -337,7 +344,7 @@ export function buildJsonConfig(token, password, dom, ips, tlsPorts, wsPorts, fp
   }
   const balancerFallbackTag = parsedChain ? firstChainTag : firstProxyTag;
 
-  outbounds.push({ protocol: 'freedom', settings: { domainStrategy: 'UseIP' }, tag: 'direct' });
+  outbounds.push({ protocol: 'freedom', streamSettings: { sockopt: { domainStrategy: 'UseIP' } }, tag: 'direct' });
   outbounds.push({ protocol: 'blackhole', settings: { response: { type: 'http' } }, tag: 'block' });
   outbounds.push({ protocol: 'dns', settings: { rules: [{ action: 'hijack' }] }, tag: 'dns-out' });
 
