@@ -125,8 +125,9 @@ export function buildClashConfig(token, password, dom, ips, tlsPorts, wsPorts, f
   const {
     basePath, fragEnable, fakeDnsEnable, ipv6Enable, lanAccess, lanUsername, lanPassword,
     remoteDnsVal, localDnsVal, tcpFastOpen, logLevel, echEnable, routingCountries, blockRules, leastPingInterval, parsedChain, jsonName, customDomainUsed, customDomain,
-    sanctionDnsVal, sanctionBypass, customBypassRules, customBlockRules, customSanctionRules
+    sanctionDnsVal, sanctionBypass, customBypassRules, customBlockRules, customSanctionRules, transport
   } = settings;
+  const isXhttp = transport === 'xhttp';
 
   const lanAuth = resolveLanAuth(lanAccess, lanUsername, lanPassword);
 
@@ -149,8 +150,8 @@ export function buildClashConfig(token, password, dom, ips, tlsPorts, wsPorts, f
   const customBlockIps = (customBlockRules && customBlockRules.ips) || [];
   const customSanctionDomains = (customSanctionRules && customSanctionRules.domains) || [];
 
-  const useVless = !protocols || protocols.vless !== false;
-  const useTrojan = !!(protocols && protocols.trojan);
+  const useVless = isXhttp || !protocols || protocols.vless !== false;
+  const useTrojan = !isXhttp && !!(protocols && protocols.trojan);
 
   const proxies = [];
   const proxyTags = [];
@@ -167,19 +168,15 @@ export function buildClashConfig(token, password, dom, ips, tlsPorts, wsPorts, f
         udp: false,
         'ip-version': ipv6Enable ? 'ipv4-prefer' : 'ipv4',
         tfo: tcpFastOpen,
-        network: 'ws',
-        'ws-opts': {
-          path: basePath,
-          'max-early-data': 2560,
-          'early-data-header-name': 'Sec-WebSocket-Protocol',
-          headers: { Host: dom }
-        }
+        ...(isXhttp
+          ? { network: 'xhttp', 'xhttp-opts': { path: basePath, host: dom, mode: 'stream-one' } }
+          : { network: 'ws', 'ws-opts': { path: basePath, 'max-early-data': 2560, 'early-data-header-name': 'Sec-WebSocket-Protocol', headers: { Host: dom } } })
       };
       if (isTls) {
         baseProxy.tls = true;
         baseProxy['client-fingerprint'] = fp === 'randomized' ? 'random' : fp;
         baseProxy['skip-cert-verify'] = false;
-        baseProxy.alpn = ['http/1.1'];
+        baseProxy.alpn = [isXhttp ? 'h2' : 'http/1.1'];
       }
 
       if (useVless) {
@@ -228,17 +225,13 @@ export function buildClashConfig(token, password, dom, ips, tlsPorts, wsPorts, f
           udp: false,
           'ip-version': ipv6Enable ? 'ipv4-prefer' : 'ipv4',
           tfo: tcpFastOpen,
-          network: 'ws',
-          'ws-opts': {
-            path: basePath,
-            'max-early-data': 2560,
-            'early-data-header-name': 'Sec-WebSocket-Protocol',
-            headers: { Host: customDomain }
-          },
+          ...(isXhttp
+            ? { network: 'xhttp', 'xhttp-opts': { path: basePath, host: customDomain, mode: 'stream-one' } }
+            : { network: 'ws', 'ws-opts': { path: basePath, 'max-early-data': 2560, 'early-data-header-name': 'Sec-WebSocket-Protocol', headers: { Host: customDomain } } }),
           tls: true,
           'client-fingerprint': fp === 'randomized' ? 'random' : fp,
           'skip-cert-verify': false,
-          alpn: ['http/1.1']
+          alpn: [isXhttp ? 'h2' : 'http/1.1']
         };
 
         if (useVless) {
