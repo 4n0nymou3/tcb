@@ -7,56 +7,81 @@ on:
   schedule:
     - cron: '0 6 * * 1'
 
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   tests:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
+    name: Test suites (pinned cores)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: tests/telegram
+    env:
+      CORES_DIR: ${{ github.workspace }}/cores
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
-          node-version: 22
-      - name: Install test dependencies
-        working-directory: tests/telegram
-        run: npm install --no-audit --no-fund
-      - name: Download the latest stable cores
-        run: |
-          mkdir -p cores
-          cd cores
-          xray_tag=$(curl -sI https://github.com/XTLS/Xray-core/releases/latest | grep -i '^location' | sed 's|.*/tag/||' | tr -d '\r')
-          sb_tag=$(curl -sI https://github.com/SagerNet/sing-box/releases/latest | grep -i '^location' | sed 's|.*/tag/||' | tr -d '\r')
-          mh_tag=$(curl -sI https://github.com/MetaCubeX/mihomo/releases/latest | grep -i '^location' | sed 's|.*/tag/||' | tr -d '\r')
-          curl -sL -o xray.zip "https://github.com/XTLS/Xray-core/releases/download/${xray_tag}/Xray-linux-64.zip"
-          curl -sL -o sb.tgz "https://github.com/SagerNet/sing-box/releases/download/${sb_tag}/sing-box-${sb_tag#v}-linux-amd64.tar.gz"
-          curl -sL -o mihomo.gz "https://github.com/MetaCubeX/mihomo/releases/download/${mh_tag}/mihomo-linux-amd64-${mh_tag}.gz"
-          unzip -q xray.zip -d xray
-          tar xzf sb.tgz
-          mv sing-box-*/sing-box ./sing-box
-          gunzip -c mihomo.gz > mihomo
-          chmod +x xray/xray sing-box mihomo
-          curl -sL -o geoip.dat https://github.com/Chocolate4U/Iran-v2ray-rules/releases/latest/download/geoip.dat
-          curl -sL -o geosite.dat https://github.com/Chocolate4U/Iran-v2ray-rules/releases/latest/download/geosite.dat
-          echo "$xray_tag $sb_tag $mh_tag"
-      - name: Panel tests
-        working-directory: tests/telegram
-        run: |
-          node ui.mjs
-          node media-regression.mjs
-          node android-boundary.mjs
-          node ctr-unit.mjs
-          node worker-dns.mjs
-      - name: Generated configs against the real cores
-        working-directory: tests/telegram
-        env:
-          CORES_DIR: ${{ github.workspace }}/cores
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22.23.5
+          cache: npm
+          cache-dependency-path: tests/telegram/package-lock.json
+      - name: Install pinned dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Fetch pinned cores and verify checksums
+        run: bash fetch-cores.sh "$CORES_DIR" pinned
+      - name: UI
+        run: node ui.mjs
+      - name: Media regression
+        run: node media-regression.mjs
+      - name: Android boundary
+        run: node android-boundary.mjs
+      - name: CTR unit
+        run: node ctr-unit.mjs
+      - name: Worker DNS
+        run: node worker-dns.mjs
+      - name: Worker connect and fallback
+        run: node worker-connect.mjs
+      - name: Core validation
         run: node core-validate.mjs
-      - name: Real clients through a local Worker
-        working-directory: tests/telegram
-        env:
-          CORES_DIR: ${{ github.workspace }}/cores
+      - name: Core end-to-end
         run: node core-e2e.mjs
-      - name: Telegram end-to-end
+      - name: Telegram end-to-end (Worker)
+        run: bash run-e2e.sh worker
+      - name: Telegram end-to-end (Pages)
+        run: bash run-e2e.sh pages
+
+  latest-cores:
+    name: Core validation (latest stable cores)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
         working-directory: tests/telegram
-        run: |
-          bash run-e2e.sh worker
-          bash run-e2e.sh pages
+    env:
+      CORES_DIR: ${{ github.workspace }}/cores-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22.23.5
+          cache: npm
+          cache-dependency-path: tests/telegram/package-lock.json
+      - name: Install pinned dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Fetch the latest stable cores
+        run: bash fetch-cores.sh "$CORES_DIR" latest
+      - name: Core validation
+        run: node core-validate.mjs
+      - name: Core end-to-end
+        run: node core-e2e.mjs
