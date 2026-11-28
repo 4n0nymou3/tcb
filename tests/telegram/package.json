@@ -5,13 +5,22 @@
   "scripts": {
     "ui": "node ui.mjs",
     "media": "node media-regression.mjs",
+    "android": "node android-boundary.mjs",
+    "ctr": "node ctr-unit.mjs",
+    "worker-dns": "node worker-dns.mjs",
+    "worker-connect": "node worker-connect.mjs",
+    "core-validate": "node core-validate.mjs",
+    "core-e2e": "node core-e2e.mjs",
     "e2e-worker": "bash run-e2e.sh worker",
     "e2e-pages": "bash run-e2e.sh pages"
   },
   "devDependencies": {
-    "esbuild": "^0.25.0",
-    "jsdom": "^26.0.0",
-    "wrangler": "^4.0.0",
-    "ws": "^8.18.0"
+    "esbuild": "0.25.12",
+    "jsdom": "26.1.0",
+    "wrangler": "4.168.0",
+    "ws": "8.23.0"
+  },
+  "engines": {
+    "node": "22.23.5"
   }
 }
