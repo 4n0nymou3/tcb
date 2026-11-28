@@ -26,7 +26,7 @@ Tunnel Config Builder is a web-based tool that lets you build VLESS and Trojan c
 - Support for multiple IPs and domains at once
 - TLS Fingerprint selection from 10 options to bypass DPI
 - WebSocket Path selection
-- Optional XHTTP transport (`stream-one`, VLESS over TLS) for the link, Xray and Clash/Mihomo outputs, besides the default WebSocket
+- Optional, experimental XHTTP transport (`stream-one`, VLESS over TLS) for the link, Xray and Clash/Mihomo outputs, besides the default WebSocket
 - DNS queries sent to Cloudflare's own resolvers (1.1.1.1, 1.0.0.1 and the security/family variants) are answered by the Worker through DNS over HTTPS instead of a direct connection
 - Fragment settings to counter deep packet inspection filtering
 - Advanced JSON settings: Fake DNS, IPv6, Allow LAN, TCP Fast Open, Log Level, Local DNS, Remote DNS / DoH
@@ -51,6 +51,7 @@ Tunnel Config Builder is a web-based tool that lets you build VLESS and Trojan c
 - **Voice/video calls (UDP)**: Cloudflare Workers currently only supports outbound TCP connections, not UDP. Because of this, like any similar tool built on Cloudflare Workers, UDP traffic (including Telegram voice/video calls or similar apps) doesn't work correctly through TCB configs. This is a fundamental limitation of the Cloudflare Workers platform itself, not something fixable by changing the Worker/Pages code.
 - **Daily request limit**: The Cloudflare Workers free plan supports 100,000 requests per day. This is typically more than enough for personal or small-group use.
 - **Telegram Web Proxy quotas on the free plan**: The Telegram proxy runs on Durable Objects, which have their own separate free-plan quotas: 100,000 requests per day and 13,000 GB-s of active duration per day. Each incoming WebSocket message counts toward requests at a 20:1 ratio, and duration is consumed for as long as a connection to Telegram's servers is open and transferring data. For light personal use these quotas are usually enough, but heavy media downloads and uploads (video, large files) or several people using the proxy at once can reach them; when that happens, Cloudflare rejects that type of operation with an error until 00:00 UTC, and Telegram connections may drop and reconnect. The Workers Paid plan (about $5 per month) has much higher limits.
+- **DNS queries to Cloudflare resolvers**: the Worker answers DNS queries aimed at Cloudflare's own resolvers (1.1.1.1, 1.0.0.1 and the security and family variants) with DNS over HTTPS. To stay within the free-plan subrequest limit (50 per connection), each connection handles at most 40 DNS queries and is then closed; later queries run on a new connection.
 - **Minimum client version for ECH**: ECH support in Sing-box and in Clash/Mihomo is relatively recent. If your Sing-box or Clash configs don't connect with ECH enabled, make sure your client is updated to its latest version.
 
 ## How to Use
@@ -348,13 +349,12 @@ This setting determines which browser or device your client presents itself as d
 
 ### Transport — WebSocket or XHTTP
 
-WebSocket is the default and works as in earlier versions. XHTTP (`stream-one` mode) is optional and only used when you select it.
+WebSocket is the default. XHTTP (`stream-one` mode) is optional and experimental, and is only used when you select it yourself.
 
-- It builds VLESS only and TLS ports only (XHTTP needs HTTP/2 over TLS to pass through Cloudflare).
-- It appears only in the links, the Xray JSON and the Clash/Mihomo YAML. The Sing-box core does not support XHTTP, so no Sing-box output is built for it.
-- The Xray core prints a deprecation warning for WebSocket, but it is not removed and WebSocket still works.
-- This mode has not been tested on real Cloudflare: the tests used real Xray and Mihomo clients against a local workerd. If it does not work on your network, go back to WebSocket.
-- Cloudflare limit: a request body can be at most 100 MB and in XHTTP mode each connection is one request, so a very large download or upload on a single connection may be cut.
+- It builds VLESS only and TLS ports only; XHTTP needs HTTP/2 over TLS to pass through Cloudflare.
+- It appears in the links, the Xray JSON and the Clash/Mihomo YAML. The Sing-box core does not support XHTTP, so no Sing-box output is built for it.
+- The Xray core shows a deprecation notice for the WebSocket transport and for the Trojan protocol; the notice is not an error and both still work.
+- Cloudflare limit: the maximum size of a request body that reaches a Worker depends on the plan of the domain (Free and Pro: 100 MB, Business: 200 MB). In XHTTP mode the data you send (upload) is the body of that request, so a very large upload on a single connection may be cut. This limit does not apply to the response (download); Cloudflare sets no size limit on response bodies.
 
 ### WebSocket Path
 
