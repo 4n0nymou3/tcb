@@ -53,7 +53,15 @@ const scenarios = {
   sanction_all: (h) => { for (const id of ['sanctionOpenai', 'sanctionGoogleai', 'sanctionAnthropic', 'sanctionXai', 'sanctionMicrosoft', 'sanctionOracle', 'sanctionDocker', 'sanctionAdobe', 'sanctionEpicgames', 'sanctionIntel', 'sanctionAmd', 'sanctionNvidia', 'sanctionAsus', 'sanctionHp', 'sanctionLenovo']) h.setCk(id, true); },
   lan_auth: (h) => { h.setVal('lanAccess', '1'); h.setVal('lanUsername', 'alice'); h.setVal('lanPassword', 'secret'); },
   ipv6_fakedns: (h) => { h.setVal('ipv6', '1'); h.setVal('fakeDns', '1'); h.setVal('ips', '104.16.0.1\n2606:4700::1'); },
-  countries: (h) => { h.setCk('routeCn', true); h.setCk('routeRu', true); }
+  countries: (h) => { h.setCk('routeCn', true); h.setCk('routeRu', true); },
+  both_protocols: (h) => h.setCk('protoTrojan', true),
+  pages_target: (h) => h.click('tab-pages'),
+  path_and_fingerprint: (h) => { const ps = h.$('pathSelect'); const fs = h.$('fpSelect'); h.setVal('pathSelect', ps.options[Math.min(2, ps.options.length - 1)].value); h.setVal('fpSelect', fs.options[Math.min(2, fs.options.length - 1)].value); },
+  custom_rules: (h) => { h.setVal('customBypassRules', 'domain:bypass.example'); h.setVal('customBlockRules', 'domain:block.example'); h.setVal('customSanctionRules', 'domain:sanction.example'); },
+  ech_and_chain: (h) => { h.setCk('echEnable', true); h.setVal('chainConfig', chainLink); },
+  fragment_custom_domain: (h) => { h.setCk('fragEnable', true); h.setCk('frag2Enable', true); h.setCk('customDomainUsed', true); h.setVal('customDomainInput', 'my.example.com'); },
+  kitchen_sink: (h) => { h.setCk('protoTrojan', true); h.setCk('echEnable', true); h.setCk('fragEnable', true); h.setCk('frag2Enable', true); h.setVal('chainConfig', chainLink); h.setCk('customDomainUsed', true); h.setVal('customDomainInput', 'my.example.com'); h.setCls('.ptls[value="8443"]', true); h.setCls('.ptls[value="2053"]', true); for (const id of ['blockPromo', 'blockPorn', 'blockQuic', 'blockMalware', 'blockPhishing', 'blockCryptominers', 'sanctionOpenai', 'sanctionGoogleai', 'sanctionAnthropic', 'routeCn', 'routeRu']) h.setCk(id, true); h.setVal('lanAccess', '1'); h.setVal('lanUsername', 'alice'); h.setVal('lanPassword', 'secret'); h.setVal('ipv6', '1'); h.setVal('fakeDns', '1'); h.setVal('ips', '104.16.0.1\n2606:4700::1'); },
+  kitchen_sink_pages: (h) => { h.click('tab-pages'); h.setCk('echEnable', true); h.setCk('fragEnable', true); h.setVal('chainConfig', chainLink); for (const id of ['blockPromo', 'blockMalware', 'sanctionOpenai', 'routeCn']) h.setCk(id, true); h.setVal('ipv6', '1'); }
 };
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'tcb-core-'));
@@ -99,6 +107,7 @@ const have = (p) => p && fs.existsSync(p);
 const xrayBin = bin('xray', 'xray/xray');
 const sbBin = bin('sing-box', 'sing-box');
 const mhBin = bin('mihomo', 'mihomo');
+let mhBytes = null;
 
 if (!coresDir) {
   console.log('[SKIP] real-core validation: set CORES_DIR to a folder holding xray/xray, sing-box and mihomo');
@@ -109,8 +118,9 @@ if (!coresDir) {
       fs.writeFileSync(f, o.xray);
       const r = spawnSync(xrayBin, ['run', '-test', '-c', f], { encoding: 'utf8', env: { ...process.env, XRAY_LOCATION_ASSET: coresDir } });
       const text = (r.stdout || '') + (r.stderr || '');
-      const dep = text.split('\n').filter((l) => /deprecat/i.test(l) && !/WebSocket transport/i.test(l));
-      check(`xray core: ${o.label} passes -test with no deprecation warning other than the WebSocket transport notice`, r.status === 0 && /Configuration OK/.test(text) && dep.length === 0, dep.join(' | ') || text.slice(-300));
+      const usesTrojan = o.transport === 'ws' && /protocols|kitchen/.test(o.name);
+      const dep = text.split('\n').filter((l) => /deprecat/i.test(l) && !/WebSocket transport/i.test(l) && !(usesTrojan && /Trojan \(with no Flow/i.test(l)));
+      check(`xray core: ${o.label} passes -test with no deprecation notice other than the known WebSocket and Trojan ones`, r.status === 0 && /Configuration OK/.test(text) && dep.length === 0, dep.join(' | ') || text.slice(-300));
     }
     if (have(sbBin) && o.sing) {
       const f = path.join(tmp, o.label.replace('/', '_') + '.singbox.json');
@@ -120,6 +130,15 @@ if (!coresDir) {
       check(`sing-box core: ${o.label} passes check with no warnings`, r.status === 0 && !/warn|deprecat/i.test(text), text.slice(-300));
     }
     if (have(mhBin)) {
+      mhBytes = mhBytes || fs.readFileSync(mhBin);
+      const c = JSON.parse(o.clash);
+      const keys = new Set(Object.keys(c));
+      for (const k of ['dns', 'tun', 'sniffer', 'profile']) if (c[k] && typeof c[k] === 'object') Object.keys(c[k]).forEach((x) => keys.add(x));
+      for (const px of c.proxies || []) { Object.keys(px).forEach((x) => keys.add(x)); for (const k of ['ws-opts', 'xhttp-opts', 'ech-opts', 'grpc-opts', 'reality-opts']) if (px[k]) Object.keys(px[k]).forEach((x) => keys.add(x)); }
+      for (const g of c['proxy-groups'] || []) Object.keys(g).forEach((x) => keys.add(x));
+      for (const rp of Object.values(c['rule-providers'] || {})) Object.keys(rp).forEach((x) => keys.add(x));
+      const missing = [...keys].filter((k) => !mhBytes.includes(Buffer.from(k)));
+      check(`mihomo core: ${o.label} every structural key exists in the mihomo binary`, missing.length === 0, missing.join(','));
       const d = path.join(tmp, 'mh_' + o.label.replace('/', '_'));
       fs.mkdirSync(d, { recursive: true });
       fs.writeFileSync(path.join(d, 'config.yaml'), o.clash);
